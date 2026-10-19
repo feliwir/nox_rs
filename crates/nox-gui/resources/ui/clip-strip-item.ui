@@ -21,19 +21,34 @@
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>
+        <!-- The media's thumbnail, or a text clip's rendered text. -->
         <child>
-          <object class="GtkPicture">
-            <property name="content-fit">contain</property>
-            <property name="width-request">112</property>
-            <property name="height-request">63</property>
-            <style><class name="thumbnail-frame"/></style>
-            <binding name="paintable">
-              <lookup name="thumbnail" type="NoxMediaObject">
-                <lookup name="media" type="NoxClipRow">
-                  <lookup name="item">GtkListItem</lookup>
-                </lookup>
-              </lookup>
-            </binding>
+          <object class="GtkOverlay">
+            <property name="child">
+              <object class="GtkPicture">
+                <property name="content-fit">contain</property>
+                <property name="width-request">112</property>
+                <property name="height-request">63</property>
+                <style><class name="thumbnail-frame"/></style>
+                <binding name="paintable">
+                  <lookup name="thumbnail" type="NoxMediaObject">
+                    <lookup name="media" type="NoxClipRow">
+                      <lookup name="item">GtkListItem</lookup>
+                    </lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </property>
+            <child type="overlay">
+              <object class="GtkPicture">
+                <property name="content-fit">contain</property>
+                <binding name="paintable">
+                  <lookup name="preview" type="NoxClipRow">
+                    <lookup name="item">GtkListItem</lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
           </object>
         </child>
         <child>

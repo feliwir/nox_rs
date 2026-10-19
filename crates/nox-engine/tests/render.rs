@@ -806,7 +806,7 @@ fn text_clips_render() {
         }],
         ..nox_text::Document::new("MM MM")
     };
-    timeline
+    let text = timeline
         .add_text_clip(f(0), f(50), document.to_parameters())
         .unwrap();
     let (sender, events) = mpsc::channel();
@@ -815,7 +815,7 @@ fn text_clips_render() {
         let _ = sender.send(event);
     });
     engine.set_size(320, 180);
-    engine.set_timeline(Arc::new(timeline));
+    engine.set_timeline(Arc::new(timeline.clone()));
     let frame = render(&engine, &events, 5);
     let (mut white, mut green, mut red_left) = (0, 0, 0);
     for y in 0..180 {
@@ -835,6 +835,36 @@ fn text_clips_render() {
     assert!(white > 300 && green > 300, "white {white}, green {green}");
     assert!(red_left > 10000, "red around the letters: {red_left}");
     assert!(close(pixel(&frame, 2, 2), [0xC0, 0x30, 0x20]));
+
+    // Turned a quarter clockwise and moved right by a tenth: the first
+    // word above the center, the second below, both around x = 160 + 32.
+    let item = timeline
+        .track_mut(text.track)
+        .and_then(|t| t.children.get_mut(text.index))
+        .and_then(Composable::item_mut)
+        .unwrap();
+    item.set_value_at(nox_project::Param::Rotation, 0.0, 90.0);
+    item.set_value_at(nox_project::Param::X, 0.0, 0.1);
+    engine.set_timeline(Arc::new(timeline));
+    let frame = render(&engine, &events, 5);
+    let (mut white, mut green, mut xs) = (0, 0, Vec::new());
+    for y in 0..180 {
+        for x in 0..320 {
+            let p = pixel(&frame, x, y);
+            if p.iter().all(|&c| c > 240) {
+                white += 1;
+                assert!(y < 90, "white above: ({x}, {y})");
+                xs.push(x);
+            } else if p[1] > 240 && p[0] < 20 && p[2] < 20 {
+                green += 1;
+                assert!(y > 90, "green below: ({x}, {y})");
+                xs.push(x);
+            }
+        }
+    }
+    assert!(white > 300 && green > 300, "white {white}, green {green}");
+    let middle = (xs.iter().min().unwrap() + xs.iter().max().unwrap()) as f64 / 2.0;
+    assert!((middle - 192.0).abs() <= 2.0, "centered at {middle}");
 }
 
 /// The engine tells how each file decodes, and decodes as it's told.

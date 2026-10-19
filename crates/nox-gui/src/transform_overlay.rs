@@ -171,13 +171,22 @@ impl TransformOverlay {
         let Composable::Clip(clip) = model.item(item).ok()? else {
             return None;
         };
-        let path = model.media_path(clip.media_reference()?)?;
-        let video = pool.find(&path)?.info()?.video.clone()?;
         let settings = &model.settings;
         let sequence = (settings.width.max(1), settings.height.max(1));
-        let placed = settings
-            .scaling
-            .place((video.width, video.height), sequence);
+        // Text is placed where its letters are, a picture by its framing.
+        let placed = match clip.text_parameters() {
+            Some(parameters) => crate::text_fonts::placed(
+                &nox_text::Document::from_parameters(parameters),
+                sequence,
+            )?,
+            None => {
+                let path = model.media_path(clip.media_reference()?)?;
+                let video = pool.find(&path)?.info()?.video.clone()?;
+                settings
+                    .scaling
+                    .place((video.width, video.height), sequence)
+            }
+        };
         let transform = clip.item.transform_at(time);
         // The picture shows the sequence fitted into the widget.
         let (w, h) = (f64::from(self.width()), f64::from(self.height()));

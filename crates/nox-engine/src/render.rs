@@ -485,10 +485,20 @@ impl Renderer {
             }
             'picture: {
                 // Text is rasterized at the output's size and kept like a
-                // still (keyed by what it shows and the size).
+                // still (keyed by what it shows, the size and its
+                // transform). Its move, zoom and rotation are drawn into
+                // its outlines, so it stays sharp; with a crop, which
+                // works on the untransformed picture, the compositor
+                // transforms it like any picture.
+                let baked = layer.text.is_some() && transform.crop == [0.0; 4];
                 let text_key = layer.text.as_ref().map(|document| {
+                    let drawn = if baked {
+                        format!("{transform:?}")
+                    } else {
+                        String::new()
+                    };
                     still_key(
-                        Path::new(&format!("nox:text:{document:?}")),
+                        Path::new(&format!("nox:text:{document:?}{drawn}")),
                         Some(u64::from(width) << 32 | u64::from(height)),
                     )
                 });
@@ -498,10 +508,16 @@ impl Renderer {
                     if !self.texts.contains_key(&key) {
                         let fonts = self.fonts.get_or_insert_with(nox_text::Fonts::new);
                         let laid = nox_text::layout(fonts, document, (width, height));
-                        let picture =
-                            nox_text::render(&laid, laid.centered((width, height)), |_| {
-                                nox_text::Look::default()
-                            });
+                        let offset = laid.centered((width, height));
+                        let look = nox_text::Look {
+                            transform: if baked {
+                                text_transform(&laid, offset, transform, (width, height))
+                            } else {
+                                nox_text::kurbo::Affine::IDENTITY
+                            },
+                            ..nox_text::Look::default()
+                        };
+                        let picture = nox_text::render(&laid, offset, |_| look);
                         if self.texts.len() >= MAX_TEXTS {
                             self.texts.clear();
                         }
@@ -555,7 +571,11 @@ impl Renderer {
                     opacity: *opacity as f32,
                     mode: blend_mode(*mode),
                     grade: *grade,
-                    transform: gpu_transform(transform),
+                    transform: if baked {
+                        gpu_transform(&nox_project::Transform::IDENTITY)
+                    } else {
+                        gpu_transform(transform)
+                    },
                 };
                 // The clip's effects run on its picture, in stack order.
                 // The clip shown on the Effects page runs them (if only
@@ -770,6 +790,29 @@ struct Layer {
     clip: u64,
     /// What a text clip shows (else `path` is its file).
     text: Option<nox_text::Document>,
+}
+
+/// `t` (no crop) as an affine of `laid`'s layout box, which `offset` puts
+/// into a picture of `frame` size: zoomed and rotated around the center of
+/// its letters, then moved, as `Transform::apply` places a picture.
+fn text_transform(
+    laid: &nox_text::TextLayout,
+    offset: nox_text::kurbo::Vec2,
+    t: &nox_project::Transform,
+    frame: (u32, u32),
+) -> nox_text::kurbo::Affine {
+    use nox_text::kurbo::{Affine, Vec2};
+    let Some(ink) = laid.ink() else {
+        return Affine::IDENTITY;
+    };
+    let center = ink.center().to_vec2() + offset;
+    let moved = Vec2::new(t.x * f64::from(frame.0), t.y * f64::from(frame.1));
+    // In picture pixels, then back into the layout box.
+    let picture = Affine::translate(center + moved)
+        * Affine::rotate(t.rotation.to_radians())
+        * Affine::scale(t.zoom)
+        * Affine::translate(-center);
+    Affine::translate(-offset) * picture * Affine::translate(offset)
 }
 
 fn gpu_transform(t: &nox_project::Transform) -> Transform {

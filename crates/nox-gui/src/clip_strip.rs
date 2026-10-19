@@ -3,7 +3,7 @@
 //! Selecting one selects it on the timeline and moves the playhead to its
 //! start, so the viewer, scopes and color controls show that clip.
 
-use gtk::{CompositeTemplate, gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{CompositeTemplate, gdk, gio, glib, prelude::*, subclass::prelude::*};
 use nox_project::{Composable, ItemRef, TrackKind};
 
 use crate::media_object::MediaObject;
@@ -25,6 +25,9 @@ mod row {
         /// The media pool item, for the thumbnail.
         #[property(get, set, nullable)]
         pub media: RefCell<Option<MediaObject>>,
+        /// A text clip's text, rendered (instead of a thumbnail).
+        #[property(get, set, nullable)]
+        pub preview: RefCell<Option<gdk::Texture>>,
         pub item: Cell<Option<ItemRef>>,
         pub start: Cell<i64>,
     }
@@ -174,10 +177,14 @@ impl ClipStrip {
                     .media_reference()
                     .and_then(|r| model.media_path(r))
                     .and_then(|path| pool.find(&path));
+                let preview = clip
+                    .text_parameters()
+                    .and_then(|p| text_preview(&nox_text::Document::from_parameters(p)));
                 let row: ClipRow = glib::Object::builder()
                     .property("name", &clip.item.name)
                     .property("timecode", project.timecode(start))
                     .property("media", media)
+                    .property("preview", preview)
                     .build();
                 row.imp().item.set(Some(item));
                 row.imp().start.set(start);
@@ -212,4 +219,57 @@ impl ClipStrip {
         imp.selection.set_selected(position);
         imp.updating.set(false);
     }
+}
+
+/// The size of text previews: twice the strip's thumbnails.
+const PREVIEW: (u32, u32) = (224, 126);
+
+/// `document` as it shows in a 16:9 picture, over the thumbnails' dark
+/// background (light for dark text, as on the timeline).
+fn text_preview(document: &nox_text::Document) -> Option<gdk::Texture> {
+    let (width, height) = PREVIEW;
+    let picture = crate::text_fonts::with(|fonts| {
+        let laid = nox_text::layout(fonts, document, PREVIEW);
+        nox_text::render(&laid, laid.centered(PREVIEW), |_| nox_text::Look::default())
+    });
+    let [r, g, b, _] = document.style.color;
+    let backdrop = if 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.35 {
+        [0xd8, 0xd8, 0xdc, 0xff]
+    } else {
+        [0x10, 0x11, 0x14, 0xff]
+    };
+    let mut rgba = backdrop.repeat((width * height) as usize);
+    if let Some(picture) = picture {
+        // Blended in (straight alpha), clipped to the preview.
+        for row in 0..picture.height as i32 {
+            let y = picture.y + row;
+            if !(0..height as i32).contains(&y) {
+                continue;
+            }
+            for column in 0..picture.width as i32 {
+                let x = picture.x + column;
+                if !(0..width as i32).contains(&x) {
+                    continue;
+                }
+                let from = (row as usize * picture.width as usize + column as usize) * 4;
+                let to = (y as usize * width as usize + x as usize) * 4;
+                let alpha = u32::from(picture.rgba[from + 3]);
+                for c in 0..3 {
+                    let (top, below) = (u32::from(picture.rgba[from + c]), u32::from(rgba[to + c]));
+                    rgba[to + c] = ((top * alpha + below * (255 - alpha) + 127) / 255) as u8;
+                }
+            }
+        }
+    }
+    let bytes = glib::Bytes::from_owned(rgba);
+    Some(
+        gdk::MemoryTexture::new(
+            width as i32,
+            height as i32,
+            gdk::MemoryFormat::R8g8b8a8,
+            &bytes,
+            width as usize * 4,
+        )
+        .upcast(),
+    )
 }

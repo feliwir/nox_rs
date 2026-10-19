@@ -154,9 +154,7 @@ impl imp::TimelineView {
                 // Drawn below, over both neighbors.
                 Composable::Transition(_) => continue,
                 _ if offline => OFFLINE_CLIP,
-                Composable::Clip(_) if track.kind == TrackKind::Video => VIDEO_CLIP,
-                Composable::Clip(_) => AUDIO_CLIP,
-                _ => NESTED_CLIP,
+                _ => clip_color(child, &track.kind),
             };
             // Clips of muted or hidden tracks are dimmed like disabled clips.
             let enabled = child.item().is_none_or(|i| i.enabled) && track.item.enabled;
@@ -187,6 +185,9 @@ impl imp::TimelineView {
                 match track.kind {
                     TrackKind::Audio if preferences.timeline_waveforms() => {
                         self.draw_waveform(snapshot, timeline, clip, range, y, alpha);
+                    }
+                    TrackKind::Video if clip.text_parameters().is_some() => {
+                        self.draw_text_preview(snapshot, clip, range, y, alpha);
                     }
                     TrackKind::Video if preferences.timeline_thumbnails() => {
                         self.draw_thumbnails(snapshot, timeline, clip, range, y, alpha);
@@ -394,6 +395,79 @@ impl imp::TimelineView {
         snapshot.pop();
     }
 
+    /// A text clip's text below its name, in its font and color (on a
+    /// light backdrop if the color is dark), as long as it fits.
+    pub(super) fn draw_text_preview(
+        &self,
+        snapshot: &gtk::Snapshot,
+        clip: &nox_project::Clip,
+        range: TimeRange,
+        y: f32,
+        alpha: f32,
+    ) {
+        let Some(parameters) = clip.text_parameters() else {
+            return;
+        };
+        let document = nox_text::Document::from_parameters(parameters);
+        let rect = self.clip_rect(range, y);
+        // Inside the clip's border (2 px when selected), as thumbnails.
+        let left = (rect.x() + 2.0).max(HEADER_WIDTH);
+        let right = (rect.x() + rect.width() - 2.0).min(self.obj().width() as f32);
+        let top = rect.y() + 16.0;
+        let height = rect.y() + rect.height() - 2.0 - top;
+        if right - left < 8.0 || height < 8.0 {
+            return;
+        }
+        let [r, g, b, a] = document.style.color;
+        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        let backdrop = if luminance < 0.35 {
+            gdk::RGBA::new(0.85, 0.85, 0.87, 0.9 * alpha)
+        } else {
+            gdk::RGBA::new(0.0, 0.0, 0.0, 0.35 * alpha)
+        };
+        let area = graphene::Rect::new(left, top, right - left, height);
+        snapshot.append_color(&backdrop, &area);
+        // One line: line breaks shown as spaces.
+        let text = document
+            .text
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        let layout = self.obj().create_pango_layout(Some(&text));
+        let mut font = gtk::pango::FontDescription::new();
+        font.set_family(&document.style.family);
+        font.set_weight(match document.style.weight.round() as i32 {
+            i32::MIN..=150 => gtk::pango::Weight::Thin,
+            151..=250 => gtk::pango::Weight::Ultralight,
+            251..=350 => gtk::pango::Weight::Light,
+            351..=450 => gtk::pango::Weight::Normal,
+            451..=550 => gtk::pango::Weight::Medium,
+            551..=650 => gtk::pango::Weight::Semibold,
+            651..=750 => gtk::pango::Weight::Bold,
+            751..=850 => gtk::pango::Weight::Ultrabold,
+            _ => gtk::pango::Weight::Heavy,
+        });
+        if document.style.italic {
+            font.set_style(gtk::pango::Style::Italic);
+        }
+        font.set_absolute_size(f64::from((height * 0.6).min(20.0)) * f64::from(gtk::pango::SCALE));
+        layout.set_font_description(Some(&font));
+        layout.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        // From the clip's start, or the visible part's if it's scrolled.
+        let x = rect.x().max(HEADER_WIDTH) + 4.0;
+        layout.set_width(((right - x - 2.0).max(0.0) * gtk::pango::SCALE as f32) as i32);
+        let (_, logical) = layout.pixel_extents();
+        snapshot.push_clip(&area);
+        snapshot.save();
+        snapshot.translate(&graphene::Point::new(
+            x,
+            top + (height - logical.height() as f32) / 2.0,
+        ));
+        snapshot.append_layout(&layout, &gdk::RGBA::new(r, g, b, a.max(0.4) * alpha));
+        snapshot.restore();
+        snapshot.pop();
+    }
+
     pub(super) fn draw_transition(
         &self,
         snapshot: &gtk::Snapshot,
@@ -440,11 +514,7 @@ impl imp::TimelineView {
                         continue;
                     };
                     let kind = &timeline.track(track).expect("track").kind;
-                    let color = if *kind == TrackKind::Video {
-                        VIDEO_CLIP
-                    } else {
-                        AUDIO_CLIP
-                    };
+                    let color = clip_color(child, kind);
                     let moved = TimeRange::new(range.start + *offset, range.duration);
                     self.draw_clip(snapshot, moved, row_y(row), child.name(), color, true);
                 }
@@ -467,11 +537,7 @@ impl imp::TimelineView {
                         Edge::End => TimeRange::from_start_end(range.start, *to),
                     };
                     let kind = &timeline.track(item.track).expect("track").kind;
-                    let color = if *kind == TrackKind::Video {
-                        VIDEO_CLIP
-                    } else {
-                        AUDIO_CLIP
-                    };
+                    let color = clip_color(child, kind);
                     self.draw_clip(snapshot, trimmed, row_y(row), child.name(), color, true);
                 }
                 *snapped
@@ -516,11 +582,7 @@ impl imp::TimelineView {
                         )
                     };
                     let kind = &timeline.track(item.track).expect("track").kind;
-                    let color = if *kind == TrackKind::Video {
-                        VIDEO_CLIP
-                    } else {
-                        AUDIO_CLIP
-                    };
+                    let color = clip_color(child, kind);
                     let text = format!("{} · {label}", child.name()); // no-i18n
                     self.draw_clip(snapshot, shown, row_y(row), &text, color, true);
                 }

@@ -19,6 +19,7 @@ mod scopes;
 mod settings_dialog;
 #[cfg(test)]
 mod template_tests;
+mod text_fonts;
 mod thumbnails;
 mod timeline;
 mod track_header;

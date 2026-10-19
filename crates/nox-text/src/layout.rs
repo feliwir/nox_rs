@@ -63,6 +63,16 @@ impl TextLayout {
         )
     }
 
+    /// The box its letters' glyphs cover, in layout box pixels (`None`
+    /// if nothing has glyphs): what `render` draws, before looks.
+    pub fn ink(&self) -> Option<Rect> {
+        self.letters
+            .iter()
+            .filter(|l| !l.glyphs.is_empty())
+            .map(Letter::ink)
+            .reduce(|a, b| a.union(b))
+    }
+
     /// How many words it has.
     pub fn words(&self) -> usize {
         self.letters

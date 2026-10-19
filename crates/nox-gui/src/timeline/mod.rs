@@ -61,6 +61,8 @@ const AUDIO_TRACK: gdk::RGBA = rgb(0x20, 0x26, 0x24);
 const VIDEO_CLIP: gdk::RGBA = rgb(0x3a, 0x5a, 0x8c);
 const AUDIO_CLIP: gdk::RGBA = rgb(0x35, 0x7a, 0x5a);
 const NESTED_CLIP: gdk::RGBA = rgb(0x6a, 0x4a, 0x8c);
+/// Text clips (magenta, as Premiere's graphics).
+const TEXT_CLIP: gdk::RGBA = rgb(0x9c, 0x3a, 0x74);
 /// Clips whose media file is missing.
 const OFFLINE_CLIP: gdk::RGBA = rgb(0x8c, 0x2e, 0x2e);
 const CLIP_BORDER: gdk::RGBA = rgb(0x12, 0x13, 0x15);
@@ -91,6 +93,16 @@ fn marker_color(name: &str) -> gdk::RGBA {
         "WHITE" => rgb(0xF0, 0xF0, 0xF0),
         "BLACK" => rgb(0x30, 0x30, 0x30),
         _ => rgb(0x3E, 0x82, 0xF0), // BLUE and unknown names
+    }
+}
+
+/// The color of `child` on a track of `kind`.
+fn clip_color(child: &Composable, kind: &TrackKind) -> gdk::RGBA {
+    match child {
+        Composable::Clip(clip) if clip.text_parameters().is_some() => TEXT_CLIP,
+        Composable::Clip(_) if *kind == TrackKind::Video => VIDEO_CLIP,
+        Composable::Clip(_) => AUDIO_CLIP,
+        _ => NESTED_CLIP,
     }
 }
 
