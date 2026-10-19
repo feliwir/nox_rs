@@ -24,6 +24,8 @@ mod thumbnails;
 mod timeline;
 mod track_header;
 mod transform_overlay;
+#[cfg(test)]
+mod ui_tests;
 mod ui_util;
 mod viewer;
 mod waveforms;

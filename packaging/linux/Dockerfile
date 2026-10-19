@@ -19,8 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libjxl-dev libopus-dev libmp3lame-dev libvulkan-dev libva-dev \
         libasound2-dev glslang-tools glslc libxml2-utils patchelf \
         # For tests: the ffmpeg CLI makes test clips; lavapipe is a Vulkan
-        # driver on the CPU, for runners without a GPU.
-        ffmpeg mesa-vulkan-drivers \
+        # driver on the CPU, for runners without a GPU; Broadway
+        # (gtk4-broadwayd) is a display for the GUI tests.
+        ffmpeg mesa-vulkan-drivers libgtk-4-bin \
     && rm -rf /var/lib/apt/lists/*
 
 # Newer Vulkan headers than Debian's (1.4.309): FFmpeg's AV1 Vulkan
@@ -35,5 +36,8 @@ COPY ffmpeg/build.sh /tmp/build-ffmpeg.sh
 RUN /tmp/build-ffmpeg.sh /usr/local && ldconfig && rm /tmp/build-ffmpeg.sh
 
 ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo PATH=/usr/local/cargo/bin:$PATH
-RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable --component rustfmt,clippy \
+# llvm-tools and cargo-llvm-cov: CI's test run measures code coverage.
+RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable --component rustfmt,clippy,llvm-tools-preview \
+    && cargo install --locked cargo-llvm-cov \
+    && rm -rf /usr/local/cargo/registry \
     && chmod -R a+w /usr/local/cargo /usr/local/rustup

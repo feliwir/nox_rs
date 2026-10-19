@@ -1,6 +1,6 @@
 //! Builds every `.ui` template, so a renamed id, a missing callback or a
 //! broken file fails here rather than when the user opens a dialog. Needs a
-//! display; without one the test passes with a note.
+//! display, as `ui_tests` (it runs on their GTK thread).
 
 use gtk::{glib, prelude::*};
 
@@ -18,20 +18,18 @@ use crate::timeline::TimelineView;
 use crate::viewer::Viewer;
 use crate::window::Window;
 
-#[test]
+#[gtk::test]
 #[cfg_attr(
     target_os = "macos",
     ignore = "GTK must be initialized on the main thread on macOS; tests run on others"
 )]
 fn templates_build() {
-    if gtk::init().is_err() {
-        eprintln!("skipping: no display");
-        return;
-    }
-    crate::i18n::init();
-    gtk::gio::resources_register_include!("nox.gresource").unwrap();
-    // Templates report problems as GLib criticals; make them fail the test.
-    glib::log_set_always_fatal(glib::LogLevels::LEVEL_CRITICAL | glib::LogLevels::LEVEL_WARNING);
+    crate::ui_tests::app();
+    // Templates report problems as GLib criticals; make them fail the test
+    // (and only this one: the GTK thread runs the others too).
+    let before = glib::log_set_always_fatal(
+        glib::LogLevels::LEVEL_CRITICAL | glib::LogLevels::LEVEL_WARNING,
+    );
 
     let window = glib::Object::new::<Window>();
     let project = Project::new();
@@ -111,4 +109,5 @@ fn templates_build() {
     preferences.destroy();
     dialog.destroy();
     window.destroy();
+    glib::log_set_always_fatal(before);
 }

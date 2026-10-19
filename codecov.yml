@@ -1,0 +1,20 @@
+# Coverage from CI's Linux tests (cargo llvm-cov, see .github/workflows/ci.yml).
+codecov:
+  require_ci_to_pass: false
+
+coverage:
+  status:
+    # Reported, not enforced: coverage changes don't fail pull requests.
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+# The tests run in a container with the checkout at /src.
+fixes:
+  - "/src/::"
+
+ignore:
+  - "xtask"

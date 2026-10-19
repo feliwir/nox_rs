@@ -154,6 +154,13 @@ impl TransformOverlay {
         self.queue_draw();
     }
 
+    /// The corners of the selected clip's box, in widget pixels (for
+    /// tests).
+    #[cfg(test)]
+    pub(crate) fn box_corners(&self) -> Option<[(f64, f64); 4]> {
+        self.geometry().map(|g| g.corners)
+    }
+
     /// The selected video clip's outline and handles, if there is one.
     fn geometry(&self) -> Option<Geometry> {
         let imp = self.imp();

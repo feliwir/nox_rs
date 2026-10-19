@@ -1,8 +1,9 @@
 # Checks every push to a branch and every pull request (tags only run the
 # Release workflow): formatting, lints and the test suite
 # on Linux (in the Debian 13 build environment, with lavapipe as the
-# Vulkan driver, as runners have no GPU), lints and tests on Windows and
-# macOS (GPU tests skip themselves there), and that the Flatpak builds.
+# Vulkan driver, as runners have no GPU; its coverage goes to Codecov),
+# lints and tests on Windows and macOS (GPU tests skip themselves there),
+# and that the Flatpak builds.
 name: CI
 
 on:
@@ -44,10 +45,23 @@ jobs:
         run: .github/scripts/in-linux-env.sh cargo clippy --workspace --all-targets --locked
 
       - name: Test
-        # lavapipe must work here: GPU tests fail rather than skip.
+        # lavapipe must work here: GPU tests fail rather than skip. The GUI
+        # tests get a display (Broadway). Run with coverage instrumentation
+        # (cargo-llvm-cov, in the image), so the GPU and GUI tests count too.
         env:
           NOX_REQUIRE_GPU: 1
-        run: .github/scripts/in-linux-env.sh cargo test --workspace --locked --no-fail-fast -- --test-threads=1
+        run: >-
+          .github/scripts/in-linux-env.sh .github/scripts/with-display.sh
+          cargo llvm-cov --workspace --locked
+          --no-fail-fast --lcov --output-path lcov.info -- --test-threads=1
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v7
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # Pull requests from forks get no token; that's no failure.
+          fail_ci_if_error: false
 
   windows:
     name: Windows x64 (build, lint, test)
