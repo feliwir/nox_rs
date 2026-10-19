@@ -11,14 +11,23 @@ use std::sync::{Arc, OnceLock};
 /// Generates `name` in the test temp dir with the given ffmpeg arguments, or
 /// returns `None` (after printing why) if ffmpeg or an encoder is missing.
 pub fn fixture(name: &str, args: &[&str]) -> Option<PathBuf> {
-    let path = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR"));
+    let path = dir.join(name);
+    // Written under a name of its own, then renamed: tests sharing a
+    // fixture (they run in parallel) never read one being written.
+    let thread = format!("{:?}", std::thread::current().id());
+    let digits: String = thread.chars().filter(char::is_ascii_digit).collect();
+    let partial = dir.join(format!("partial-{}-{digits}-{name}", std::process::id()));
     let output = Command::new("ffmpeg")
         .args(["-y", "-hide_banner", "-loglevel", "error"])
         .args(args)
-        .arg(&path)
+        .arg(&partial)
         .output();
     match output {
-        Ok(output) if output.status.success() => Some(path),
+        Ok(output) if output.status.success() => {
+            std::fs::rename(&partial, &path).expect("fixture in place");
+            Some(path)
+        }
         // FFmpeg without that encoder (e.g. builds without libwebp).
         Ok(output)
             if ["Unknown encoder", "Encoder not found"]

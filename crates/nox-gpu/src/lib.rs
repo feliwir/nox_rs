@@ -15,8 +15,8 @@ mod vk_util;
 
 pub use ash::vk;
 pub use compositor::{
-    BlendMode, Compositor, LayerHook, LayerPicture, LayerStyle, MAX_LAYERS, Placement, Rect,
-    Transform, YuvTarget,
+    BlendMode, Compositor, LayerHook, LayerPicture, LayerStyle, MAX_LAYERS, MAX_TRANSITIONS,
+    Placement, Rect, Transform, TransitionPass, YuvTarget,
 };
 pub use converter::{
     BufferFrame, Converter, CpuFrame, ImageSync, Input, Layout, Orientation, Plane, PlaneFormat,

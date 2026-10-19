@@ -14,9 +14,7 @@
 
 use crate::metadata::Object;
 use crate::time::{Time, TimeRange};
-use crate::timeline::{
-    Composable, Gap, Marker, Timeline, Track, TrackKind, Transition, TransitionKind,
-};
+use crate::timeline::{Composable, Gap, Marker, Timeline, Track, TrackKind, Transition};
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum EditError {
@@ -36,6 +34,8 @@ pub enum EditError {
     NoCut,
     #[error("the clips have no media beyond the cut to dissolve with")]
     NoHandles,
+    #[error("the clips are too short for a transition this long")]
+    TooShort,
     #[error("track {0} is locked")]
     Locked(usize),
     #[error("there is no marker {0}")]
@@ -46,6 +46,14 @@ pub enum EditError {
     InvalidSpeed,
     #[error("only video clips can be frozen")]
     NotFreezable,
+}
+
+/// The length of transition `item` of `timeline`.
+fn transition_length(timeline: &Timeline, item: ItemRef) -> Option<Time> {
+    match timeline.item(item).ok()? {
+        Composable::Transition(t) => Some(t.in_offset + t.out_offset),
+        _ => None,
+    }
 }
 
 /// An item on a top-level track: its stack index and its index in the track.
@@ -1376,7 +1384,9 @@ impl Timeline {
         edge: Edge,
         duration: Time,
     ) -> Result<ItemRef, EditError> {
-        self.add_transition(item, edge, duration, TransitionKind::Dissolve)
+        let zero = Time::zero(duration.timebase);
+        let dissolve = Transition::new(crate::DISSOLVE, "Cross Dissolve", zero, zero);
+        self.add_transition(item, edge, duration, &dissolve)
     }
 
     /// Changes the length of transition `item`, keeping its kind; see
@@ -1389,15 +1399,16 @@ impl Timeline {
         let Composable::Transition(transition) = self.item(item)? else {
             return Err(EditError::NoCut);
         };
-        let kind = transition.kind();
+        let like = transition.clone();
         let before = ItemRef {
             track: item.track,
             index: item.index.checked_sub(1).ok_or(EditError::NoCut)?,
         };
-        self.add_transition(before, Edge::End, duration, kind)
+        self.add_transition(before, Edge::End, duration, &like)
     }
 
-    /// Adds a transition of `kind` at the cut on `edge` of clip `item`
+    /// Adds a transition like `like` (its id and parameters) at the cut on
+    /// `edge` of clip `item`
     /// (replacing one that is there), about `duration` long and centered on
     /// the cut. Each side is limited by the media the clips have beyond the
     /// cut; if one side has less, the other takes the rest. Returns the
@@ -1407,7 +1418,7 @@ impl Timeline {
         item: ItemRef,
         edge: Edge,
         duration: Time,
-        kind: TransitionKind,
+        like: &Transition,
     ) -> Result<ItemRef, EditError> {
         let track = self.track_checked(item.track)?;
         self.item(item)?;
@@ -1455,7 +1466,11 @@ impl Timeline {
         if (in_offset + out_offset).is_zero() {
             return Err(EditError::NoHandles);
         }
-        let transition = Composable::Transition(Transition::new(kind, in_offset, out_offset));
+        let transition = Composable::Transition(Transition {
+            in_offset,
+            out_offset,
+            ..like.clone()
+        });
         let track = self.track_checked_mut(item.track)?;
         let index = match existing {
             Some(index) => {
@@ -1471,6 +1486,105 @@ impl Timeline {
             track: item.track,
             index,
         })
+    }
+
+    /// Whether a transition of `duration` fits at the cut on `edge` of clip
+    /// `item` as the clips are: whether their media reaches across the cut
+    /// far enough (else `add_transition` makes it shorter, and
+    /// `add_transition_making_room` trims the clips first).
+    pub fn transition_fits(
+        &self,
+        item: ItemRef,
+        edge: Edge,
+        duration: Time,
+    ) -> Result<bool, EditError> {
+        let mut copy = self.clone();
+        let zero = Time::zero(duration.timebase);
+        let probe = Transition::new(crate::DISSOLVE, "", zero, zero);
+        match copy.add_transition(item, edge, duration, &probe) {
+            Ok(added) => Ok(transition_length(&copy, added) == Some(duration)),
+            Err(EditError::NoHandles) => Ok(false),
+            Err(err) => Err(err),
+        }
+    }
+
+    /// What `add_transition_making_room` cuts off the clips at the cut on
+    /// `edge` of `item` for a transition of `duration`: off the end of the
+    /// clip before the cut and off the start of the one after it, so their
+    /// media reaches across (as Resolve offers when handles are short).
+    /// Centered on the cut where both sides can be; zero where it fits.
+    pub fn transition_trims(
+        &self,
+        item: ItemRef,
+        edge: Edge,
+        duration: Time,
+    ) -> Result<(Time, Time), EditError> {
+        let track = self.track_checked(item.track)?;
+        let (left, right) = track.cut_after(self.cut_index(item, edge)?)?;
+        let clip = |i: usize| track.children[i].as_clip().ok_or(EditError::NoCut);
+        let (a, b) = (clip(left)?, clip(right)?);
+        let (Some(a_range), Some(b_range)) = (a.trimmed_range(), b.trimmed_range()) else {
+            return Err(EditError::NoCut);
+        };
+        // Media beyond the cut (unknown lengths: enough).
+        let a_tail = a
+            .available_range()
+            .map_or(duration, |r| r.end() - a_range.end());
+        let b_head = b
+            .available_range()
+            .map_or(duration, |r| b_range.start - r.start);
+        let zero = Time::zero(duration.timebase);
+        let before = Time::new(duration.ticks / 2, duration.timebase);
+        let after = duration - before;
+        // What each side lacks for a centered transition, less what the
+        // other side has to spare.
+        let short_before = (before - b_head).max(zero);
+        let short_after = (after - a_tail).max(zero);
+        let spare_before = (b_head - before).max(zero);
+        let spare_after = (a_tail - after).max(zero);
+        Ok((
+            (short_after - spare_before).max(zero),
+            (short_before - spare_after).max(zero),
+        ))
+    }
+
+    /// Adds a transition like `like` of `duration` at the cut on `edge` of
+    /// clip `item`, first ripple-trimming the clips at the cut as far as
+    /// `transition_trims` says, so it gets its whole length (what follows
+    /// moves up; linked clips are trimmed along). Fails if the clips are
+    /// too short for it.
+    pub fn add_transition_making_room(
+        &mut self,
+        item: ItemRef,
+        edge: Edge,
+        duration: Time,
+        like: &Transition,
+    ) -> Result<ItemRef, EditError> {
+        let (trim_end, trim_start) = self.transition_trims(item, edge, duration)?;
+        let left = ItemRef {
+            track: item.track,
+            index: self.cut_index(item, edge)?,
+        };
+        if trim_end.is_positive() {
+            let end = self.item_range(left)?.end();
+            self.ripple_trim(left, Edge::End, end - trim_end)
+                .map_err(|_| EditError::TooShort)?;
+        }
+        if trim_start.is_positive() {
+            let (_, right) = self.track_checked(left.track)?.cut_after(left.index)?;
+            let right = ItemRef {
+                track: left.track,
+                index: right,
+            };
+            let start = self.item_range(right)?.start;
+            self.ripple_trim(right, Edge::Start, start + trim_start)
+                .map_err(|_| EditError::TooShort)?;
+        }
+        let added = self.add_transition(left, Edge::End, duration, like)?;
+        if transition_length(self, added) != Some(duration) {
+            return Err(EditError::TooShort);
+        }
+        Ok(added)
     }
 
     /// Adds an empty track of `kind`, above the existing tracks of that kind
@@ -1521,6 +1635,8 @@ fn tighter(a: Option<Time>, b: Option<Time>, pick: fn(Time, Time) -> Time) -> Op
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::effects::Parameters;
+    use crate::metadata::Value;
     use crate::time::Rational;
     use crate::timeline::{Clip, MediaReference, Transition};
     use std::path::Path;
@@ -1856,59 +1972,101 @@ mod tests {
     }
 
     #[test]
-    fn transition_kinds_mix_and_change_length() {
-        use crate::{DipColor, Side, TransitionKind};
+    fn transitions_keep_their_id_and_parameters() {
         let mut timeline = Timeline::new("t", Rational::new(24, 1));
         timeline.place(0, clip("a", 10, 20), f(0)).unwrap();
         timeline.place(0, clip("b", 10, 20), f(20)).unwrap();
         let a = ItemRef { track: 0, index: 0 };
-        let wipe = timeline
-            .add_transition(a, Edge::End, f(8), TransitionKind::Wipe(Side::Left))
-            .unwrap();
-        let transition = |t: &Timeline| match t.item(wipe).unwrap() {
+        let mut iris = Transition::new("nox.iris", "Iris", f(0), f(0));
+        iris.set_param("shape", Some(Value::from("star")));
+        let added = timeline.add_transition(a, Edge::End, f(8), &iris).unwrap();
+        let transition = |t: &Timeline| match t.item(added).unwrap() {
             Composable::Transition(t) => t.clone(),
             _ => panic!("not a transition"),
         };
-        let wiped = transition(&timeline);
-        assert_eq!(wiped.kind(), TransitionKind::Wipe(Side::Left));
-        assert_eq!(wiped.transition_type, "Custom_Transition");
-        // A quarter through: the incoming clip shows its left quarter.
-        let mix = wiped.mix(0.25);
-        assert_eq!(
-            (mix.outgoing, mix.incoming, mix.wipe),
-            (1.0, 1.0, [0.0, 0.0, 0.75, 0.0])
-        );
-        let layers = timeline.video_layers(f(18));
-        assert_eq!(layers.len(), 2);
-        assert_eq!(layers[1].wipe, [0.0, 0.0, 0.75, 0.0]);
-        // A dip to white: the color covers the outgoing picture, then the
-        // incoming one covers the color.
-        let mut dip = wiped.clone();
-        dip.set_kind(TransitionKind::Dip(DipColor::White));
-        let first = dip.mix(0.25);
-        assert_eq!((first.outgoing, first.incoming), (1.0, 0.0));
-        assert_eq!(
-            first.dip_out.map(|d| (d.opacity, d.before)),
-            Some((0.5, false))
-        );
-        let second = dip.mix(0.75);
-        assert_eq!((second.outgoing, second.incoming), (0.0, 0.5));
-        assert_eq!(
-            second.dip_in.map(|d| (d.opacity, d.before)),
-            Some((1.0, true))
-        );
-        assert_eq!(dip.kind(), TransitionKind::Dip(DipColor::White));
-        // Back to a dissolve: OTIO's type, no Nox metadata.
-        dip.set_kind(TransitionKind::Dissolve);
-        assert_eq!(
-            (dip.transition_type.as_str(), dip.metadata.is_empty()),
-            ("SMPTE_Dissolve", true)
-        );
-        // Longer, keeping the kind.
-        let longer = timeline.set_transition_length(wipe, f(12)).unwrap();
         let t = transition(&timeline);
-        assert_eq!((longer, t.in_offset + t.out_offset), (wipe, f(12)));
-        assert_eq!(t.kind(), TransitionKind::Wipe(Side::Left));
+        assert_eq!((t.id(), t.name.as_str()), ("nox.iris", "Iris"));
+        assert_eq!(t.transition_type, "Custom_Transition");
+        assert_eq!(t.param("shape"), Some(&Value::from("star")));
+        // Both sides show, tagged with how far through they are.
+        let layers = timeline.video_layers(f(18));
+        let tags: Vec<_> = layers
+            .iter()
+            .map(|l| {
+                l.transition
+                    .map(|t| (t.incoming, t.progress, t.transition.id()))
+            })
+            .collect();
+        assert_eq!(
+            tags,
+            [
+                Some((false, 0.25, "nox.iris")),
+                Some((true, 0.25, "nox.iris"))
+            ]
+        );
+        // Longer, keeping the id and parameters.
+        let longer = timeline.set_transition_length(added, f(12)).unwrap();
+        let t = transition(&timeline);
+        assert_eq!((longer, t.in_offset + t.out_offset), (added, f(12)));
+        assert_eq!(t.param("shape"), Some(&Value::from("star")));
+        // Another transition: its own defaults. A dissolve is OTIO's type,
+        // without Nox metadata.
+        let mut t = t;
+        t.set_id(crate::DISSOLVE, "Cross Dissolve");
+        assert_eq!(
+            (t.id(), t.transition_type.as_str(), t.metadata.is_empty()),
+            (crate::DISSOLVE, "SMPTE_Dissolve", true)
+        );
+    }
+
+    /// Without media beyond the cut, the clips are trimmed at the cut to
+    /// make room (what follows moves up), as Resolve offers.
+    #[test]
+    fn transitions_make_room_by_trimming() {
+        let mut timeline = Timeline::new("t", Rational::new(24, 1));
+        // a uses 87..100 of 100 (no tail), b uses 0..20 (no head), then c.
+        timeline.place(0, clip("a", 87, 13), f(0)).unwrap();
+        timeline.place(0, clip("b", 0, 20), f(13)).unwrap();
+        timeline.place(0, clip("c", 0, 5), f(33)).unwrap();
+        let a = ItemRef { track: 0, index: 0 };
+        let zero = Time::zero(f(1).timebase);
+        let dissolve = Transition::new(crate::DISSOLVE, "Cross Dissolve", zero, zero);
+        assert_eq!(timeline.transition_fits(a, Edge::End, f(8)), Ok(false));
+        assert_eq!(
+            timeline.transition_trims(a, Edge::End, f(8)),
+            Ok((f(4), f(4)))
+        );
+        let added = timeline
+            .add_transition_making_room(a, Edge::End, f(8), &dissolve)
+            .unwrap();
+        assert_eq!(transition_length(&timeline, added), Some(f(8)));
+        // a ends 4 frames earlier, b starts 4 frames later in its media,
+        // and everything after moved up 8 frames.
+        assert_eq!(
+            layout(timeline.track(0).unwrap()),
+            "a[87]@0+9 x@5+8 b[4]@9+16 c[0]@25+5"
+        );
+        // A side with media to spare covers for the other.
+        let mut timeline = Timeline::new("t", Rational::new(24, 1));
+        timeline.place(0, clip("a", 80, 17), f(0)).unwrap(); // 3 of tail
+        timeline.place(0, clip("b", 0, 20), f(17)).unwrap(); // no head
+        assert_eq!(
+            timeline.transition_trims(a, Edge::End, f(8)),
+            Ok((f(1), f(4)))
+        );
+        let mut fits = Timeline::new("t", Rational::new(24, 1));
+        fits.place(0, clip("a", 10, 10), f(0)).unwrap();
+        fits.place(0, clip("b", 3, 10), f(10)).unwrap();
+        assert_eq!(fits.transition_fits(a, Edge::End, f(8)), Ok(true));
+        assert_eq!(fits.transition_trims(a, Edge::End, f(8)), Ok((zero, zero)));
+        // Too short to make room in.
+        let mut short = Timeline::new("t", Rational::new(24, 1));
+        short.place(0, clip("a", 98, 2), f(0)).unwrap();
+        short.place(0, clip("b", 0, 2), f(2)).unwrap();
+        assert_eq!(
+            short.add_transition_making_room(a, Edge::End, f(8), &dissolve),
+            Err(EditError::TooShort)
+        );
     }
 
     #[test]
@@ -1971,23 +2129,23 @@ mod tests {
                     (
                         l.clip.item.name.clone(),
                         l.source_time.frame(fps),
-                        (l.opacity * 100.0).round() as i64,
+                        l.transition.map(|t| (t.progress * 100.0).round() as i64),
                     )
                 })
                 .collect::<Vec<_>>()
         };
-        assert_eq!(names(7.0 / 24.0), [("a".into(), 17, 100)]);
+        assert_eq!(names(7.0 / 24.0), [("a".into(), 17, None)]);
         // The dissolve runs from frame 8 to 12; at 9 it is a quarter done.
         // b starts early: its source frame 10 is at the cut (frame 10).
         assert_eq!(
             names(9.0 / 24.0),
-            [("a".into(), 19, 100), ("b".into(), 9, 25)]
+            [("a".into(), 19, Some(25)), ("b".into(), 9, Some(25))]
         );
         assert_eq!(
             names(11.0 / 24.0),
-            [("a".into(), 21, 100), ("b".into(), 11, 75)]
+            [("a".into(), 21, Some(75)), ("b".into(), 11, Some(75))]
         );
-        assert_eq!(names(12.0 / 24.0), [("b".into(), 12, 100)]);
+        assert_eq!(names(12.0 / 24.0), [("b".into(), 12, None)]);
 
         let range = TimeRange::new(f(0), f(20));
         let segments = timeline.audio_segments(range);

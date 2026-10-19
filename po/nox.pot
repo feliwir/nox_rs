@@ -533,6 +533,7 @@ msgid "Edit"
 msgstr ""
 
 #: resources/ui/window.ui:184
+#: crates/nox-fx/transitions
 msgid "Color"
 msgstr ""
 
@@ -714,10 +715,6 @@ msgstr ""
 
 #: resources/ui/rename-track.ui:22
 msgid "Track name"
-msgstr ""
-
-#: src/timeline.rs:1601
-msgid "Dissolve, {length}"
 msgstr ""
 
 #: src/timeline.rs:1608
@@ -1173,6 +1170,7 @@ msgid "Position Y"
 msgstr ""
 
 #: resources/ui/inspector.ui
+#: crates/nox-fx/transitions
 msgid "Zoom"
 msgstr ""
 
@@ -1257,39 +1255,18 @@ msgid "Easing"
 msgstr ""
 
 #: resources/ui/inspector.ui
+#: crates/nox-fx/src/transitions.rs
 msgid "Linear"
 msgstr ""
 
 #: resources/ui/inspector.ui
+#: crates/nox-fx/src/transitions.rs
 msgid "Ease In and Out"
 msgstr ""
 
 #: src/i18n.rs
+#: crates/nox-fx/src/transitions.rs
 msgid "Cross Dissolve"
-msgstr ""
-
-#: src/i18n.rs
-msgid "Wipe from Left"
-msgstr ""
-
-#: src/i18n.rs
-msgid "Wipe from Right"
-msgstr ""
-
-#: src/i18n.rs
-msgid "Wipe from Top"
-msgstr ""
-
-#: src/i18n.rs
-msgid "Wipe from Bottom"
-msgstr ""
-
-#: src/i18n.rs
-msgid "Dip to Black"
-msgstr ""
-
-#: src/inspector.rs
-msgid "Change Transition"
 msgstr ""
 
 #: src/inspector.rs
@@ -1387,10 +1364,6 @@ msgstr ""
 
 #: src/timeline.rs
 msgid "Move Keyframe"
-msgstr ""
-
-#: src/i18n.rs
-msgid "Dip to White"
 msgstr ""
 
 #: resources/ui/color-wheels.ui
@@ -1671,7 +1644,7 @@ msgstr ""
 msgid "AI"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Gaussian Blur"
 msgstr ""
 
@@ -1679,47 +1652,48 @@ msgstr ""
 msgid "Radius"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Sharpen"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Amount"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Threshold"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Painterly"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Sharpness"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Chroma Key"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Key Color"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Tolerance"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
+#: crates/nox-fx/transitions
 msgid "Softness"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Spill Suppression"
 msgstr ""
 
-#: crates/nox-fx/src/registry.rs
+#: crates/nox-fx/effects
 msgid "Show Matte"
 msgstr ""
 
@@ -1838,3 +1812,409 @@ msgstr ""
 #: crates/nox-fx/src/registry.rs
 msgid "Feather Matte"
 msgstr ""
+
+#: crates/nox-fx/src/transitions.rs
+msgid "Dissolves"
+msgstr ""
+
+#: crates/nox-fx/src/transitions.rs
+msgid "Wipes"
+msgstr ""
+
+#: crates/nox-fx/src/transitions.rs
+msgid "Motion"
+msgstr ""
+
+#: crates/nox-fx/src/transitions.rs
+msgid "Ease"
+msgstr ""
+
+#: crates/nox-fx/src/transitions.rs
+msgid "Ease In"
+msgstr ""
+
+#: crates/nox-fx/src/transitions.rs
+msgid "Ease Out"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Angle"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Border"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Border Color"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Reverse"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Clockwise"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Center X"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Center Y"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Blend"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Perceptual"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Linear Light"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Dip to Color"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Edge Wipe"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Center Split"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Clock Wipe"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Start Angle"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Iris"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Shape"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Circle"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Ellipse"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Diamond"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Rectangle"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Star"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Blinds"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Count"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Checkerboard"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Columns"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Random Blocks"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Blocks Across"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Push"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Slide"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Reveal"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Direction"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "In"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Out"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Spin"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Turns"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/transition.rs
+msgid "Change Transition to {transition}"
+msgstr ""
+
+#: crates/nox-gui/src/timeline/selection.rs
+msgid "{transition}, {length}"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/inspector.ui
+msgid "Choose the transition"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "Cannot add a dissolve"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "Not enough media for the dissolve"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "Trim Clips"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "The clips have too little media beyond the cut for a dissolve of {length}. Trim {trim} off the clips at the cut to make room? What follows moves up."
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Amount of blur"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Amount of perspective"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Blur strength"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Burn"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Color the images brighten toward"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Column the view ends on"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Cross Warp"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Cross Zoom"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Cube"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Depth"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Directional Warp"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Direction of the wipe"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Doorway"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Dreamy"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Film Burn"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Floating"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Frequency of the ripples"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Glitch Memories"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Kaleidoscope"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Linear Blur"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Morph"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Mosaic"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Number of pixelation steps; 0 for a continuous effect"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Number of slices"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Number of squares at the strongest pixelation"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Page Curl"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Pixelize"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Power"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Random seed"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Ripple"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Row the view ends on"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Softness of the edge"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Softness of the slices' edges"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Speed of the ripples"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Strength of the displacement"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Strength of the reflection"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Swirl"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Unzoom"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Width of the ragged edge"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Wind"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Window Slice"
+msgstr ""
+
+#: crates/nox-fx/transitions
+msgid "Wipe from right to left instead"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "_Open Folder"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Open the folder transition packages go in"
+msgstr ""
+
+#: crates/nox-gui/src/preferences.rs
+msgid "No transition packages. Put .glsl transitions (as gl-transitions writes them) in {folder}; Nox loads them when it starts."
+msgstr ""
+
+#: crates/nox-gui/src/preferences.rs
+#, python-brace-format
+msgid "{count} transition package from {folder}; Nox loads them when it starts."
+msgid_plural "{count} transition packages from {folder}; Nox loads them when it starts."
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/nox-gui/src/preferences.rs
+msgid "{file} couldn't be loaded: {problem}"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Packages"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Open the folder effect packages go in"
+msgstr ""
+
+#: crates/nox-gui/src/preferences.rs
+msgid "No effect packages. Put .glsl effects in {folder}; Nox loads them when it starts."
+msgstr ""
+
+#: crates/nox-gui/src/preferences.rs
+#, python-brace-format
+msgid "{count} effect package from {folder}; Nox loads them when it starts."
+msgid_plural "{count} effect packages from {folder}; Nox loads them when it starts."
+msgstr[0] ""
+msgstr[1] ""

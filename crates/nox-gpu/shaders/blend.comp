@@ -2,7 +2,8 @@
 // ycbcr_to_working) and blends it onto the accumulated picture, in linear
 // light. Runs over the layer's rectangle only, or for a transformed layer
 // (nox_gpu::Transform) over the pixels it covers, mapping each back into
-// the layer and sampling it bilinearly.
+// the layer and sampling it bilinearly. Into a transition's picture
+// (mode bit 256) it keeps alpha, premultiplied.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
@@ -78,7 +79,13 @@ void main() {
     } else {
         src = texelFetch(layer, local, 0);
     }
-    vec3 dst = imageLoad(accum, pos).rgb;
+    vec4 target = imageLoad(accum, pos);
+    vec3 dst = target.rgb;
+    // Into a transition's picture (mode bit 256): premultiplied, keeping
+    // alpha; else into the opaque output.
+    bool group = (p.mode & 256) != 0;
+    int mode = p.mode & 255;
+    float dst_alpha = group ? target.a : 1.0;
     if (p.slope.w != 0.0) {
         vec3 v = acescct_from_linear(src.rgb);
         v = pow(max(v * p.slope.rgb + p.add.rgb, 0.0), p.power.rgb);
@@ -86,14 +93,15 @@ void main() {
     }
     float a = clamp(p.opacity * src.a, 0.0, 1.0);
     vec3 blended;
-    if (p.mode == ADD) {
+    if (mode == ADD) {
         blended = dst + src.rgb;
-    } else if (p.mode == MULTIPLY) {
+    } else if (mode == MULTIPLY) {
         blended = dst * src.rgb;
-    } else if (p.mode == SCREEN) {
+    } else if (mode == SCREEN) {
         blended = 1.0 - (1.0 - dst) * (1.0 - src.rgb);
     } else {
         blended = src.rgb;
     }
-    imageStore(accum, pos, vec4(mix(dst, blended, a), 1.0));
+    vec3 result = mix(dst, blended, a);
+    imageStore(accum, pos, vec4(result, group ? a + dst_alpha * (1.0 - a) : 1.0));
 }

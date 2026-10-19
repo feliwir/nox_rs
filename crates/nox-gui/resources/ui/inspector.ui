@@ -401,11 +401,11 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkDropDown" id="transition_type">
+                          <object class="GtkMenuButton" id="transition_type">
+                            <property name="tooltip-text" translatable="yes">Choose the transition</property>
                             <accessibility>
                               <relation name="labelled-by">transition_type_label</relation>
                             </accessibility>
-                            <signal name="notify::selected" handler="on_transition_type_changed" swapped="true"/>
                             <layout>
                               <property name="column">1</property>
                               <property name="row">0</property>
@@ -434,6 +434,18 @@
                             <layout>
                               <property name="column">1</property>
                               <property name="row">1</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <!-- The transition's parameters (inspector/transition.rs). -->
+                        <child>
+                          <object class="GtkGrid" id="transition_params">
+                            <property name="row-spacing">6</property>
+                            <property name="column-spacing">8</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">2</property>
+                              <property name="column-span">2</property>
                             </layout>
                           </object>
                         </child>

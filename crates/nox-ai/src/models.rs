@@ -341,7 +341,7 @@ pub fn registry() -> &'static Registry {
 /// Nox's folder in the user's data folder (`$XDG_DATA_HOME` or
 /// `~/.local/share` on Linux and in the Flatpak, `%LOCALAPPDATA%` on
 /// Windows, `~/Library/Application Support` on macOS).
-fn data_dir() -> PathBuf {
+pub fn data_dir() -> PathBuf {
     let home = || {
         std::env::var_os("HOME")
             .map(PathBuf::from)

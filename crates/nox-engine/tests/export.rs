@@ -6,7 +6,7 @@ use common::{FPS, clip, f, fixture, solid};
 use nox_engine::{EncodeQuality, ExportError, ExportSettings, VideoCodec, export};
 use nox_media::{AudioDecoder, VideoDecoder, probe};
 use nox_project::{
-    Clip, Composable, Edge, ItemRef, MediaReference, ScalingMode, TimeRange, Timeline,
+    Clip, Composable, Edge, ItemRef, MediaReference, Parameters, ScalingMode, TimeRange, Timeline,
 };
 use std::path::{Path, PathBuf};
 
@@ -30,9 +30,16 @@ fn timeline() -> Option<Timeline> {
     (timeline.settings.width, timeline.settings.height) = (320, 180);
     timeline.place(0, clip(&red, 10, 50), f(0)).unwrap();
     timeline.place(0, clip(&blue, 10, 25), f(50)).unwrap();
-    timeline
+    let dissolve = timeline
         .add_dissolve(ItemRef { track: 0, index: 0 }, Edge::End, f(10))
         .unwrap();
+    // Mixing in linear light (checked below).
+    if let Some(Composable::Transition(t)) = timeline
+        .track_mut(0)
+        .and_then(|t| t.children.get_mut(dissolve.index))
+    {
+        t.set_param("blend", Some("linear".into()));
+    }
     timeline.place(1, clip(&tone, 0, 50), f(0)).unwrap();
     Some(timeline)
 }

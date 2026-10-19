@@ -96,6 +96,9 @@ impl Resolved {
 pub struct Graph {
     pub nodes: Vec<Resolved>,
     pub output: Option<Source>,
+    /// The media time it was resolved at (seconds), for effects that
+    /// change over time.
+    pub time: f64,
 }
 
 impl Graph {
@@ -115,6 +118,13 @@ impl Graph {
             node.hash_into(hasher);
         }
         self.output.hash(hasher);
+        if self
+            .nodes
+            .iter()
+            .any(|n| n.def.shader.is_some_and(|s| s.uses_time))
+        {
+            self.time.to_bits().hash(hasher);
+        }
     }
 
     /// What `source` carries.
@@ -211,6 +221,7 @@ pub fn resolve(item: &Item, time: f64) -> Graph {
         .filter(|&s| graph.kind(s) == PortKind::Picture)
         .unwrap_or(previous);
     graph.output = Some(output);
+    graph.time = time;
     prune(graph)
 }
 
@@ -256,7 +267,11 @@ fn prune(graph: Graph) -> Graph {
         Some(Source::Clip) | None => None,
         output => output,
     };
-    Graph { nodes, output }
+    Graph {
+        nodes,
+        output,
+        time: graph.time,
+    }
 }
 
 /// The implicit picture input of each rendering effect (by key, in
@@ -387,6 +402,7 @@ pub fn simplify(item: &mut Item) {
 mod tests {
     use super::*;
     use crate::registry::*;
+    use nox_project::Parameters;
     use nox_project::{Effect, Value};
 
     fn add(item: &mut Item, id: &str) -> String {

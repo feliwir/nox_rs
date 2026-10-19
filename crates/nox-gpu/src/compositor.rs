@@ -319,6 +319,31 @@ struct Layer {
     rect: Rect,
     style: LayerStyle,
     source: Source,
+    /// Blended into a transition's picture (its index, and whether the
+    /// incoming one) instead of the output.
+    group: Option<(usize, bool)>,
+}
+
+/// The most transitions with both pictures (`begin_transition`) in one
+/// output picture.
+pub const MAX_TRANSITIONS: usize = 4;
+
+/// A transition that needs both pictures at once: `kernel` is a compute
+/// shader with three storage images (`rgba32f`) at bindings 0–2: the
+/// outgoing picture and the incoming one (linear working space,
+/// premultiplied alpha, transparent where nothing is) and the output
+/// picture so far, which it draws the transition over; `push` are its
+/// push constants. It runs over the whole output, workgroups of 16×16.
+pub struct TransitionPass {
+    pub kernel: Arc<crate::compute::Kernel>,
+    pub push: Vec<u8>,
+}
+
+/// A transition of the current picture: its pass, and how many layers
+/// were queued before it (it runs after them).
+struct QueuedTransition {
+    pass: TransitionPass,
+    after: usize,
 }
 
 /// Where a layer's converted pixels are.
@@ -428,6 +453,15 @@ pub struct Compositor {
     /// How pictures leave the working space.
     encoding: OutputEncoding,
     descriptor_pool: vk::DescriptorPool,
+    /// Sets of the current picture's transition passes (reset per picture).
+    transition_pool: vk::DescriptorPool,
+    /// The current picture's transitions with both pictures.
+    transitions: Vec<QueuedTransition>,
+    /// Where layers go while a transition is being queued.
+    open_group: Option<(usize, bool)>,
+    /// Each transition's outgoing and incoming pictures, at the output size.
+    groups: Vec<(GpuImage, GpuImage)>,
+    groups_size: (u32, u32),
     blend_sets: Vec<vk::DescriptorSet>,
     output_set: vk::DescriptorSet,
     output_yuv_set: vk::DescriptorSet,
@@ -469,6 +503,13 @@ impl Compositor {
             .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
             .descriptor_count(1)
             .stage_flags(vk::ShaderStageFlags::COMPUTE);
+        let buffer = |binding| {
+            vk::DescriptorSetLayoutBinding::default()
+                .binding(binding)
+                .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
+                .descriptor_count(1)
+                .stage_flags(vk::ShaderStageFlags::COMPUTE)
+        };
         // SAFETY: plain object creation on a valid device; everything is
         // destroyed in Drop.
         unsafe {
@@ -490,13 +531,6 @@ impl Compositor {
                 &[storage(0), storage(1)],
                 size_of::<OutputParams>(),
             )?;
-            let buffer = |binding| {
-                vk::DescriptorSetLayoutBinding::default()
-                    .binding(binding)
-                    .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
-                    .descriptor_count(1)
-                    .stage_flags(vk::ShaderStageFlags::COMPUTE)
-            };
             let output_yuv = create_pipeline(
                 device,
                 OUTPUT_YUV_SHADER,
@@ -547,6 +581,15 @@ impl Compositor {
                     .descriptor_pool(descriptor_pool)
                     .set_layouts(&blend_layouts),
             )?;
+            let transition_pool = device.create_descriptor_pool(
+                &vk::DescriptorPoolCreateInfo::default()
+                    .max_sets(MAX_TRANSITIONS as u32)
+                    .pool_sizes(&[vk::DescriptorPoolSize {
+                        ty: vk::DescriptorType::STORAGE_IMAGE,
+                        descriptor_count: 3 * MAX_TRANSITIONS as u32,
+                    }]),
+                None,
+            )?;
             let output_set = alloc_set(device, descriptor_pool, output.set_layout)?;
             let output_yuv_set = alloc_set(device, descriptor_pool, output_yuv.set_layout)?;
             let output_linear_set = alloc_set(device, descriptor_pool, output_linear.set_layout)?;
@@ -571,6 +614,11 @@ impl Compositor {
                 output_linear,
                 encoding: OutputEncoding::Sdr,
                 descriptor_pool,
+                transition_pool,
+                transitions: Vec::new(),
+                open_group: None,
+                groups: Vec::new(),
+                groups_size: (0, 0),
                 blend_sets,
                 output_set,
                 output_yuv_set,
@@ -646,8 +694,143 @@ impl Compositor {
         self.width = width;
         self.height = height;
         self.layers.clear();
+        self.transitions.clear();
+        self.open_group = None;
         self.slots_used = 0;
         self.clock += 1;
+        Ok(())
+    }
+
+    /// Starts a transition that needs both pictures: the layers added from
+    /// now on make its outgoing picture, after `transition_to` its
+    /// incoming one, until `end_transition`.
+    pub fn begin_transition(&mut self) -> Result<()> {
+        if self.open_group.is_some() {
+            return Err(Error::Unsupported("a transition is already open".into()));
+        }
+        if self.transitions.len() >= MAX_TRANSITIONS {
+            return Err(Error::Unsupported(format!(
+                "more than {MAX_TRANSITIONS} transitions in a picture"
+            )));
+        }
+        self.open_group = Some((self.transitions.len(), false));
+        Ok(())
+    }
+
+    /// The layers added from now on make the open transition's incoming
+    /// picture.
+    pub fn transition_to(&mut self) {
+        if let Some((_, incoming)) = &mut self.open_group {
+            *incoming = true;
+        }
+    }
+
+    /// Ends the open transition: `pass` draws it from its two pictures
+    /// over the layers queued before it.
+    pub fn end_transition(&mut self, pass: TransitionPass) -> Result<()> {
+        if self.open_group.take().is_none() {
+            return Err(Error::Unsupported("no transition is open".into()));
+        }
+        self.transitions.push(QueuedTransition {
+            pass,
+            after: self.layers.len(),
+        });
+        Ok(())
+    }
+
+    /// Records transition `t`'s pass (from its two pictures over the
+    /// output so far), then `barrier`.
+    ///
+    /// # Safety
+    /// `cmd` is being recorded; the transition's pictures are in GENERAL
+    /// layout with their layers' writes before `barrier`.
+    unsafe fn record_transition(
+        &self,
+        cmd: vk::CommandBuffer,
+        t: &QueuedTransition,
+        barrier: &vk::MemoryBarrier2<'_>,
+    ) -> Result<()> {
+        let device = &self.gpu().device;
+        let index = self
+            .transitions
+            .iter()
+            .position(|q| std::ptr::eq(q, t))
+            .expect("queued transition");
+        let (from, to) = &self.groups[index];
+        let accum = self.accum.as_ref().expect("accum").0.view;
+        let pipeline = t.pass.kernel.pipeline();
+        let storage = |view| {
+            vk::DescriptorImageInfo::default()
+                .image_view(view)
+                .image_layout(vk::ImageLayout::GENERAL)
+        };
+        let infos = [storage(from.view), storage(to.view), storage(accum)];
+        // SAFETY: guaranteed by the caller; the pool was reset for this
+        // picture and has room for MAX_TRANSITIONS sets.
+        unsafe {
+            let set = alloc_set(device, self.transition_pool, pipeline.set_layout)?;
+            let writes: Vec<_> = infos
+                .iter()
+                .enumerate()
+                .map(|(i, info)| {
+                    image_write(set, i as u32, vk::DescriptorType::STORAGE_IMAGE, info)
+                })
+                .collect();
+            device.update_descriptor_sets(&writes, &[]);
+            device.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::COMPUTE, pipeline.pipeline);
+            device.cmd_bind_descriptor_sets(
+                cmd,
+                vk::PipelineBindPoint::COMPUTE,
+                pipeline.layout,
+                0,
+                &[set],
+                &[],
+            );
+            if !t.pass.push.is_empty() {
+                device.cmd_push_constants(
+                    cmd,
+                    pipeline.layout,
+                    vk::ShaderStageFlags::COMPUTE,
+                    0,
+                    &t.pass.push,
+                );
+            }
+            device.cmd_dispatch(
+                cmd,
+                self.width.div_ceil(WORKGROUP_SIZE),
+                self.height.div_ceil(WORKGROUP_SIZE),
+                1,
+            );
+            device.cmd_pipeline_barrier2(
+                cmd,
+                &vk::DependencyInfo::default().memory_barriers(std::slice::from_ref(barrier)),
+            );
+        }
+        Ok(())
+    }
+
+    /// Group pictures for the current picture's transitions, at its size.
+    fn ensure_groups(&mut self) -> Result<()> {
+        let size = (self.width, self.height);
+        if self.groups_size != size {
+            for (from, to) in std::mem::take(&mut self.groups) {
+                self.converter.destroy_image(from);
+                self.converter.destroy_image(to);
+            }
+            self.groups_size = size;
+        }
+        while self.groups.len() < self.transitions.len() {
+            let image = || {
+                self.converter.create_image(
+                    WORKING_FORMAT,
+                    size.0,
+                    size.1,
+                    vk::ImageUsageFlags::STORAGE | vk::ImageUsageFlags::TRANSFER_DST,
+                )
+            };
+            let pair = (image()?, image()?);
+            self.groups.push(pair);
+        }
         Ok(())
     }
 
@@ -688,6 +871,7 @@ impl Compositor {
                 ..style
             },
             source: Source::Cached(index),
+            group: self.open_group,
         });
         true
     }
@@ -780,6 +964,7 @@ impl Compositor {
                 ..style
             },
             source: Source::Cached(index),
+            group: self.open_group,
         });
         Ok(())
     }
@@ -854,6 +1039,7 @@ impl Compositor {
                 ..style
             },
             source: Source::Slot(index),
+            group: self.open_group,
         });
         Ok(())
     }
@@ -1127,13 +1313,22 @@ impl Compositor {
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
             })
             .collect();
+        let target_infos: Vec<_> = self
+            .layers
+            .iter()
+            .map(|layer| match layer.group {
+                Some((t, false)) => storage(self.groups[t].0.view),
+                Some((t, true)) => storage(self.groups[t].1.view),
+                None => accum_info,
+            })
+            .collect();
         let mut writes = Vec::new();
         for (i, layer_info) in layer_infos.iter().enumerate() {
             writes.push(image_write(
                 self.blend_sets[i],
                 0,
                 vk::DescriptorType::STORAGE_IMAGE,
-                &accum_info,
+                &target_infos[i],
             ));
             writes.push(image_write(
                 self.blend_sets[i],
@@ -1178,6 +1373,7 @@ impl Compositor {
     /// Records and runs: clear, blend every layer, write the output.
     fn composite(&mut self, mut output: Output<'_>) -> Result<()> {
         self.ensure_accum()?;
+        self.ensure_groups()?;
         let (out_image, views) = match &output {
             Output::Readback(r) => (r.image.image, OutputViews::Rgba(r.image.view)),
             Output::Export(image, view) => (*image, OutputViews::Rgba(*view)),
@@ -1234,44 +1430,65 @@ impl Compositor {
                     .dst_access_mask(vk::AccessFlags2::SHADER_SAMPLED_READ)
                 })
                 .collect();
-            barriers.push(
-                image_barrier(
-                    accum,
-                    vk::ImageLayout::UNDEFINED,
-                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                )
-                .dst_stage_mask(vk::PipelineStageFlags2::CLEAR)
-                .dst_access_mask(vk::AccessFlags2::TRANSFER_WRITE),
-            );
+            // The output starts black, transitions' pictures transparent.
+            let cleared: Vec<(vk::Image, [f32; 4])> =
+                std::iter::once((accum, [0.0, 0.0, 0.0, 1.0]))
+                    .chain(
+                        self.groups[..self.transitions.len()]
+                            .iter()
+                            .flat_map(|(from, to)| [from.image, to.image])
+                            .map(|image| (image, [0.0; 4])),
+                    )
+                    .collect();
+            for &(image, _) in &cleared {
+                barriers.push(
+                    image_barrier(
+                        image,
+                        vk::ImageLayout::UNDEFINED,
+                        vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    )
+                    .dst_stage_mask(vk::PipelineStageFlags2::CLEAR)
+                    .dst_access_mask(vk::AccessFlags2::TRANSFER_WRITE),
+                );
+            }
             device.cmd_pipeline_barrier2(
                 cmd,
                 &vk::DependencyInfo::default().image_memory_barriers(&barriers),
             );
-            device.cmd_clear_color_image(
-                cmd,
-                accum,
-                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                &vk::ClearColorValue {
-                    float32: [0.0, 0.0, 0.0, 1.0],
-                },
-                &[color_range()],
-            );
-            let to_general = image_barrier(
-                accum,
-                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                vk::ImageLayout::GENERAL,
-            )
-            .src_stage_mask(vk::PipelineStageFlags2::CLEAR)
-            .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
-            .dst_stage_mask(vk::PipelineStageFlags2::COMPUTE_SHADER)
-            .dst_access_mask(
-                vk::AccessFlags2::SHADER_STORAGE_READ | vk::AccessFlags2::SHADER_STORAGE_WRITE,
-            );
+            for &(image, color) in &cleared {
+                device.cmd_clear_color_image(
+                    cmd,
+                    image,
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &vk::ClearColorValue { float32: color },
+                    &[color_range()],
+                );
+            }
+            let to_general: Vec<_> = cleared
+                .iter()
+                .map(|&(image, _)| {
+                    image_barrier(
+                        image,
+                        vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                        vk::ImageLayout::GENERAL,
+                    )
+                    .src_stage_mask(vk::PipelineStageFlags2::CLEAR)
+                    .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+                    .dst_stage_mask(vk::PipelineStageFlags2::COMPUTE_SHADER)
+                    .dst_access_mask(
+                        vk::AccessFlags2::SHADER_STORAGE_READ
+                            | vk::AccessFlags2::SHADER_STORAGE_WRITE,
+                    )
+                })
+                .collect();
             device.cmd_pipeline_barrier2(
                 cmd,
-                &vk::DependencyInfo::default()
-                    .image_memory_barriers(std::slice::from_ref(&to_general)),
+                &vk::DependencyInfo::default().image_memory_barriers(&to_general),
             );
+            device.reset_descriptor_pool(
+                self.transition_pool,
+                vk::DescriptorPoolResetFlags::empty(),
+            )?;
 
             // Each layer reads what the previous one wrote.
             let accum_dependency = vk::MemoryBarrier2::default()
@@ -1281,8 +1498,11 @@ impl Compositor {
                 .dst_access_mask(
                     vk::AccessFlags2::SHADER_STORAGE_READ | vk::AccessFlags2::SHADER_STORAGE_WRITE,
                 );
-            device.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::COMPUTE, self.blend.pipeline);
             for (i, layer) in self.layers.iter().enumerate() {
+                for t in self.transitions.iter().filter(|t| t.after == i) {
+                    self.record_transition(cmd, t, &accum_dependency)?;
+                }
+                device.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::COMPUTE, self.blend.pipeline);
                 device.cmd_bind_descriptor_sets(
                     cmd,
                     vk::PipelineBindPoint::COMPUTE,
@@ -1317,7 +1537,8 @@ impl Compositor {
                     size: [region.width as i32, region.height as i32],
                     out_size: [width as i32, height as i32],
                     opacity: layer.style.opacity,
-                    mode: layer.style.mode as i32,
+                    // Into a transition's picture: keeping alpha.
+                    mode: layer.style.mode as i32 | if layer.group.is_some() { 256 } else { 0 },
                     slope: [k.slope[0], k.slope[1], k.slope[2], graded],
                     add: [
                         k.add[0],
@@ -1353,6 +1574,13 @@ impl Compositor {
                     &vk::DependencyInfo::default()
                         .memory_barriers(std::slice::from_ref(&accum_dependency)),
                 );
+            }
+            for t in self
+                .transitions
+                .iter()
+                .filter(|t| t.after == self.layers.len())
+            {
+                self.record_transition(cmd, t, &accum_dependency)?;
             }
 
             if let Output::Yuv(target, _, _, measure) = &output {
@@ -1609,6 +1837,10 @@ impl Drop for Compositor {
         for cached in std::mem::take(&mut self.cache) {
             self.converter.destroy_image(cached.image);
         }
+        for (from, to) in std::mem::take(&mut self.groups) {
+            self.converter.destroy_image(from);
+            self.converter.destroy_image(to);
+        }
         if let Some((accum, _, _)) = self.accum.take() {
             self.converter.destroy_image(accum);
         }
@@ -1630,6 +1862,7 @@ impl Drop for Compositor {
             self.one_shot.destroy(device);
             device.destroy_sampler(self.sampler, None);
             device.destroy_descriptor_pool(self.descriptor_pool, None);
+            device.destroy_descriptor_pool(self.transition_pool, None);
             for pipeline in [
                 &self.blend,
                 &self.output,

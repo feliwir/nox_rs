@@ -12,6 +12,7 @@ nox-ai.workspace = true
 nox-color.workspace = true
 nox-gpu.workspace = true
 nox-project.workspace = true
+glslang = "0.9"
 tracing.workspace = true
 
 [dev-dependencies]

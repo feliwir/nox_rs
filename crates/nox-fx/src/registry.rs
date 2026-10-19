@@ -3,7 +3,10 @@
 //! in and out). Resolving an item's effects into a graph is `graph.rs`. Labels are English msgids, marked for
 //! extraction with `n_` and translated by the GUI.
 
-use nox_project::{Effect, Value};
+use nox_project::{Effect, Parameters, Value};
+use std::sync::OnceLock;
+
+use crate::shader_effects::{self, ShaderEffect};
 use std::hash::{Hash, Hasher};
 
 /// Marks a label for translation (`xgettext --keyword=n_`, see
@@ -23,6 +26,14 @@ pub enum Category {
 }
 
 impl Category {
+    /// A file's `Category` header (its English label).
+    fn parse(name: &str) -> Option<Self> {
+        let name = name.trim().to_lowercase();
+        Self::ALL
+            .into_iter()
+            .find(|c| c.label().to_lowercase() == name)
+    }
+
     pub const ALL: [Category; 5] = [
         Self::Generic,
         Self::Keying,
@@ -96,8 +107,9 @@ pub const MATTE_OUT: PortDef = PortDef {
 };
 
 /// What a number means, for the controls showing it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Unit {
+    #[default]
     Plain,
     /// 0–100 %.
     Percent,
@@ -217,6 +229,8 @@ pub struct EffectDef {
     pub task: Option<nox_ai::models::Task>,
     pub inputs: &'static [PortDef],
     pub outputs: &'static [PortDef],
+    /// Run by its GLSL (`shader_effects`), else by Rust code (AI, mattes).
+    pub shader: Option<&'static ShaderEffect>,
 }
 
 /// The same effect: the same id.
@@ -283,7 +297,7 @@ const MODEL: ParamDef = ParamDef {
 /// A picture effect that can be masked.
 const MASKABLE: &[PortDef] = &[PICTURE_IN, MASK_IN];
 
-const fn number(
+pub(crate) const fn number(
     name: &'static str,
     label: &'static str,
     min: f64,
@@ -305,122 +319,8 @@ const fn number(
     }
 }
 
-static EFFECTS: [EffectDef; 8] = [
-    EffectDef {
-        id: GAUSSIAN_BLUR,
-        label: n_("Gaussian Blur"),
-        category: Category::Generic,
-        params: &[number(
-            "radius",
-            n_("Radius"),
-            0.0,
-            10.0,
-            1.0,
-            2,
-            Unit::PictureHeight,
-        )],
-        task: None,
-        inputs: MASKABLE,
-        outputs: &[PICTURE_OUT],
-    },
-    EffectDef {
-        id: SHARPEN,
-        label: n_("Sharpen"),
-        category: Category::Generic,
-        params: &[
-            number("amount", n_("Amount"), 0.0, 500.0, 100.0, 0, Unit::Percent),
-            number(
-                "radius",
-                n_("Radius"),
-                0.0,
-                2.0,
-                0.15,
-                2,
-                Unit::PictureHeight,
-            ),
-            number(
-                "threshold",
-                n_("Threshold"),
-                0.0,
-                50.0,
-                0.0,
-                1,
-                Unit::Percent,
-            ),
-        ],
-        task: None,
-        inputs: MASKABLE,
-        outputs: &[PICTURE_OUT],
-    },
-    EffectDef {
-        id: PAINTERLY,
-        label: n_("Painterly"),
-        category: Category::Stylize,
-        params: &[
-            number(
-                "radius",
-                n_("Radius"),
-                0.0,
-                3.0,
-                0.5,
-                2,
-                Unit::PictureHeight,
-            ),
-            number("sharpness", n_("Sharpness"), 1.0, 16.0, 8.0, 1, Unit::Plain),
-        ],
-        task: None,
-        inputs: MASKABLE,
-        outputs: &[PICTURE_OUT],
-    },
-    EffectDef {
-        id: CHROMA_KEY,
-        label: n_("Chroma Key"),
-        category: Category::Keying,
-        params: &[
-            ParamDef {
-                name: "color",
-                label: n_("Key Color"),
-                kind: ParamKind::Color {
-                    default: [0.0, 0.69, 0.25],
-                },
-            },
-            number(
-                "tolerance",
-                n_("Tolerance"),
-                0.0,
-                100.0,
-                20.0,
-                1,
-                Unit::Percent,
-            ),
-            number(
-                "softness",
-                n_("Softness"),
-                0.0,
-                100.0,
-                10.0,
-                1,
-                Unit::Percent,
-            ),
-            number(
-                "spill",
-                n_("Spill Suppression"),
-                0.0,
-                100.0,
-                50.0,
-                0,
-                Unit::Percent,
-            ),
-            ParamDef {
-                name: "show_matte",
-                label: n_("Show Matte"),
-                kind: ParamKind::Bool { default: false },
-            },
-        ],
-        task: None,
-        inputs: MASKABLE,
-        outputs: &[PICTURE_OUT, MATTE_OUT],
-    },
+/// The effects Rust runs: AI and mattes.
+static RUST_EFFECTS: [EffectDef; 4] = [
     EffectDef {
         id: SEGMENT_SUBJECT,
         label: n_("Segment Subject"),
@@ -429,6 +329,7 @@ static EFFECTS: [EffectDef; 8] = [
         task: Some(nox_ai::models::Task::BackgroundRemoval),
         inputs: &[PICTURE_IN],
         outputs: &[MATTE_OUT],
+        shader: None,
     },
     EffectDef {
         id: APPLY_MATTE,
@@ -455,6 +356,7 @@ static EFFECTS: [EffectDef; 8] = [
         task: None,
         inputs: &[PICTURE_IN, MATTE_IN],
         outputs: &[PICTURE_OUT],
+        shader: None,
     },
     EffectDef {
         id: INVERT_MATTE,
@@ -464,6 +366,7 @@ static EFFECTS: [EffectDef; 8] = [
         task: None,
         inputs: &[MATTE_IN],
         outputs: &[MATTE_OUT],
+        shader: None,
     },
     EffectDef {
         id: FEATHER_MATTE,
@@ -481,29 +384,80 @@ static EFFECTS: [EffectDef; 8] = [
         task: None,
         inputs: &[MATTE_IN],
         outputs: &[MATTE_OUT],
+        shader: None,
     },
 ];
 
 /// Every effect, in the order the "Add effect" list shows them.
-pub fn effects() -> &'static [EffectDef] {
-    &EFFECTS
+pub fn effects() -> &'static [&'static EffectDef] {
+    static ALL: OnceLock<Vec<&'static EffectDef>> = OnceLock::new();
+    ALL.get_or_init(|| {
+        let def = |id: String, parsed: ShaderEffect| -> &'static EffectDef {
+            let parsed: &'static ShaderEffect = Box::leak(Box::new(parsed));
+            let label = if parsed.name.is_empty() {
+                id.rsplit('.').next().unwrap_or_default().to_owned()
+            } else {
+                parsed.name.clone()
+            };
+            Box::leak(Box::new(EffectDef {
+                id: Box::leak(id.into_boxed_str()),
+                label: Box::leak(label.into_boxed_str()),
+                category: parsed
+                    .category
+                    .as_deref()
+                    .and_then(Category::parse)
+                    .unwrap_or(Category::Stylize),
+                params: Box::leak(parsed.params.clone().into_boxed_slice()),
+                task: None,
+                inputs: MASKABLE,
+                outputs: if parsed.matte {
+                    &[PICTURE_OUT, MATTE_OUT]
+                } else {
+                    &[PICTURE_OUT]
+                },
+                shader: Some(parsed),
+            }))
+        };
+        let mut all: Vec<&'static EffectDef> = Vec::new();
+        for (id, source) in shader_effects::BUILT_IN {
+            match ShaderEffect::parse(source) {
+                Ok(parsed) => all.push(def((*id).to_owned(), parsed)),
+                Err(err) => tracing::error!("effect {id}: {err}"),
+            }
+        }
+        all.extend(RUST_EFFECTS.iter());
+        let (packages, problems) = shader_effects::load_packages(&shader_effects::packages_dir());
+        for (stem, parsed) in packages {
+            all.push(def(format!("user.{stem}"), parsed));
+        }
+        let _ = shader_effects::PROBLEMS.set(problems);
+        // Each category together, in order (packages among Nox's own).
+        all.sort_by_key(|e| Category::ALL.iter().position(|&c| c == e.category));
+        all
+    })
 }
 
 /// The effect with `effect_name` `id`.
 pub fn find(id: &str) -> Option<&'static EffectDef> {
-    EFFECTS.iter().find(|e| e.id == id)
+    effects().iter().copied().find(|e| e.id == id)
 }
 
 /// The values of every parameter of `def` in `effect` (one of its kind)
 /// at media time `time` (seconds): keyframed, stored or the default.
 pub fn values(effect: &Effect, def: &EffectDef, time: f64) -> Vec<ParamValue> {
-    def.params
+    param_values(effect, def.params, time)
+}
+
+/// The values of `params` stored in `stored` (an effect or transition) at
+/// media time `time`: keyframed, stored or the default.
+pub fn param_values(stored: &dyn Parameters, params: &[ParamDef], time: f64) -> Vec<ParamValue> {
+    params
         .iter()
         .map(|param| match param.kind {
             ParamKind::Number {
                 min, max, default, ..
-            } => ParamValue::Number(effect.number_at(param.name, time, default).clamp(min, max)),
-            _ => param.read(effect.param(param.name)),
+            } => ParamValue::Number(stored.number_at(param.name, time, default).clamp(min, max)),
+            _ => param.read(stored.param(param.name)),
         })
         .collect()
 }
@@ -519,7 +473,45 @@ mod tests {
             .filter(|e| e.in_stack())
             .map(|e| e.id)
             .collect();
-        assert_eq!(in_stack, [GAUSSIAN_BLUR, SHARPEN, PAINTERLY, CHROMA_KEY]);
+        // By category: blur and sharpen, keying, stylize.
+        assert_eq!(in_stack, [GAUSSIAN_BLUR, SHARPEN, CHROMA_KEY, PAINTERLY]);
+        // Nox's GLSL effects keep their parameters.
+        let names = |id: &str| -> Vec<(&str, Unit)> {
+            find(id)
+                .unwrap()
+                .params
+                .iter()
+                .map(|p| match p.kind {
+                    ParamKind::Number { unit, .. } => (p.name, unit),
+                    _ => (p.name, Unit::Plain),
+                })
+                .collect()
+        };
+        assert_eq!(names(GAUSSIAN_BLUR), [("radius", Unit::PictureHeight)]);
+        assert_eq!(
+            names(SHARPEN),
+            [
+                ("amount", Unit::Percent),
+                ("radius", Unit::PictureHeight),
+                ("threshold", Unit::Percent)
+            ]
+        );
+        assert_eq!(
+            names(PAINTERLY),
+            [("radius", Unit::PictureHeight), ("sharpness", Unit::Plain)]
+        );
+        assert_eq!(
+            names(CHROMA_KEY),
+            [
+                ("color", Unit::Plain),
+                ("tolerance", Unit::Percent),
+                ("softness", Unit::Percent),
+                ("spill", Unit::Percent),
+                ("show_matte", Unit::Plain)
+            ]
+        );
+        assert_eq!(find(CHROMA_KEY).unwrap().outputs, [PICTURE_OUT, MATTE_OUT]);
+        assert_eq!(find(PAINTERLY).unwrap().category, Category::Stylize);
         let segment = find(SEGMENT_SUBJECT).unwrap();
         assert!(!segment.outputs_picture());
         assert_eq!(segment.output("matte").unwrap().kind, PortKind::Matte);

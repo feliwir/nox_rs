@@ -567,8 +567,9 @@ impl Ui {
     }
 
     /// A one-second dissolve at the selected clip's edge nearest the
-    /// playhead.
-    fn add_dissolve(&self) {
+    /// playhead. If the clips lack media beyond the cut for it, offers to
+    /// trim them to make room (as Resolve does).
+    fn add_dissolve(self: &Rc<Self>) {
         let Some(item) = self.timeline.selection() else {
             tracing::info!("select a clip to add a dissolve to");
             return;
@@ -586,8 +587,61 @@ impl Ui {
             Edge::End
         };
         let one_second = Time::from_frames(nox_project::nominal_fps(fps) as i64, fps);
-        let _ = self.project.edit(&gettext("Add Dissolve"), |t| {
-            t.add_dissolve(item, edge, one_second)
+        let label = gettext("Add Dissolve");
+        let cannot = gettext("Cannot add a dissolve");
+        let room = {
+            let timeline = self.project.timeline();
+            timeline
+                .transition_fits(item, edge, one_second)
+                .and_then(|fits| Ok((fits, timeline.transition_trims(item, edge, one_second)?)))
+        };
+        let (trim_end, trim_start) = match room {
+            Ok((true, _)) => {
+                let _ = self
+                    .project
+                    .edit(&label, |t| t.add_dissolve(item, edge, one_second));
+                return;
+            }
+            Ok((false, trims)) => trims,
+            Err(err) => {
+                self.show_error(&cannot, &err.to_string());
+                return;
+            }
+        };
+        let detail = fill(
+            &gettext(
+                "The clips have too little media beyond the cut for a dissolve of {length}. \
+                 Trim {trim} off the clips at the cut to make room? What follows moves up.",
+            ),
+            &[
+                ("length", &self.project.timecode(one_second.frame(fps))),
+                (
+                    "trim",
+                    &self.project.timecode((trim_end + trim_start).frame(fps)),
+                ),
+            ],
+        );
+        let dialog = gtk::AlertDialog::builder()
+            .message(gettext("Not enough media for the dissolve"))
+            .detail(detail)
+            .buttons([gettext("Cancel"), gettext("Trim Clips")])
+            .cancel_button(0)
+            .default_button(1)
+            .modal(true)
+            .build();
+        let ui = self.clone();
+        dialog.choose(Some(&self.window), gio::Cancellable::NONE, move |result| {
+            if result != Ok(1) {
+                return;
+            }
+            let zero = Time::zero(one_second.timebase);
+            let dissolve =
+                nox_project::Transition::new(nox_project::DISSOLVE, "Cross Dissolve", zero, zero);
+            if let Err(err) = ui.project.edit(&label, |t| {
+                t.add_transition_making_room(item, edge, one_second, &dissolve)
+            }) {
+                ui.show_error(&cannot, &err.to_string());
+            }
         });
     }
 

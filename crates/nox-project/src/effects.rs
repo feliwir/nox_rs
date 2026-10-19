@@ -59,6 +59,145 @@ impl Connection {
     }
 }
 
+/// Values kept in `metadata.nox` (`params`, `keyframes`, …), by effects
+/// and transitions. The registries (nox-fx) know which parameters there
+/// are and their defaults; this stores values only.
+pub trait Parameters {
+    fn metadata(&self) -> &Object;
+    fn metadata_mut(&mut self) -> &mut Object;
+
+    /// `metadata.nox.<key>`.
+    fn nox_value(&self, key: &str) -> Option<&Value> {
+        crate::metadata::nox_value(self.metadata(), key)
+    }
+
+    /// Sets or (with `None`) removes `metadata.nox.<key>`.
+    fn set_nox_value(&mut self, key: &str, value: Option<Value>) {
+        crate::metadata::set_nox_value(self.metadata_mut(), key, value);
+    }
+
+    /// The stored value of parameter `name` (none: the default).
+    fn param(&self, name: &str) -> Option<&Value> {
+        self.nox_value("params")?.as_object()?.get(name)
+    }
+
+    /// Stores parameter `name`; `None` goes back to the default.
+    fn set_param(&mut self, name: &str, value: Option<Value>) {
+        let mut params = match self.nox_value("params") {
+            Some(Value::Object(params)) => params.clone(),
+            _ => Object::new(),
+        };
+        match value {
+            Some(value) => params.insert(name, value),
+            None => {
+                params.remove(name);
+            }
+        }
+        self.set_nox_value(
+            "params",
+            (!params.is_empty()).then_some(Value::Object(params)),
+        );
+    }
+
+    /// The keyframes of number parameter `name`, sorted (empty if it is
+    /// constant).
+    fn keyframes(&self, name: &str) -> Vec<Keyframe> {
+        self.nox_value("keyframes")
+            .and_then(Value::as_object)
+            .and_then(|k| k.get(name))
+            .map(keyframes_from)
+            .unwrap_or_default()
+    }
+
+    /// Replaces the keyframes of `name` (none: constant again).
+    fn set_keyframes(&mut self, name: &str, keys: Vec<Keyframe>) {
+        let mut all = match self.nox_value("keyframes") {
+            Some(Value::Object(all)) => all.clone(),
+            _ => Object::new(),
+        };
+        match keyframes_value(keys) {
+            Some(list) => all.insert(name, list),
+            None => {
+                all.remove(name);
+            }
+        }
+        self.set_nox_value("keyframes", (!all.is_empty()).then_some(Value::Object(all)));
+    }
+
+    /// Names of the parameters with keyframes.
+    fn animated_params(&self) -> Vec<String> {
+        self.nox_value("keyframes")
+            .and_then(Value::as_object)
+            .map(|k| k.iter().map(|(name, _)| name.to_owned()).collect())
+            .unwrap_or_default()
+    }
+
+    /// Number parameter `name` at media time `time`: interpolated if it
+    /// is keyframed, else its stored value, else `default`.
+    fn number_at(&self, name: &str, time: f64, default: f64) -> f64 {
+        let keys = self.keyframes(name);
+        if !keys.is_empty() {
+            return interpolate(&keys, time);
+        }
+        self.param(name).and_then(Value::as_f64).unwrap_or(default)
+    }
+
+    /// Sets number parameter `name` at `time`: as a keyframe there if it
+    /// is keyframed, else as its constant value.
+    fn set_number_at(&mut self, name: &str, time: f64, value: f64) {
+        let mut keys = self.keyframes(name);
+        if keys.is_empty() {
+            self.set_param(name, Some(Value::Float(value)));
+            return;
+        }
+        match keys.iter_mut().find(|k| (k.time - time).abs() < SAME_TIME) {
+            Some(key) => key.value = value,
+            None => keys.push(Keyframe {
+                time,
+                value,
+                ease: Ease::Linear,
+            }),
+        }
+        self.set_keyframes(name, keys);
+    }
+
+    /// Adds a keyframe for `name` at `time` with its value there, or
+    /// removes the one at `time` (the last one's value stays as the
+    /// constant value).
+    fn toggle_keyframe(&mut self, name: &str, time: f64, default: f64) {
+        let mut keys = self.keyframes(name);
+        if let Some(i) = keys.iter().position(|k| (k.time - time).abs() < SAME_TIME) {
+            let removed = keys.remove(i);
+            if keys.is_empty() {
+                self.set_param(name, Some(Value::Float(removed.value)));
+            }
+        } else {
+            keys.push(Keyframe {
+                time,
+                value: self.number_at(name, time, default),
+                ease: Ease::Linear,
+            });
+        }
+        self.set_keyframes(name, keys);
+    }
+
+    fn has_keyframe(&self, name: &str, time: f64) -> bool {
+        self.keyframes(name)
+            .iter()
+            .any(|k| (k.time - time).abs() < SAME_TIME)
+    }
+}
+
+impl Parameters for Effect {
+    fn metadata(&self) -> &Object {
+        &self.metadata
+    }
+
+    fn metadata_mut(&mut self) -> &mut Object {
+        &mut self.metadata
+    }
+}
+
 /// `Item::connect` refused: the connection would make a cycle.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cycle;
@@ -82,129 +221,8 @@ impl Effect {
         self.kind == EffectKind::Generic
     }
 
-    /// `metadata.nox.<key>`.
-    pub fn nox_value(&self, key: &str) -> Option<&Value> {
-        crate::metadata::nox_value(&self.metadata, key)
-    }
-
-    /// Sets or (with `None`) removes `metadata.nox.<key>`.
-    pub fn set_nox_value(&mut self, key: &str, value: Option<Value>) {
-        crate::metadata::set_nox_value(&mut self.metadata, key, value);
-    }
-
     pub fn uid(&self) -> Option<&str> {
         self.nox_value("uid").and_then(Value::as_str)
-    }
-
-    /// The stored value of parameter `name` (none: the default).
-    pub fn param(&self, name: &str) -> Option<&Value> {
-        self.nox_value("params")?.as_object()?.get(name)
-    }
-
-    /// Stores parameter `name`; `None` goes back to the default.
-    pub fn set_param(&mut self, name: &str, value: Option<Value>) {
-        let mut params = match self.nox_value("params") {
-            Some(Value::Object(params)) => params.clone(),
-            _ => Object::new(),
-        };
-        match value {
-            Some(value) => params.insert(name, value),
-            None => {
-                params.remove(name);
-            }
-        }
-        self.set_nox_value(
-            "params",
-            (!params.is_empty()).then_some(Value::Object(params)),
-        );
-    }
-
-    /// The keyframes of number parameter `name`, sorted (empty if it is
-    /// constant).
-    pub fn keyframes(&self, name: &str) -> Vec<Keyframe> {
-        self.nox_value("keyframes")
-            .and_then(Value::as_object)
-            .and_then(|k| k.get(name))
-            .map(keyframes_from)
-            .unwrap_or_default()
-    }
-
-    /// Replaces the keyframes of `name` (none: constant again).
-    pub fn set_keyframes(&mut self, name: &str, keys: Vec<Keyframe>) {
-        let mut all = match self.nox_value("keyframes") {
-            Some(Value::Object(all)) => all.clone(),
-            _ => Object::new(),
-        };
-        match keyframes_value(keys) {
-            Some(list) => all.insert(name, list),
-            None => {
-                all.remove(name);
-            }
-        }
-        self.set_nox_value("keyframes", (!all.is_empty()).then_some(Value::Object(all)));
-    }
-
-    /// Names of the parameters with keyframes.
-    pub fn animated_params(&self) -> Vec<String> {
-        self.nox_value("keyframes")
-            .and_then(Value::as_object)
-            .map(|k| k.iter().map(|(name, _)| name.to_owned()).collect())
-            .unwrap_or_default()
-    }
-
-    /// Number parameter `name` at media time `time`: interpolated if it
-    /// is keyframed, else its stored value, else `default`.
-    pub fn number_at(&self, name: &str, time: f64, default: f64) -> f64 {
-        let keys = self.keyframes(name);
-        if !keys.is_empty() {
-            return interpolate(&keys, time);
-        }
-        self.param(name).and_then(Value::as_f64).unwrap_or(default)
-    }
-
-    /// Sets number parameter `name` at `time`: as a keyframe there if it
-    /// is keyframed, else as its constant value.
-    pub fn set_number_at(&mut self, name: &str, time: f64, value: f64) {
-        let mut keys = self.keyframes(name);
-        if keys.is_empty() {
-            self.set_param(name, Some(Value::Float(value)));
-            return;
-        }
-        match keys.iter_mut().find(|k| (k.time - time).abs() < SAME_TIME) {
-            Some(key) => key.value = value,
-            None => keys.push(Keyframe {
-                time,
-                value,
-                ease: Ease::Linear,
-            }),
-        }
-        self.set_keyframes(name, keys);
-    }
-
-    /// Adds a keyframe for `name` at `time` with its value there, or
-    /// removes the one at `time` (the last one's value stays as the
-    /// constant value).
-    pub fn toggle_keyframe(&mut self, name: &str, time: f64, default: f64) {
-        let mut keys = self.keyframes(name);
-        if let Some(i) = keys.iter().position(|k| (k.time - time).abs() < SAME_TIME) {
-            let removed = keys.remove(i);
-            if keys.is_empty() {
-                self.set_param(name, Some(Value::Float(removed.value)));
-            }
-        } else {
-            keys.push(Keyframe {
-                time,
-                value: self.number_at(name, time, default),
-                ease: Ease::Linear,
-            });
-        }
-        self.set_keyframes(name, keys);
-    }
-
-    pub fn has_keyframe(&self, name: &str, time: f64) -> bool {
-        self.keyframes(name)
-            .iter()
-            .any(|k| (k.time - time).abs() < SAME_TIME)
     }
 
     /// Where input `name` is connected to (none: implicit).

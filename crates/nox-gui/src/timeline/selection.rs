@@ -225,11 +225,17 @@ impl imp::TimelineView {
         let fps = model.frame_rate();
         let text = match child {
             Composable::Transition(t) => fill(
-                &gettext("Dissolve, {length}"),
-                &[(
-                    "length",
-                    &project.timecode((t.in_offset + t.out_offset).frame(fps)),
-                )],
+                &gettext("{transition}, {length}"),
+                &[
+                    (
+                        "transition",
+                        &gettext(nox_fx::transitions::transition_def(t).label),
+                    ),
+                    (
+                        "length",
+                        &project.timecode((t.in_offset + t.out_offset).frame(fps)),
+                    ),
+                ],
             ),
             _ => fill(
                 &gettext("{name}, {start} to {end}"),

@@ -12,22 +12,30 @@
 //! used.
 
 mod ai;
+pub mod glsl;
 pub mod graph;
 pub mod registry;
+pub mod shader_effects;
+pub mod shader_transitions;
+pub mod transitions;
 
 use nox_ai::Matte;
 use nox_gpu::compute::{Binding, BindingKind, Buffer, Image, Kernel, MemoryUse, Recording};
 use nox_gpu::{GpuDevice, LayerHook, LayerPicture, Result, vk};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 use std::sync::Arc;
+
+use shader_effects::ShaderEffect;
 
 pub use graph::{
     Graph, Resolved, Source, Wire, is_linear, materialize, output_wire, resolve, simplify, wires,
 };
 pub use registry::{
     Category, EffectDef, ParamDef, ParamKind, ParamValue, PortDef, PortKind, Unit, effects, find,
-    values,
+    param_values, values,
 };
 
 /// The clip an effect runs for.
@@ -44,10 +52,9 @@ pub struct Context {
 /// loaded models, kept between frames.
 pub struct Effects {
     gpu: Arc<GpuDevice>,
-    blur: Kernel,
-    sharpen: Kernel,
-    kuwahara: Kernel,
-    chroma_key: Kernel,
+    /// GLSL effects' passes, compiled when first used (`None`: they
+    /// don't compile; logged once).
+    shader_kernels: RefCell<HashMap<&'static str, Option<Rc<Vec<Kernel>>>>>,
     apply_matte: Kernel,
     mix: Kernel,
     invert_matte: Kernel,
@@ -55,8 +62,9 @@ pub struct Effects {
     alpha_to_matte: Kernel,
     thumb_picture: Kernel,
     thumb_matte: Kernel,
-    /// Two intermediate pictures for effects' own passes, at least as
-    /// large as the largest picture so far.
+    /// Intermediate pictures for effects' own passes (the input kept
+    /// aside, two for passes in between), at least as large as the
+    /// largest picture so far.
     scratch: Vec<Image>,
     /// Pictures between nodes of a graph (a picture read by more than one
     /// node is kept in one of these).
@@ -68,50 +76,6 @@ macro_rules! spv {
     ($name:literal) => {
         include_bytes!(concat!(env!("OUT_DIR"), "/", $name, ".comp.spv"))
     };
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct BlurPush {
-    size: [u32; 2],
-    vertical: u32,
-    taps: i32,
-    step: i32,
-    inv_two_sigma2: f32,
-    premultiply: u32,
-    unpremultiply: u32,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct SharpenPush {
-    size: [u32; 2],
-    amount: f32,
-    threshold: f32,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct KuwaharaPush {
-    size: [u32; 2],
-    radius: i32,
-    step: i32,
-    sharpness: f32,
-    pad: u32,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct ChromaKeyPush {
-    size: [u32; 2],
-    pad: [u32; 2],
-    key: [f32; 4],
-    tolerance: f32,
-    softness: f32,
-    spill: f32,
-    dominant: u32,
-    show_matte: u32,
-    pad2: [u32; 3],
 }
 
 #[repr(C)]
@@ -196,7 +160,6 @@ fn gaussian(radius: f64) -> (f64, f64, i32) {
 
 impl Effects {
     pub fn new(gpu: Arc<GpuDevice>) -> Result<Self> {
-        let two = [BindingKind::Image, BindingKind::Image];
         let image_buffer = [BindingKind::Image, BindingKind::Buffer];
         let buffers = [BindingKind::Buffer, BindingKind::Buffer];
         Ok(Self {
@@ -242,15 +205,7 @@ impl Effects {
                 &buffers,
                 size_of::<ThumbMattePush>(),
             )?,
-            blur: Kernel::new(&gpu, spv!("blur"), &two, size_of::<BlurPush>())?,
-            sharpen: Kernel::new(&gpu, spv!("sharpen"), &two, size_of::<SharpenPush>())?,
-            kuwahara: Kernel::new(&gpu, spv!("kuwahara"), &two, size_of::<KuwaharaPush>())?,
-            chroma_key: Kernel::new(
-                &gpu,
-                spv!("chroma_key"),
-                &[BindingKind::Image],
-                size_of::<ChromaKeyPush>(),
-            )?,
+            shader_kernels: RefCell::default(),
             scratch: Vec::new(),
             pictures: Vec::new(),
             ai: ai::Ai::new(gpu.clone()),
@@ -419,141 +374,71 @@ impl Effects {
         Ok(())
     }
 
-    /// Records `effect` on `picture`; false if it does nothing at these
-    /// values (nothing recorded).
+    /// Records GLSL effect `effect` on `picture` at media time `time`:
+    /// its passes read a copy of the picture, pass between two scratch
+    /// pictures and the last writes the picture. False if it doesn't
+    /// compile (nothing recorded; the picture passes through).
     fn record(
         &self,
         recording: &mut Recording,
         effect: &Resolved,
         picture: &LayerPicture,
+        time: f64,
     ) -> Result<bool> {
-        let size = [picture.width, picture.height];
-        let groups = groups_2d(picture.width, picture.height);
-        let pixels = |percent: f64| percent / 100.0 * f64::from(picture.height);
-        let view = picture.view;
-        let (a, b) = (&self.scratch[0], &self.scratch[1]);
-        match effect.def.id {
-            registry::GAUSSIAN_BLUR => {
-                let radius = pixels(effect.number("radius"));
-                if radius < 0.5 {
-                    return Ok(false);
-                }
-                self.record_blur(recording, size, radius, view, a.view(), view)?;
-            }
-            registry::SHARPEN => {
-                let radius = pixels(effect.number("radius")).max(0.5);
-                let amount = effect.number("amount") / 100.0;
-                if amount <= 0.0 {
-                    return Ok(false);
-                }
-                self.record_blur(recording, size, radius, view, a.view(), b.view())?;
-                let push = SharpenPush {
-                    size,
-                    amount: amount as f32,
-                    threshold: (effect.number("threshold") / 100.0) as f32,
-                };
-                recording.dispatch(
-                    &self.sharpen,
-                    &[Binding::Image(view), Binding::Image(b.view())],
-                    bytemuck::bytes_of(&push),
-                    groups,
-                )?;
-            }
-            registry::PAINTERLY => {
-                let radius = pixels(effect.number("radius")).round() as i32;
-                if radius < 1 {
-                    return Ok(false);
-                }
-                // About 13 × 13 taps at most: wider ones skip pixels.
-                let push = KuwaharaPush {
-                    size,
-                    radius,
-                    step: (radius / 6).max(1),
-                    sharpness: effect.number("sharpness") as f32,
-                    pad: 0,
-                };
-                recording.dispatch(
-                    &self.kuwahara,
-                    &[Binding::Image(view), Binding::Image(a.view())],
-                    bytemuck::bytes_of(&push),
-                    groups,
-                )?;
-                recording.copy_image(a.handle(), picture.image, picture.width, picture.height);
-            }
-            registry::CHROMA_KEY => {
-                let key = working_rgb(effect.color("color"));
-                let sum = key.iter().sum::<f32>().max(1e-6);
-                let dominant = (0..3)
-                    .max_by(|&i, &j| key[i].total_cmp(&key[j]))
-                    .unwrap_or(1);
-                // Chromaticity distances: a saturated key is ~0.5 from gray.
-                let push = ChromaKeyPush {
-                    size,
-                    pad: [0; 2],
-                    key: [key[0] / sum, key[1] / sum, key[2] / sum, 0.0],
-                    tolerance: (effect.number("tolerance") / 100.0 * 0.4) as f32,
-                    softness: (effect.number("softness") / 100.0 * 0.4) as f32,
-                    spill: (effect.number("spill") / 100.0) as f32,
-                    dominant: dominant as u32,
-                    show_matte: u32::from(effect.bool("show_matte")),
-                    pad2: [0; 3],
-                };
-                recording.dispatch(
-                    &self.chroma_key,
-                    &[Binding::Image(view)],
-                    bytemuck::bytes_of(&push),
-                    groups,
-                )?;
-            }
-            other => unreachable!("{other} isn't rendered on the GPU here"),
+        let Some(shader) = effect.def.shader else {
+            return Ok(false);
+        };
+        let Some(kernels) = self.shader_kernels(effect.def.id, shader) else {
+            return Ok(false);
+        };
+        let (width, height) = (picture.width, picture.height);
+        let (input, between) = (&self.scratch[0], [&self.scratch[1], &self.scratch[2]]);
+        recording.copy_image(picture.image, input.handle(), width, height);
+        let push = shader.push(&effect.values, (width, height), time);
+        for (i, kernel) in kernels.iter().enumerate() {
+            let previous = if i == 0 {
+                input.view()
+            } else {
+                between[(i - 1) % 2].view()
+            };
+            let output = if i + 1 == kernels.len() {
+                picture.view
+            } else {
+                between[i % 2].view()
+            };
+            recording.dispatch(
+                kernel,
+                &[
+                    Binding::Image(input.view()),
+                    Binding::Image(previous),
+                    Binding::Image(output),
+                ],
+                &push,
+                groups_2d(width, height),
+            )?;
         }
         Ok(true)
     }
 
-    /// A Gaussian blur of `src` into `dst` through `tmp` (`src` and `dst`
-    /// may be the same).
-    fn record_blur(
-        &self,
-        recording: &mut Recording,
-        size: [u32; 2],
-        radius: f64,
-        src: vk::ImageView,
-        tmp: vk::ImageView,
-        dst: vk::ImageView,
-    ) -> Result<()> {
-        let (sigma, step, taps) = gaussian(radius);
-        let groups = groups_2d(size[0], size[1]);
-        for (vertical, from, to) in [(0, src, tmp), (1, tmp, dst)] {
-            let push = BlurPush {
-                size,
-                vertical,
-                taps,
-                step: step as i32,
-                inv_two_sigma2: (1.0 / (2.0 * sigma * sigma)) as f32,
-                premultiply: u32::from(vertical == 0),
-                unpremultiply: vertical,
-            };
-            recording.dispatch(
-                &self.blur,
-                &[Binding::Image(from), Binding::Image(to)],
-                bytemuck::bytes_of(&push),
-                groups,
-            )?;
-        }
-        Ok(())
+    /// `shader`'s kernels (effect `id`), compiled when first asked for.
+    fn shader_kernels(&self, id: &'static str, shader: &ShaderEffect) -> Option<Rc<Vec<Kernel>>> {
+        self.shader_kernels
+            .borrow_mut()
+            .entry(id)
+            .or_insert_with(|| match shader.kernels(&self.gpu) {
+                Ok(kernels) => Some(Rc::new(kernels)),
+                Err(err) => {
+                    tracing::warn!("effect {id}: {err}");
+                    None
+                }
+            })
+            .clone()
     }
 }
 
 /// Workgroups of 16 × 16 over `width` × `height`.
 fn groups_2d(width: u32, height: u32) -> [u32; 3] {
     [width.div_ceil(16), height.div_ceil(16), 1]
-}
-
-/// An sRGB color as picked, in the linear working space.
-fn working_rgb(srgb: [f64; 3]) -> [f32; 3] {
-    let linear = srgb.map(|c| nox_color::Transfer::Srgb.eotf(c as f32));
-    let m = nox_color::Primaries::Bt709.conversion_to(nox_color::WORKING_PRIMARIES);
-    [0, 1, 2].map(|r| (0..3).map(|c| m[r][c] * linear[c]).sum())
 }
 
 /// A graph ready to run on one clip's picture (`Effects::prepare`).
@@ -705,7 +590,7 @@ impl LayerHook for Prepared<'_> {
         }
         *reads.entry(output).or_default() += 1;
         let result = (|| {
-            self.effects.ensure_scratch(2, width, height)?;
+            self.effects.ensure_scratch(3, width, height)?;
             let mut used = vec![false; self.effects.pictures.len()];
             let mut pictures: HashMap<Source, Picture> = HashMap::new();
             pictures.insert(Source::Clip, Picture::Layer);
@@ -838,10 +723,11 @@ impl LayerHook for Prepared<'_> {
                             }
                         }
                         _ => {
-                            self.effects.record(&mut recording, node, &view)?;
+                            self.effects
+                                .record(&mut recording, node, &view, self.graph.time)?;
                         }
                     }
-                    if node.def.id == registry::CHROMA_KEY {
+                    if node.def.shader.is_some_and(|s| s.matte) {
                         // What the key kept, as a matte.
                         let matte = self.effects.new_matte(width, height)?;
                         recording.dispatch(

@@ -346,6 +346,12 @@ impl Kernel {
     }
 }
 
+impl Kernel {
+    pub(crate) fn pipeline(&self) -> &crate::vk_util::Pipeline {
+        &self.pipeline
+    }
+}
+
 impl Drop for Kernel {
     fn drop(&mut self) {
         // SAFETY: recordings using the kernel wait for completion and must

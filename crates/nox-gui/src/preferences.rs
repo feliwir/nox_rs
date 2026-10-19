@@ -5,11 +5,11 @@
 //!
 //! The preferences window (`resources/ui/preferences.ui`) edits them.
 
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{CompositeTemplate, gio, glib, prelude::*, subclass::prelude::*};
 use nox_engine::HwDecode;
 use std::path::PathBuf;
 
-use crate::i18n::{fill, gettext, n_};
+use crate::i18n::{fill, gettext, n_, ngettext};
 
 mod model {
     use super::*;
@@ -180,6 +180,10 @@ mod imp {
         pub models_info: TemplateChild<gtk::Label>,
         #[template_child]
         pub delete_models: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub transitions_info: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub effects_info: TemplateChild<gtk::Label>,
         pub choices: RefCell<Vec<(HwDecode, &'static str, &'static str)>>,
     }
 
@@ -232,6 +236,16 @@ pub fn show(parent: Option<&gtk::Window>) {
 
 #[gtk::template_callbacks]
 impl PreferencesWindow {
+    #[template_callback]
+    fn on_open_effects_clicked(&self) {
+        open_folder(self, &nox_fx::shader_effects::packages_dir());
+    }
+
+    #[template_callback]
+    fn on_open_transitions_clicked(&self) {
+        open_folder(self, &nox_fx::shader_transitions::packages_dir());
+    }
+
     #[template_callback]
     fn on_delete_models_clicked(&self) {
         let dir = nox_ai::models::default_dir();
@@ -289,6 +303,48 @@ impl PreferencesWindow {
         ));
         self.explain_decoding();
         self.show_models();
+        self.show_transitions();
+    }
+
+    /// The packages: how many effects and transitions loaded, from
+    /// where, and the ones that couldn't be.
+    fn show_transitions(&self) {
+        let effects = nox_fx::effects()
+            .iter()
+            .filter(|e| e.id.starts_with("user."))
+            .count();
+        let transitions = nox_fx::transitions::transitions()
+            .iter()
+            .filter(|t| t.id.starts_with("user."))
+            .count();
+        let effects_text = packages_text(
+            &ngettext(
+                "{count} effect package from {folder}; Nox loads them when it starts.",
+                "{count} effect packages from {folder}; Nox loads them when it starts.",
+                effects as u32,
+            ),
+            &gettext(
+                "No effect packages. Put .glsl effects in {folder}; Nox loads them when it starts.",
+            ),
+            effects,
+            &nox_fx::shader_effects::packages_dir(),
+            nox_fx::shader_effects::package_problems(),
+        );
+        let transitions_text = packages_text(
+            &ngettext(
+                "{count} transition package from {folder}; Nox loads them when it starts.",
+                "{count} transition packages from {folder}; Nox loads them when it starts.",
+                transitions as u32,
+            ),
+            &gettext(
+                "No transition packages. Put .glsl transitions (as gl-transitions writes them) in {folder}; Nox loads them when it starts.",
+            ),
+            transitions,
+            &nox_fx::shader_transitions::packages_dir(),
+            nox_fx::shader_transitions::package_problems(),
+        );
+        self.imp().effects_info.set_text(&effects_text);
+        self.imp().transitions_info.set_text(&transitions_text);
     }
 
     /// Which AI models are downloaded, and how big they are.
@@ -337,4 +393,49 @@ impl PreferencesWindow {
             .unwrap_or_default();
         imp.decoding_info.set_text(&text);
     }
+}
+
+/// Opens `dir` (made first, if need be) in the file manager.
+fn open_folder(parent: &impl IsA<gtk::Window>, dir: &std::path::Path) {
+    if let Err(err) = std::fs::create_dir_all(dir) {
+        tracing::warn!("cannot create {}: {err}", dir.display());
+    }
+    gtk::FileLauncher::new(Some(&gio::File::for_path(dir))).launch(
+        Some(parent),
+        gio::Cancellable::NONE,
+        |result| {
+            if let Err(err) = result {
+                tracing::warn!("cannot open the folder: {err}");
+            }
+        },
+    );
+}
+
+/// What a packages row says: `loaded` (a template with `{count}` and
+/// `{folder}`) or `none` (with `{folder}`), then the packages that failed.
+fn packages_text(
+    loaded: &str,
+    none: &str,
+    count: usize,
+    folder: &std::path::Path,
+    problems: &[nox_fx::glsl::Problem],
+) -> String {
+    let mut text = if count == 0 {
+        fill(none, &[("folder", &folder.display())])
+    } else {
+        fill(loaded, &[("count", &count), ("folder", &folder.display())])
+    };
+    for problem in problems {
+        let name = problem
+            .path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy();
+        text.push('\n');
+        text.push_str(&fill(
+            &gettext("{file} couldn't be loaded: {problem}"),
+            &[("file", &name), ("problem", &problem.message.trim())],
+        ));
+    }
+    text
 }

@@ -5,7 +5,7 @@ mod common;
 use common::{FPS, clip, f, fixture, solid, wait_for};
 use nox_engine::{DecodeApi, Engine, EngineEvent, FrameImage, HwDecode, Mixer, RenderedFrame};
 use nox_project::{
-    Clip, Composable, Edge, ItemRef, MediaReference, TimeRange, Timeline, TrackKind,
+    Clip, Composable, Edge, ItemRef, MediaReference, Parameters, TimeRange, Timeline, TrackKind,
 };
 use std::sync::Arc;
 use std::sync::mpsc;
@@ -59,9 +59,16 @@ fn composites_tracks_and_dissolves() {
     // V1: red 0–50, then blue 50–80 with a dissolve over the cut.
     timeline.place(0, clip(&red, 10, 50), f(0)).unwrap();
     timeline.place(0, clip(&blue, 10, 30), f(50)).unwrap();
-    timeline
+    let dissolve = timeline
         .add_dissolve(ItemRef { track: 0, index: 0 }, Edge::End, f(10))
         .unwrap();
+    // Mixing in linear light, as opacity does.
+    if let Some(Composable::Transition(t)) = timeline
+        .track_mut(0)
+        .and_then(|t| t.children.get_mut(dissolve.index))
+    {
+        t.set_param("blend", Some("linear".into()));
+    }
     // V2: half-transparent blue over frames 10–20.
     let v2 = timeline.add_track(TrackKind::Video);
     let mut top = clip(&blue, 0, 10);
@@ -569,30 +576,31 @@ fn mixer_follows_clip_speed() {
     );
 }
 
-/// A dip to white covers the outgoing picture with white, then the
-/// incoming one fades in over it, whatever is on the tracks below.
-#[test]
-fn dips_go_through_a_color() {
-    // Composited on the GPU (the CPU fallback shows the top layer only).
+/// A red clip, then a blue one, with transition `id` (with `params`)
+/// from frame 10 to 30 between them, rendered at 160×90 on the GPU (the
+/// CPU fallback shows the top layer only): the frames `frames`. `None`
+/// without a GPU or FFmpeg.
+fn red_to_blue(
+    id: &str,
+    params: &[(&str, nox_project::Value)],
+    frames: &[i64],
+) -> Option<Vec<Arc<RenderedFrame>>> {
     if !common::have_gpu() {
-        return;
+        return None;
     }
-    let (Some(red), Some(blue)) = (
-        solid("red-dip.mkv", "0xC03020", "320x180"),
-        solid("blue-dip.mkv", "0x2060E0", "320x180"),
-    ) else {
-        return;
-    };
+    let red = solid("red-dip.mkv", "0xC03020", "320x180")?;
+    let blue = solid("blue-dip.mkv", "0x2060E0", "320x180")?;
     let mut timeline = Timeline::new("t", FPS);
     timeline.place(0, clip(&red, 20, 20), f(0)).unwrap();
     timeline.place(0, clip(&blue, 20, 20), f(20)).unwrap();
+    let mut like = nox_fx::transitions::new_transition(
+        nox_fx::transitions::find_transition(id).expect("transition"),
+    );
+    for (name, value) in params {
+        like.set_param(name, Some(value.clone()));
+    }
     timeline
-        .add_transition(
-            ItemRef { track: 0, index: 0 },
-            Edge::End,
-            f(20),
-            nox_project::TransitionKind::Dip(nox_project::DipColor::White),
-        )
+        .add_transition(ItemRef { track: 0, index: 0 }, Edge::End, f(20), &like)
         .unwrap();
     let (sender, events) = mpsc::channel();
     let engine = Engine::new(Vec::new(), move |event| {
@@ -600,16 +608,167 @@ fn dips_go_through_a_color() {
     });
     engine.set_size(160, 90);
     engine.set_timeline(Arc::new(timeline));
-    // The dip runs from frame 10 to 30; halfway it is all white.
-    let middle = pixel(&render(&engine, &events, 20), 80, 45);
+    Some(
+        frames
+            .iter()
+            .map(|&frame| render(&engine, &events, frame))
+            .collect(),
+    )
+}
+
+const RED: [u8; 3] = [0xC0, 0x30, 0x20];
+const BLUE: [u8; 3] = [0x20, 0x60, 0xE0];
+
+fn rgb(r: f64, g: f64, b: f64) -> nox_project::Value {
+    nox_project::Value::Array(vec![r.into(), g.into(), b.into()])
+}
+
+/// Asserts the pixel at (`x`, `y`) of `frame` is close to `expected`.
+#[track_caller]
+fn assert_pixel(frame: &RenderedFrame, x: u32, y: u32, expected: [u8; 3]) {
+    let px = pixel(frame, x, y);
+    assert!(close(px, expected), "({x}, {y}): {px:?}, not {expected:?}");
+}
+
+fn dips_go_through_a_color() {
+    let Some(frames) = red_to_blue(
+        nox_fx::transitions::DIP,
+        &[("color", rgb(1.0, 1.0, 1.0))],
+        &[20, 15],
+    ) else {
+        return;
+    };
+    // Halfway it is all white.
+    let middle = pixel(&frames[0], 80, 45);
     assert!(middle.iter().all(|&c| c >= 250), "white: {middle:?}");
     // A quarter through: red, half covered by white.
-    let quarter = pixel(&render(&engine, &events, 15), 80, 45);
+    let quarter = pixel(&frames[1], 80, 45);
     assert!(
         quarter[0] > 200 && quarter[1] > 100 && quarter[2] > 100,
         "{quarter:?}"
     );
     assert!(quarter[1] < 250, "not white yet: {quarter:?}");
+}
+
+/// Wipes reveal the incoming clip through a mask: an edge from the left,
+/// with a border running ahead of it; an iris from the center.
+fn wipes_reveal_the_incoming_clip() {
+    use nox_fx::transitions::{EDGE_WIPE, IRIS};
+    let Some(frames) = red_to_blue(EDGE_WIPE, &[], &[20]) else {
+        return;
+    };
+    assert_pixel(&frames[0], 20, 45, BLUE);
+    assert_pixel(&frames[0], 140, 45, RED);
+
+    let border = [
+        ("border", 10.0.into()),
+        ("border_color", rgb(0.0, 1.0, 0.0)),
+    ];
+    let frames = red_to_blue(EDGE_WIPE, &border, &[20]).unwrap();
+    let px = pixel(&frames[0], 80, 45);
+    assert!(px[1] > 240 && px[0] < 20 && px[2] < 20, "border: {px:?}");
+    assert_pixel(&frames[0], 20, 45, BLUE);
+    assert_pixel(&frames[0], 140, 45, RED);
+
+    let frames = red_to_blue(IRIS, &[], &[20]).unwrap();
+    assert_pixel(&frames[0], 80, 45, BLUE);
+    assert_pixel(&frames[0], 2, 2, RED);
+}
+
+/// Motion transitions move the clips: a push to the left halfway shows
+/// the outgoing clip's right half on the left and the incoming clip's left
+/// half on the right; a reveal slides the outgoing clip away above the
+/// incoming one.
+fn motion_moves_the_clips() {
+    use nox_fx::transitions::{PUSH, REVEAL};
+    let Some(frames) = red_to_blue(PUSH, &[("angle", 180.0.into())], &[20]) else {
+        return;
+    };
+    assert_pixel(&frames[0], 40, 45, RED);
+    assert_pixel(&frames[0], 120, 45, BLUE);
+
+    // A quarter through: the red clip moved a quarter to the right, still
+    // on top; the blue one shows on the left.
+    let frames = red_to_blue(REVEAL, &[], &[15]).unwrap();
+    assert_pixel(&frames[0], 20, 45, BLUE);
+    assert_pixel(&frames[0], 120, 45, RED);
+}
+
+/// A dissolve mixes perceptually by default: halfway between red and blue
+/// it is darker than mixing in linear light.
+fn dissolves_mix_perceptually_or_in_linear_light() {
+    let Some(frames) = red_to_blue(nox_project::DISSOLVE, &[], &[20]) else {
+        return;
+    };
+    let perceptual = pixel(&frames[0], 80, 45);
+    let frames = red_to_blue(nox_project::DISSOLVE, &[("blend", "linear".into())], &[20]).unwrap();
+    let linear = pixel(&frames[0], 80, 45);
+    let sum = |p: [u8; 3]| p.iter().map(|&c| u32::from(c)).sum::<u32>();
+    assert!(
+        sum(perceptual) + 15 < sum(linear),
+        "{perceptual:?} vs {linear:?}"
+    );
+}
+
+/// Transitions render as they mix, one after another (each makes an
+/// engine; a test each would create more GPU devices at once than drivers
+/// allow).
+#[test]
+fn transitions_render() {
+    dips_go_through_a_color();
+    wipes_reveal_the_incoming_clip();
+    motion_moves_the_clips();
+    dissolves_mix_perceptually_or_in_linear_light();
+    shaders_draw_from_both_pictures();
+    more_wipes_and_motion();
+}
+
+/// Halfway (frame 20) through the other wipes and motion transitions.
+fn more_wipes_and_motion() {
+    use nox_fx::transitions::{CLOCK_WIPE, SLIDE, SPIN, SPLIT, ZOOM};
+    // From a vertical line through the center, opening sideways.
+    let Some(frames) = red_to_blue(SPLIT, &[], &[20]) else {
+        return;
+    };
+    assert_pixel(&frames[0], 80, 45, BLUE);
+    assert_pixel(&frames[0], 5, 45, RED);
+    assert_pixel(&frames[0], 155, 45, RED);
+    // From 12 o'clock clockwise: the right half.
+    let frames = red_to_blue(CLOCK_WIPE, &[], &[20]).unwrap();
+    assert_pixel(&frames[0], 140, 45, BLUE);
+    assert_pixel(&frames[0], 20, 45, RED);
+    // In from the left, halfway.
+    let frames = red_to_blue(SLIDE, &[], &[20]).unwrap();
+    assert_pixel(&frames[0], 40, 45, BLUE);
+    assert_pixel(&frames[0], 120, 45, RED);
+    // Growing from the center, or the outgoing one shrinking into it.
+    let frames = red_to_blue(ZOOM, &[], &[20]).unwrap();
+    assert_pixel(&frames[0], 80, 45, BLUE);
+    assert_pixel(&frames[0], 4, 4, RED);
+    let frames = red_to_blue(ZOOM, &[("direction", "out".into())], &[20]).unwrap();
+    assert_pixel(&frames[0], 80, 45, RED);
+    assert_pixel(&frames[0], 4, 4, BLUE);
+    // Spinning in at half size.
+    let frames = red_to_blue(SPIN, &[], &[20]).unwrap();
+    assert_pixel(&frames[0], 80, 45, BLUE);
+    assert_pixel(&frames[0], 4, 4, RED);
+}
+
+/// A bundled shader transition (a blur dissolve) starts on the outgoing
+/// clip, ends on the incoming one and mixes them in between.
+fn shaders_draw_from_both_pictures() {
+    let Some(frames) = red_to_blue("gl.linear_blur", &[], &[10, 20, 29]) else {
+        return;
+    };
+    assert_pixel(&frames[0], 80, 45, RED);
+    let middle = pixel(&frames[1], 80, 45);
+    assert!(
+        !close(middle, RED) && !close(middle, BLUE),
+        "mixed: {middle:?}"
+    );
+    assert!(middle[0] > 0x30 && middle[2] > 0x30, "mixed: {middle:?}");
+    let end = pixel(&frames[2], 80, 45);
+    assert!(end[2] > 0xC0 && end[0] < 0x50, "nearly blue: {end:?}");
 }
 
 /// The engine tells how each file decodes, and decodes as it's told.

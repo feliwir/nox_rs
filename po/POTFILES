@@ -1,4 +1,5 @@
 crates/nox-fx/src/registry.rs
+crates/nox-fx/src/transitions.rs
 crates/nox-gui/resources/ui/clip-strip-item.ui
 crates/nox-gui/resources/ui/clip-strip.ui
 crates/nox-gui/resources/ui/color-wheels.ui
@@ -21,6 +22,7 @@ crates/nox-gui/src/framing.rs
 crates/nox-gui/src/i18n.rs
 crates/nox-gui/src/inspector.rs
 crates/nox-gui/src/inspector/effects.rs
+crates/nox-gui/src/inspector/transition.rs
 crates/nox-gui/src/media_object.rs
 crates/nox-gui/src/media_pool.rs
 crates/nox-gui/src/node_editor.rs

@@ -1,11 +1,12 @@
-//! Controls for effects, shared by the inspector's stack and the Effects
-//! page's node panel: a control per parameter of nox-fx's registry (sliders
-//! with keyframe toggles, checks, drop-downs, color buttons), and the list
-//! effects are added from. Edits go through an `EffectHost`.
+//! Controls for parameters of effects and transitions, shared by the
+//! inspector and the Effects page's node panel: a control per parameter of
+//! nox-fx's registries (sliders with keyframe toggles, checks, drop-downs,
+//! color buttons), and the searchable lists they are picked from. Edits go
+//! through an `EffectHost`.
 
 use gtk::{gdk, glib, prelude::*};
-use nox_fx::{EffectDef, ParamKind, ParamValue, Unit};
-use nox_project::{Effect, Value};
+use nox_fx::{EffectDef, ParamDef, ParamKind, ParamValue, Unit};
+use nox_project::{Parameters, Value};
 use std::rc::Rc;
 
 use crate::i18n::{fill, gettext};
@@ -18,13 +19,14 @@ pub(crate) trait EffectHost {
     fn updating(&self) -> bool;
     /// The selected clip's media time at the playhead (for keyframes).
     fn media_time(&self) -> f64;
-    /// Changes effect `key` of the selected clips.
+    /// Changes the parameters of effect `key` of the selected clips (or of
+    /// the selected transition).
     fn edit_effect(
         &self,
         label: &str,
         merge_key: Option<&str>,
         key: &str,
-        change: &dyn Fn(&mut Effect),
+        change: &dyn Fn(&mut dyn Parameters),
     );
     /// Whether the models for `choice` (an AI effect's "model") are there;
     /// if not, the host may offer them and call `then` once they are.
@@ -37,39 +39,66 @@ pub(crate) trait EffectHost {
 pub(crate) enum Control {
     Number {
         adjustment: gtk::Adjustment,
-        keyframe: gtk::ToggleButton,
+        /// None where nothing is keyframed (transitions).
+        keyframe: Option<gtk::ToggleButton>,
     },
     Bool(gtk::CheckButton),
     Choice(gtk::DropDown),
     Color(gtk::ColorDialogButton),
 }
 
-/// Controls for every parameter of `def` on effect `key` (called
+/// What parameter controls offer.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Offer {
+    /// Keyframe toggles on numbers.
+    pub keyframes: bool,
+    /// Model choices (AI effects) that may need downloads first.
+    pub models: bool,
+}
+
+impl Offer {
+    /// As for `def`'s effects.
+    pub(crate) fn effect(def: &EffectDef) -> Self {
+        Self {
+            keyframes: true,
+            models: def.task.is_some(),
+        }
+    }
+
+    /// As for transitions: nothing to keyframe or download.
+    pub(crate) const TRANSITION: Self = Self {
+        keyframes: false,
+        models: false,
+    };
+}
+
+/// Controls for every parameter of `params` on effect `key` (called
 /// `title`), added to `grid` from row 0.
 pub(crate) fn param_controls(
     host: &Rc<dyn EffectHost>,
     grid: &gtk::Grid,
     key: &str,
     title: &str,
-    def: &'static EffectDef,
+    params: &'static [ParamDef],
+    offer: Offer,
 ) -> Vec<Control> {
     let mut line = 0;
-    def.params
+    params
         .iter()
-        .map(|param| param_control(host, grid, &mut line, key, title, def, param))
+        .map(|param| param_control(host, grid, &mut line, key, title, offer, param))
         .collect()
 }
 
-/// Shows `effect`'s values at media time `time` in `controls` (made by
-/// `param_controls` for `def`).
+/// Shows the values `stored` has at media time `time` in `controls` (made
+/// by `param_controls` for `params`).
 pub(crate) fn update_controls(
     controls: &[Control],
-    def: &'static EffectDef,
-    effect: &Effect,
+    params: &'static [ParamDef],
+    stored: &dyn Parameters,
     time: f64,
 ) {
-    let values = nox_fx::values(effect, def, time);
-    for ((param, value), control) in def.params.iter().zip(values).zip(controls) {
+    let values = nox_fx::param_values(stored, params, time);
+    for ((param, value), control) in params.iter().zip(values).zip(controls) {
         match (control, value) {
             (
                 Control::Number {
@@ -79,11 +108,13 @@ pub(crate) fn update_controls(
                 ParamValue::Number(v),
             ) => {
                 adjustment.set_value(v);
-                keyframe.set_active(effect.has_keyframe(param.name, time));
-                if effect.keyframes(param.name).is_empty() {
-                    keyframe.remove_css_class("animated");
-                } else {
-                    keyframe.add_css_class("animated");
+                if let Some(keyframe) = keyframe {
+                    keyframe.set_active(stored.has_keyframe(param.name, time));
+                    if stored.keyframes(param.name).is_empty() {
+                        keyframe.remove_css_class("animated");
+                    } else {
+                        keyframe.add_css_class("animated");
+                    }
                 }
             }
             (Control::Bool(check), ParamValue::Bool(on)) => check.set_active(on),
@@ -113,7 +144,7 @@ fn param_control(
     line: &mut i32,
     key: &str,
     title: &str,
-    def: &'static EffectDef,
+    offer: Offer,
     param: &'static nox_fx::ParamDef,
 ) -> Control {
     let label = gtk::Label::new(Some(&gettext(param.label)));
@@ -152,16 +183,23 @@ fn param_control(
             scale.set_tooltip_text(unit.as_deref());
             spin.update_relation(&labelled);
             scale.update_relation(&labelled);
-            let keyframe = gtk::ToggleButton::new();
-            keyframe.set_icon_name("nox-keyframe-symbolic");
-            keyframe.set_tooltip_text(Some(&gettext("Keyframe at the playhead")));
-            keyframe.add_css_class("keyframe");
-            keyframe.add_css_class("flat");
-            keyframe.update_relation(&labelled);
             grid.attach(&label, 0, *line, 2, 1);
-            grid.attach(&spin, 2, *line, 1, 1);
-            grid.attach(&keyframe, 3, *line, 1, 1);
-            grid.attach(&scale, 0, *line + 1, 3, 1);
+            let keyframe = offer.keyframes.then(|| {
+                let keyframe = gtk::ToggleButton::new();
+                keyframe.set_icon_name("nox-keyframe-symbolic");
+                keyframe.set_tooltip_text(Some(&gettext("Keyframe at the playhead")));
+                keyframe.add_css_class("keyframe");
+                keyframe.add_css_class("flat");
+                keyframe.update_relation(&labelled);
+                grid.attach(&spin, 2, *line, 1, 1);
+                grid.attach(&keyframe, 3, *line, 1, 1);
+                grid.attach(&scale, 0, *line + 1, 3, 1);
+                keyframe
+            });
+            if keyframe.is_none() {
+                grid.attach(&spin, 2, *line, 2, 1);
+                grid.attach(&scale, 0, *line + 1, 4, 1);
+            }
             *line += 2;
             let (value_host, value_key) = (host.clone(), key.clone());
             adjustment.connect_value_changed(move |adjustment| {
@@ -174,15 +212,17 @@ fn param_control(
                     e.set_number_at(name, time, value)
                 });
             });
-            keyframe.connect_toggled(move |_| {
-                if host.updating() {
-                    return;
-                }
-                let time = host.media_time();
-                host.edit_effect(&gettext("Toggle Keyframe"), None, &key, &|e| {
-                    e.toggle_keyframe(name, time, default)
+            if let Some(keyframe) = &keyframe {
+                keyframe.connect_toggled(move |_| {
+                    if host.updating() {
+                        return;
+                    }
+                    let time = host.media_time();
+                    host.edit_effect(&gettext("Toggle Keyframe"), None, &key, &|e| {
+                        e.toggle_keyframe(name, time, default)
+                    });
                 });
-            });
+            }
             Control::Number {
                 adjustment,
                 keyframe,
@@ -214,7 +254,7 @@ fn param_control(
             grid.attach(&label, 0, *line, 2, 1);
             grid.attach(&dropdown, 2, *line, 2, 1);
             *line += 1;
-            let ai = def.task.is_some();
+            let ai = offer.models;
             dropdown.connect_selected_notify(move |dropdown| {
                 if host.updating() {
                     return;
@@ -269,30 +309,58 @@ pub(crate) fn effect_list_popover(
     show: fn(&EffectDef) -> bool,
     pick: impl Fn(&'static EffectDef) + 'static,
 ) -> gtk::Popover {
+    let defs: Vec<&'static EffectDef> = nox_fx::effects()
+        .iter()
+        .copied()
+        .filter(|d| show(d))
+        .collect();
+    let items = defs.iter().map(|d| (d.label, d.category.label())).collect();
+    list_popover(items, move |i| pick(defs[i]))
+}
+
+/// A popover listing transitions by category, with a search field; `pick`
+/// gets the one chosen.
+pub(crate) fn transition_list_popover(
+    pick: impl Fn(&'static nox_fx::transitions::TransitionDef) + 'static,
+) -> gtk::Popover {
+    let defs = nox_fx::transitions::transitions();
+    let items = defs.iter().map(|d| (d.label, d.category.label())).collect();
+    list_popover(items, move |i| pick(defs[i]))
+}
+
+/// A popover listing `items` (label, category label; untranslated, in
+/// category order) under category headings, with a search field; `pick`
+/// gets the index of the one chosen.
+fn list_popover(
+    items: Vec<(&'static str, &'static str)>,
+    pick: impl Fn(usize) + 'static,
+) -> gtk::Popover {
     let list = gtk::ListBox::new();
     list.set_selection_mode(gtk::SelectionMode::None);
-    let defs: Vec<&'static EffectDef> = nox_fx::effects().iter().filter(|d| show(d)).collect();
-    for def in &defs {
-        let label = gtk::Label::new(Some(&gettext(def.label)));
+    for (text, _) in &items {
+        let label = gtk::Label::new(Some(&gettext(*text)));
         label.set_xalign(0.0);
         label.set_margin_start(6);
         label.set_margin_end(6);
         list.append(&label);
     }
-    let defs = Rc::new(defs);
-    let def_of = {
-        let defs = defs.clone();
-        move |row: &gtk::ListBoxRow| defs.get(usize::try_from(row.index()).ok()?).copied()
+    let items = Rc::new(items);
+    let item_of = {
+        let items = items.clone();
+        move |row: &gtk::ListBoxRow| {
+            let i = usize::try_from(row.index()).ok()?;
+            items.get(i).map(|&(label, category)| (i, label, category))
+        }
     };
     // A heading where the category changes.
-    let header_def = def_of.clone();
+    let header_item = item_of.clone();
     list.set_header_func(move |row, before| {
-        let category = header_def(row).map(|d| d.category);
-        if before.and_then(&header_def).map(|d| d.category) == category {
+        let category = header_item(row).map(|(_, _, c)| c);
+        if before.and_then(&header_item).map(|(_, _, c)| c) == category {
             row.set_header(gtk::Widget::NONE);
             return;
         }
-        let heading = gtk::Label::new(category.map(|c| gettext(c.label())).as_deref());
+        let heading = gtk::Label::new(category.map(gettext).as_deref());
         heading.set_xalign(0.0);
         heading.set_margin_top(6);
         heading.set_margin_start(6);
@@ -301,10 +369,11 @@ pub(crate) fn effect_list_popover(
     });
     let search = gtk::SearchEntry::new();
     let text = search.clone();
-    let filter_def = def_of.clone();
+    let filter_item = item_of.clone();
     list.set_filter_func(move |row| {
         let wanted = text.text().to_lowercase();
-        filter_def(row).is_some_and(|def| gettext(def.label).to_lowercase().contains(&wanted))
+        filter_item(row)
+            .is_some_and(|(_, label, _)| gettext(label).to_lowercase().contains(&wanted))
     });
     search.connect_search_changed(glib::clone!(
         #[weak]
@@ -334,8 +403,8 @@ pub(crate) fn effect_list_popover(
         popover,
         move |_, row| {
             popover.popdown();
-            if let Some(def) = def_of(row) {
-                pick(def);
+            if let Some((i, _, _)) = item_of(row) {
+                pick(i);
             }
         }
     ));

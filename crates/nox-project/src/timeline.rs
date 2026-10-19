@@ -10,6 +10,7 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::effects::Parameters;
 use crate::metadata::{Object, Value};
 use crate::time::{Rational, Time, TimeRange};
 use nox_color::{Grade, Wheel};
@@ -335,13 +336,10 @@ pub struct ResolvedClip<'a> {
     /// Time in the clip's media reference (same time space as
     /// `source_range` and `available_range`).
     pub source_time: Time,
-    /// The clip's opacity, times the progress of a dissolve it fades in by.
+    /// The clip's opacity (with its fades).
     pub opacity: f64,
-    /// Cut off by a wipe it comes in with (left, top, right, bottom, as
-    /// fractions of the picture).
-    pub wipe: [f64; 4],
-    /// A color drawn with it, in a dip.
-    pub dip: Option<Dip>,
+    /// The transition it shows in, if any (how is nox-fx's).
+    pub transition: Option<InTransition<'a>>,
 }
 
 impl ResolvedClip<'_> {
@@ -911,8 +909,7 @@ impl Composable {
                     clip,
                     source_time,
                     opacity: opacity * fade,
-                    wipe: [0.0; 4],
-                    dip: None,
+                    transition: None,
                 }]
             }
             Self::Track(track) => track.resolve(time, kind),
@@ -1004,101 +1001,16 @@ pub struct Transition {
     pub extra: Object,
 }
 
-/// What a transition does. Dissolves are OTIO's `SMPTE_Dissolve`; the
-/// others are `Custom_Transition`s named in `metadata.nox.transition`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum TransitionKind {
-    #[default]
-    Dissolve,
-    /// The incoming picture slides in over the outgoing one from a side,
-    /// revealed by a moving edge.
-    Wipe(Side),
-    /// The outgoing picture fades to a color, then the incoming one fades
-    /// in from it.
-    Dip(DipColor),
-}
-
-/// The color a dip goes through.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DipColor {
-    Black,
-    White,
-}
-
-impl DipColor {
-    /// The color as display R'G'B' (BT.709), 0–1.
-    pub fn rgb(self) -> [f64; 3] {
-        match self {
-            Self::Black => [0.0; 3],
-            Self::White => [1.0; 3],
-        }
-    }
-}
-
-/// A solid color drawn with a layer during a dip: just before it (below)
-/// or just after it (above), at `opacity`.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Dip {
-    pub color: DipColor,
-    pub opacity: f64,
-    pub before: bool,
-}
-
-/// The side a wipe starts from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Side {
-    Left,
-    Right,
-    Top,
-    Bottom,
-}
-
-impl TransitionKind {
-    pub const ALL: [TransitionKind; 7] = [
-        Self::Dissolve,
-        Self::Wipe(Side::Left),
-        Self::Wipe(Side::Right),
-        Self::Wipe(Side::Top),
-        Self::Wipe(Side::Bottom),
-        Self::Dip(DipColor::Black),
-        Self::Dip(DipColor::White),
-    ];
-
-    /// The name under `metadata.nox.transition` (and in `as_str`).
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Dissolve => "dissolve",
-            Self::Wipe(Side::Left) => "wipe-left",
-            Self::Wipe(Side::Right) => "wipe-right",
-            Self::Wipe(Side::Top) => "wipe-top",
-            Self::Wipe(Side::Bottom) => "wipe-bottom",
-            Self::Dip(DipColor::Black) => "dip-black",
-            Self::Dip(DipColor::White) => "dip-white",
-        }
-    }
-
-    pub fn parse(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|k| k.as_str() == name)
-    }
-
-    /// English name, also the transition's OTIO `name`.
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Dissolve => "Cross Dissolve",
-            Self::Wipe(Side::Left) => "Wipe from Left",
-            Self::Wipe(Side::Right) => "Wipe from Right",
-            Self::Wipe(Side::Top) => "Wipe from Top",
-            Self::Wipe(Side::Bottom) => "Wipe from Bottom",
-            Self::Dip(DipColor::Black) => "Dip to Black",
-            Self::Dip(DipColor::White) => "Dip to White",
-        }
-    }
-}
+/// The id of a cross dissolve, OTIO's `SMPTE_Dissolve`. Other transitions
+/// are `Custom_Transition`s with their id (nox-fx's registry) in
+/// `metadata.nox.transition` and their parameters in `metadata.nox.params`
+/// (`Parameters`).
+pub const DISSOLVE: &str = "nox.dissolve";
 
 impl Transition {
-    /// A transition of `kind` reaching `in_offset` and `out_offset` across
-    /// the cut.
-    pub fn new(kind: TransitionKind, in_offset: Time, out_offset: Time) -> Self {
+    /// Transition `id` (named `name`, as other tools show it) reaching
+    /// `in_offset` and `out_offset` across the cut.
+    pub fn new(id: &str, name: &str, in_offset: Time, out_offset: Time) -> Self {
         let mut transition = Self {
             name: String::new(),
             metadata: Object::new(),
@@ -1107,98 +1019,53 @@ impl Transition {
             out_offset,
             extra: Object::new(),
         };
-        transition.set_kind(kind);
+        transition.set_id(id, name);
         transition
     }
 
-    pub fn kind(&self) -> TransitionKind {
+    /// Which transition it is: `DISSOLVE`, or the id in
+    /// `metadata.nox.transition` (other tools' custom transitions: theirs,
+    /// or none, which play as dissolves).
+    pub fn id(&self) -> &str {
         if self.transition_type == "SMPTE_Dissolve" {
-            return TransitionKind::Dissolve;
+            return DISSOLVE;
         }
-        self.metadata
-            .get("nox")
-            .and_then(Value::as_object)
-            .and_then(|nox| nox.get("transition"))
+        self.nox_value("transition")
             .and_then(Value::as_str)
-            .and_then(TransitionKind::parse)
-            // Unknown types play as dissolves.
-            .unwrap_or_default()
+            .unwrap_or(DISSOLVE)
     }
 
-    pub fn set_kind(&mut self, kind: TransitionKind) {
-        self.name = kind.label().into();
-        let mut nox = match self.metadata.remove("nox") {
-            Some(Value::Object(nox)) => nox,
-            _ => Object::new(),
-        };
-        if kind == TransitionKind::Dissolve {
+    /// Makes it transition `id` (named `name`) with default parameters.
+    pub fn set_id(&mut self, id: &str, name: &str) {
+        self.name = name.into();
+        self.set_nox_value("params", None);
+        if id == DISSOLVE {
             self.transition_type = "SMPTE_Dissolve".into();
-            nox.remove("transition");
+            self.set_nox_value("transition", None);
         } else {
             self.transition_type = "Custom_Transition".into();
-            nox.insert("transition", kind.as_str());
-        }
-        if !nox.is_empty() {
-            self.metadata.insert("nox", nox);
-        }
-    }
-
-    /// How the two pictures show at `progress` (0–1) through the
-    /// transition.
-    pub fn mix(&self, progress: f64) -> Mix {
-        let p = progress.clamp(0.0, 1.0);
-        let simple = |outgoing, incoming, wipe| Mix {
-            outgoing,
-            incoming,
-            wipe,
-            dip_out: None,
-            dip_in: None,
-        };
-        match self.kind() {
-            TransitionKind::Dissolve => simple(1.0, p, [0.0; 4]),
-            // The color covers the outgoing picture, then the incoming one
-            // covers the color.
-            TransitionKind::Dip(color) if p < 0.5 => Mix {
-                dip_out: Some(Dip {
-                    color,
-                    opacity: 2.0 * p,
-                    before: false,
-                }),
-                ..simple(1.0, 0.0, [0.0; 4])
-            },
-            TransitionKind::Dip(color) => Mix {
-                dip_in: Some(Dip {
-                    color,
-                    opacity: 1.0,
-                    before: true,
-                }),
-                ..simple(0.0, 2.0 * p - 1.0, [0.0; 4])
-            },
-            TransitionKind::Wipe(side) => {
-                let hidden = 1.0 - p;
-                let crop = match side {
-                    Side::Left => [0.0, 0.0, hidden, 0.0],
-                    Side::Right => [hidden, 0.0, 0.0, 0.0],
-                    Side::Top => [0.0, 0.0, 0.0, hidden],
-                    Side::Bottom => [0.0, hidden, 0.0, 0.0],
-                };
-                simple(1.0, 1.0, crop)
-            }
+            self.set_nox_value("transition", Some(Value::from(id)));
         }
     }
 }
 
-/// How a transition shows its two pictures at some point.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Mix {
-    /// Opacity factors of the outgoing and incoming picture.
-    pub outgoing: f64,
-    pub incoming: f64,
-    /// Cut off the incoming picture (left, top, right, bottom).
-    pub wipe: [f64; 4],
-    /// Solid colors drawn with the outgoing and the incoming picture.
-    pub dip_out: Option<Dip>,
-    pub dip_in: Option<Dip>,
+impl Parameters for Transition {
+    fn metadata(&self) -> &Object {
+        &self.metadata
+    }
+
+    fn metadata_mut(&mut self) -> &mut Object {
+        &mut self.metadata
+    }
+}
+
+/// A layer shown by a transition: of the clip before it (outgoing) or
+/// after it (incoming), `progress` (0–1) through it.
+#[derive(Debug, Clone, Copy)]
+pub struct InTransition<'a> {
+    pub transition: &'a Transition,
+    pub progress: f64,
+    pub incoming: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1327,28 +1194,22 @@ impl Track {
             let Composable::Transition(transition) = child else {
                 unreachable!("checked above")
             };
-            let progress = (time - range.start).as_seconds() / range.duration.as_seconds();
-            let mix = transition.mix(progress);
-            let mut layers: Vec<ResolvedClip<'_>> = before
-                .resolve(time - ranges[i - 1].start, kind)
-                .into_iter()
-                .map(|mut layer| {
-                    layer.opacity *= mix.outgoing;
-                    layer.dip = mix.dip_out;
-                    layer
-                })
-                .collect();
-            layers.extend(
-                after
-                    .resolve(time - ranges[i + 1].start, kind)
-                    .into_iter()
-                    .map(|mut layer| {
-                        layer.opacity *= mix.incoming;
-                        layer.wipe = mix.wipe;
-                        layer.dip = mix.dip_in;
-                        layer
-                    }),
-            );
+            let progress =
+                ((time - range.start).as_seconds() / range.duration.as_seconds()).clamp(0.0, 1.0);
+            let mut layers = Vec::new();
+            for (child, start, incoming) in [
+                (before, ranges[i - 1].start, false),
+                (after, ranges[i + 1].start, true),
+            ] {
+                for mut layer in child.resolve(time - start, kind) {
+                    layer.transition = Some(InTransition {
+                        transition,
+                        progress,
+                        incoming,
+                    });
+                    layers.push(layer);
+                }
+            }
             return layers;
         }
         match self.child_at(time) {

@@ -849,6 +849,7 @@ fn write_marker(marker: &Marker) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nox_project::Parameters;
 
     #[test]
     fn rates() {
@@ -919,6 +920,29 @@ mod tests {
         assert!(!text.contains("\"drop_frame\""), "{text}");
         assert!(text.contains("\"locked\": true"), "{text}");
         assert_eq!(read_str(&text).unwrap(), timeline);
+    }
+
+    #[test]
+    fn transitions_round_trip_with_parameters() {
+        let mut timeline = Timeline::new("t", Rational::new(25, 1));
+        let zero = Time::zero(Rational::new(1, 25));
+        let mut iris = Transition::new("nox.iris", "Iris", zero, zero);
+        iris.set_param("shape", Some(Value::from("star")));
+        let dissolve = Transition::new(nox_project::DISSOLVE, "Cross Dissolve", zero, zero);
+        let v1 = timeline.track_mut(0).unwrap();
+        v1.children.push(Composable::Transition(iris));
+        v1.children.push(Composable::Transition(dissolve));
+        let text = write_string(&timeline);
+        assert!(text.contains("\"SMPTE_Dissolve\""), "{text}");
+        let read = read_str(&text).unwrap();
+        assert_eq!(read, timeline);
+        let Composable::Transition(t) = &read.track(0).unwrap().children[0] else {
+            panic!("a transition");
+        };
+        assert_eq!(
+            (t.id(), t.param("shape")),
+            ("nox.iris", Some(&Value::from("star")))
+        );
     }
 
     #[test]

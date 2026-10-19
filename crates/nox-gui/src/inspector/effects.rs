@@ -13,12 +13,12 @@
 
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use nox_fx::EffectDef;
-use nox_project::{Effect, Item};
+use nox_project::{Effect, Item, Parameters};
 use std::rc::Rc;
 
 use super::Inspector;
 use crate::effect_controls::{
-    Control, EffectHost, effect_list_popover, param_controls, update_controls,
+    Control, EffectHost, Offer, effect_list_popover, param_controls, update_controls,
 };
 use crate::i18n::{fill, gettext};
 
@@ -51,10 +51,10 @@ impl EffectHost for glib::WeakRef<Inspector> {
         label: &str,
         merge_key: Option<&str>,
         key: &str,
-        change: &dyn Fn(&mut Effect),
+        change: &dyn Fn(&mut dyn Parameters),
     ) {
         if let Some(inspector) = self.upgrade() {
-            inspector.edit_effect(label, merge_key, key, change);
+            inspector.edit_effect(label, merge_key, key, &|e| change(e));
         }
     }
 
@@ -190,7 +190,7 @@ impl Inspector {
             if let Some(effect) = item.effect(&row.key) {
                 row.enabled.set_active(effect.enabled);
                 if let Some(def) = row.def {
-                    update_controls(&row.controls, def, effect, time);
+                    update_controls(&row.controls, def.params, effect, time);
                 }
             }
         }
@@ -276,7 +276,7 @@ impl Inspector {
         grid.set_margin_start(6);
         let host: Rc<dyn EffectHost> = Rc::new(self.downgrade());
         let controls = match def {
-            Some(def) => param_controls(&host, &grid, key, &title, def),
+            Some(def) => param_controls(&host, &grid, key, &title, def.params, Offer::effect(def)),
             None => {
                 let note = gtk::Label::new(Some(&gettext(
                     "Nox can't render this effect; it stays in the project.",

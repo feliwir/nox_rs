@@ -6,7 +6,7 @@
 use nox_fx::{Context, Effects, ParamValue, registry};
 use nox_gpu::compute::{Buffer, Image, MemoryUse, Recording};
 use nox_gpu::{LayerHook, LayerPicture};
-use nox_project::{Effect, Item};
+use nox_project::{Effect, Item, Parameters};
 use std::sync::{Arc, OnceLock};
 
 fn gpu() -> Option<Arc<nox_gpu::GpuDevice>> {

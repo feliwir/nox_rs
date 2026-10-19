@@ -9,6 +9,7 @@
 //! smoothstep) if the first one says so. Before the first and after the
 //! last keyframe it holds.
 
+use crate::effects::Parameters;
 use crate::metadata::{Object, Value};
 use crate::timeline::{Item, Transform, grade_from_value, grade_to_value};
 use nox_color::{Grade, Wheel};

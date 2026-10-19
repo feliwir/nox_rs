@@ -1,9 +1,10 @@
 //! Renders sequence frames: decodes every layer, composites them on the
 //! GPU and hands out the result as DMA-BUF or in system memory.
 
+use nox_fx::shader_transitions::ShaderKernels;
 use nox_gpu::{
     BlendMode, Compositor, FrameLight, GpuTarget, Image, LayerHook, LayerStyle, Placement, Rect,
-    Transform,
+    Transform, TransitionPass,
 };
 use nox_media::{Accel, Decoding, HwDecode, VideoDecoder};
 use nox_project::{Time, Timeline};
@@ -141,6 +142,8 @@ pub(crate) struct Renderer {
     decodings: std::collections::HashMap<PathBuf, Decoding>,
     /// Runs clips' effects; made when the first clip with effects shows.
     effects: Option<nox_fx::Effects>,
+    /// Shader transitions' kernels; made when the first one shows.
+    shader_kernels: Option<ShaderKernels>,
     /// The clip (`Timeline::clip_key`) whose effects' thumbnails are made.
     thumbnail_clip: Option<u64>,
     /// The still (cache key) whose thumbnails were made last: cached, it
@@ -184,6 +187,7 @@ impl Renderer {
             hw: HwDecode::from_env(),
             decodings: Default::default(),
             effects: None,
+            shader_kernels: None,
             thumbnail_clip: None,
             thumbnailed_still: None,
             thumbnails: None,
@@ -276,11 +280,14 @@ impl Renderer {
                     opacity: layer.opacity,
                     mode: layer.blend_mode(),
                     grade: layer.clip.item.grade_at(layer.source_time.as_seconds()),
-                    transform: with_wipe(
-                        layer.clip.item.transform_at(layer.source_time.as_seconds()),
-                        layer.wipe,
-                    ),
-                    dip: layer.dip,
+                    transform: layer.clip.item.transform_at(layer.source_time.as_seconds()),
+                    transition: layer.transition.map(|t| InTransition {
+                        key: std::ptr::from_ref(t.transition) as usize,
+                        incoming: t.incoming,
+                        def: nox_fx::transitions::transition_def(t.transition),
+                        transition: t.transition.clone(),
+                        progress: nox_fx::transitions::eased(t.transition, t.progress),
+                    }),
                     effects: nox_fx::resolve(&layer.clip.item, source),
                     clip,
                     path,
@@ -411,21 +418,50 @@ impl Renderer {
         let (accel, compositor) = self.gpu.as_mut().expect("gpu");
         compositor.begin(width, height)?;
         self.thumbnails = None;
-        for Layer {
-            path,
-            time,
-            opacity,
-            mode,
-            grade,
-            transform,
-            dip,
-            effects,
-            clip,
-        } in layers
-        {
-            // A dip's color goes below the picture or above it.
-            if let Some(dip) = dip.filter(|d| d.before) {
-                add_color(compositor, &dip, width, height)?;
+        // A transition's pass, while its layers are being queued.
+        let mut pass: Option<TransitionPass> = None;
+        for (i, layer) in layers.iter().enumerate() {
+            let Layer {
+                path,
+                time,
+                opacity,
+                mode,
+                grade,
+                transform,
+                effects,
+                clip,
+                ..
+            } = layer;
+            // A transition is drawn by its shader from both pictures: its
+            // layers (outgoing ones first) go into the compositor's
+            // transition pictures.
+            let key = |l: &Layer| l.transition.as_ref().map(|t| t.key);
+            if let Some(t) = &layer.transition {
+                let previous = i.checked_sub(1).map(|p| &layers[p]);
+                if previous.and_then(key) != Some(t.key) {
+                    let kernels = self
+                        .shader_kernels
+                        .get_or_insert_with(|| ShaderKernels::new(accel.gpu().clone()));
+                    pass = kernels
+                        .pass(
+                            t.def.id,
+                            t.def.shader,
+                            &t.transition,
+                            t.progress,
+                            (width, height),
+                        )
+                        .filter(|_| compositor.begin_transition().is_ok());
+                    if pass.is_some() && t.incoming {
+                        compositor.transition_to();
+                    }
+                } else if t.incoming
+                    && previous
+                        .and_then(|p| p.transition.as_ref())
+                        .is_some_and(|p| !p.incoming)
+                    && pass.is_some()
+                {
+                    compositor.transition_to();
+                }
             }
             'picture: {
                 if self.failed.contains(path) {
@@ -518,8 +554,11 @@ impl Renderer {
                     self.thumbnails = Some((*clip, made));
                 }
             }
-            if let Some(dip) = dip.filter(|d| !d.before) {
-                add_color(compositor, &dip, width, height)?;
+            if let Some(t) = &layer.transition
+                && layers.get(i + 1).and_then(key) != Some(t.key)
+                && let Some(pass) = pass.take()
+            {
+                compositor.end_transition(pass)?;
             }
         }
         Ok(())
@@ -638,6 +677,17 @@ fn still_key(path: &Path, effects: Option<u64>) -> u64 {
     hasher.finish()
 }
 
+/// The transition a layer shows in.
+struct InTransition {
+    /// Which: its layers come together, the outgoing ones first.
+    key: usize,
+    incoming: bool,
+    def: &'static nox_fx::transitions::TransitionDef,
+    transition: nox_project::Transition,
+    /// Eased.
+    progress: f64,
+}
+
 /// A video layer.
 struct Layer {
     path: PathBuf,
@@ -647,45 +697,12 @@ struct Layer {
     mode: nox_project::BlendMode,
     grade: nox_project::Grade,
     transform: nox_project::Transform,
-    /// The color of a dip drawn with it.
-    dip: Option<nox_project::Dip>,
+    /// The transition it shows in, if any.
+    transition: Option<InTransition>,
     /// Its effects at this frame.
     effects: nox_fx::Graph,
     /// Identifies the clip (its media and trim), for effects with state.
     clip: u64,
-}
-
-/// Queues a solid color over the whole picture (a dip).
-fn add_color(
-    compositor: &mut Compositor,
-    dip: &nox_project::Dip,
-    width: u32,
-    height: u32,
-) -> nox_media::Result<()> {
-    let rgb = dip.color.rgb().map(|c| (c * 255.0).round() as u8);
-    let key = still_key(Path::new(&format!("nox:color:{rgb:?}")), None);
-    let rect = Rect {
-        x: 0,
-        y: 0,
-        width,
-        height,
-    };
-    let style = LayerStyle::blend(dip.opacity as f32, BlendMode::Normal);
-    if !compositor.try_cached_layer(key, rect, style) {
-        let frame = nox_media::solid_frame(rgb);
-        nox_media::with_gpu_input(&frame, None, |input| {
-            compositor.add_cached_layer(key, input, rect, style)
-        })??;
-    }
-    Ok(())
-}
-
-/// A wipe crops what the clip's own crop leaves.
-fn with_wipe(mut transform: nox_project::Transform, wipe: [f64; 4]) -> nox_project::Transform {
-    for (crop, wipe) in transform.crop.iter_mut().zip(wipe) {
-        *crop = crop.max(wipe);
-    }
-    transform
 }
 
 fn gpu_transform(t: &nox_project::Transform) -> Transform {

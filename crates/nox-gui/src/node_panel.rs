@@ -3,11 +3,11 @@
 
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use nox_fx::EffectDef;
-use nox_project::{Composable, Effect, Item, SOURCE};
+use nox_project::{Composable, Effect, Item, Parameters, SOURCE};
 use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
 
-use crate::effect_controls::{Control, EffectHost, param_controls, update_controls};
+use crate::effect_controls::{Control, EffectHost, Offer, param_controls, update_controls};
 use crate::i18n::{fill, gettext};
 use crate::node_editor::OUTPUT;
 use crate::timeline::TimelineView;
@@ -111,17 +111,10 @@ impl EffectHost for glib::WeakRef<NodePanel> {
         label: &str,
         merge_key: Option<&str>,
         key: &str,
-        change: &dyn Fn(&mut Effect),
+        change: &dyn Fn(&mut dyn Parameters),
     ) {
-        if let Some(panel) = self.upgrade()
-            && let Some(timeline) = panel.imp().timeline.get()
-        {
-            let key = key.to_owned();
-            timeline.edit_shown_clip(label, merge_key, |item| {
-                if let Some(effect) = item.effect_mut(&key) {
-                    change(effect);
-                }
-            });
+        if let Some(panel) = self.upgrade() {
+            panel.edit_effect(label, merge_key, key, &|e| change(e));
         }
     }
 }
@@ -149,6 +142,24 @@ impl NodePanel {
         self.refresh();
     }
 
+    /// Changes effect `key` of the shown clip.
+    fn edit_effect(
+        &self,
+        label: &str,
+        merge_key: Option<&str>,
+        key: &str,
+        change: &dyn Fn(&mut Effect),
+    ) {
+        if let Some(timeline) = self.imp().timeline.get() {
+            let key = key.to_owned();
+            timeline.edit_shown_clip(label, merge_key, |item| {
+                if let Some(effect) = item.effect_mut(&key) {
+                    change(effect);
+                }
+            });
+        }
+    }
+
     /// Changes the shown effect of the shown clip.
     fn edit_shown(&self, label: &str, merge_key: Option<&str>, change: &dyn Fn(&mut Effect)) {
         let imp = self.imp();
@@ -156,7 +167,7 @@ impl NodePanel {
             return;
         }
         if let Some(key) = imp.key.borrow().clone() {
-            EffectHost::edit_effect(&self.downgrade(), label, merge_key, &key, change);
+            self.edit_effect(label, merge_key, &key, change);
         }
     }
 
@@ -216,7 +227,9 @@ impl NodePanel {
             title.set_text(&name);
             let host: Rc<dyn EffectHost> = Rc::new(self.downgrade());
             let controls = match def {
-                Some(def) => param_controls(&host, grid, &key, &name, def),
+                Some(def) => {
+                    param_controls(&host, grid, &key, &name, def.params, Offer::effect(def))
+                }
                 None => Vec::new(),
             };
             imp.controls.replace(controls);
@@ -231,7 +244,7 @@ impl NodePanel {
                 .get()
                 .and_then(TimelineView::selected_media_time)
                 .unwrap_or_default();
-            update_controls(&imp.controls.borrow(), def, effect, time);
+            update_controls(&imp.controls.borrow(), def.params, effect, time);
         }
         imp.updating.set(false);
     }

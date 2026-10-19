@@ -4,7 +4,7 @@
 
 use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use nox_project::keyframes::SAME_TIME;
-use nox_project::{BlendMode, Composable, Ease, Param, Time, TrackKind, Transform, TransitionKind};
+use nox_project::{BlendMode, Composable, Ease, Param, Time, TrackKind, Transform};
 use std::rc::Rc;
 
 use crate::i18n::{blend_mode_name, fill, gettext};
@@ -14,6 +14,7 @@ use crate::timeline::TimelineView;
 use crate::ui_util::string_list;
 
 mod effects;
+mod transition;
 
 mod imp {
     use super::*;
@@ -113,7 +114,12 @@ mod imp {
         #[template_child]
         pub freeze: TemplateChild<gtk::CheckButton>,
         #[template_child]
-        pub transition_type: TemplateChild<gtk::DropDown>,
+        pub transition_type: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        pub transition_params: TemplateChild<gtk::Grid>,
+        /// The selected transition's controls, and its id they're for.
+        pub(crate) transition_controls:
+            std::cell::RefCell<(Option<&'static str>, Vec<crate::effect_controls::Control>)>,
         #[template_child]
         pub transition_length: TemplateChild<gtk::SpinButton>,
         #[template_child]
@@ -164,14 +170,6 @@ mod imp {
             )));
             self.updating.set(false);
 
-            self.updating.set(true);
-            self.transition_type.set_model(Some(&string_list(
-                TransitionKind::ALL
-                    .into_iter()
-                    .map(crate::i18n::transition_name),
-            )));
-            self.updating.set(false);
-
             let obj = self.obj();
             // Spin buttons and sliders change their value on the wheel, so
             // scrolling down the inspector would edit whatever passes under
@@ -202,6 +200,7 @@ mod imp {
             });
             self.item_scroller.add_controller(wheel);
             obj.setup_effects();
+            obj.setup_transitions();
             self.speed.adjustment().connect_value_changed(glib::clone!(
                 #[weak]
                 obj,
@@ -442,35 +441,6 @@ impl Inspector {
         let _ = timeline
             .project()
             .edit(&label, |t| t.set_freeze_frame(item, frame));
-    }
-
-    #[template_callback]
-    fn on_transition_type_changed(&self) {
-        let imp = self.imp();
-        if imp.updating.get() {
-            return;
-        }
-        let (Some(timeline), Some(&kind)) = (
-            imp.timeline.get(),
-            TransitionKind::ALL.get(imp.transition_type.selected() as usize),
-        ) else {
-            return;
-        };
-        let Some(item) = timeline.selection() else {
-            return;
-        };
-        let _ = timeline.project().edit(&gettext("Change Transition"), |t| {
-            let transition = t
-                .track_mut(item.track)
-                .and_then(|track| track.children.get_mut(item.index))
-                .and_then(|child| match child {
-                    Composable::Transition(transition) => Some(transition),
-                    _ => None,
-                })
-                .ok_or("not a transition")?;
-            transition.set_kind(kind);
-            Ok::<_, &str>(())
-        });
     }
 
     /// The selected transition's length changed: as long as the clips'
@@ -793,13 +763,7 @@ impl Inspector {
                     .set_selected(u32::from(ease == Some(Ease::Smooth)));
             }
             Composable::Transition(transition) => {
-                let kind = transition.kind();
-                imp.name_label.set_text(&crate::i18n::transition_name(kind));
-                let index = TransitionKind::ALL
-                    .iter()
-                    .position(|&k| k == kind)
-                    .unwrap_or(0);
-                imp.transition_type.set_selected(index as u32);
+                self.show_transition(transition);
                 let adjustment = imp.transition_length.adjustment();
                 adjustment.set_step_increment(1.0 / fps.as_f64());
                 adjustment.set_value((transition.in_offset + transition.out_offset).as_seconds());
