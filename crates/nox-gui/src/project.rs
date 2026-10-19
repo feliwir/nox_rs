@@ -328,16 +328,20 @@ impl Project {
 
     /// The window title: file name, marked when there are unsaved changes.
     pub fn title(&self) -> String {
-        let name = self
-            .path()
-            .and_then(|p| p.file_stem().map(|n| n.to_string_lossy().into_owned()));
-        let name = name.unwrap_or_else(|| self.timeline().name.clone());
+        let name = self.name();
         let title = if self.is_modified() {
             gettext("• {name} — Nox")
         } else {
             gettext("{name} — Nox")
         };
         fill(&title, &[("name", &name)])
+    }
+
+    /// The project's name: its file's, else its timeline's.
+    pub fn name(&self) -> String {
+        self.path()
+            .and_then(|p| p.file_stem().map(|n| n.to_string_lossy().into_owned()))
+            .unwrap_or_else(|| self.timeline().name.clone())
     }
 
     /// Replaces the project with a new, empty one.

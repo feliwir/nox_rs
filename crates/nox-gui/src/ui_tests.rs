@@ -25,19 +25,21 @@ fn f(n: i64) -> Time {
 
 /// GTK set up as Nox sets it up, once: translations, the bundled resources
 /// and an application for windows to join. Also used by `template_tests`.
-pub(crate) fn app() -> gtk::Application {
+pub(crate) fn app() -> adw::Application {
     thread_local! {
-        static APP: OnceCell<gtk::Application> = const { OnceCell::new() };
+        static APP: OnceCell<adw::Application> = const { OnceCell::new() };
     }
     APP.with(|app| {
         app.get_or_init(|| {
             crate::i18n::init();
             gio::resources_register_include!("nox.gresource").expect("bundled resources");
             // Not unique: no D-Bus needed, and Nox itself may be running.
-            let app = gtk::Application::builder()
+            let app = adw::Application::builder()
                 .application_id("io.github.feliwir.Nox.Tests")
                 .flags(gio::ApplicationFlags::NON_UNIQUE)
+                .resource_base_path(crate::RESOURCES)
                 .build();
+            app.connect_startup(crate::set_up);
             app.register(None::<&gio::Cancellable>)
                 .expect("application registered");
             app
@@ -102,7 +104,7 @@ fn open(timeline: &Timeline) -> Window {
     });
     let path = dir().join(format!("project-{n}.otio"));
     nox_otio::write_file(&path, timeline).expect("project written");
-    let window = crate::window::build(&app(), &[gio::File::for_path(&path)]);
+    let window = crate::window::build(app().upcast_ref(), &[gio::File::for_path(&path)]);
     window.present();
     window
 }
@@ -296,6 +298,54 @@ fn edits_from_the_toolbar() {
     close(window);
 }
 
+/// Clips by keyboard: nudging, moving to another track and trimming to
+/// the playhead, through the actions their keys activate.
+#[gtk::test]
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "GTK must be initialized on the main thread on macOS"
+)]
+fn edits_by_keyboard() {
+    let Some(red) = solid("red.mkv", "0xC03020") else {
+        return;
+    };
+    let mut model = Timeline::new("t", FPS);
+    model.place(0, clip(&red, 10, 50), f(40)).unwrap();
+    model.add_track(nox_project::TrackKind::Video);
+    let window = open(&model);
+    let timeline = window.imp().timeline.get();
+    let range = |item: ItemRef| timeline.project().timeline().item_range(item).unwrap();
+    act(&window, "win.seek", Some(45i64.to_variant()));
+    act(&window, "win.select-clip-at-playhead", None);
+    let first = timeline.selection().expect("the clip");
+
+    act(&window, "win.nudge-right", None);
+    act(&window, "win.nudge-right", None);
+    let moved = timeline.selection().unwrap();
+    assert_eq!(range(moved).start, f(42));
+    act(&window, "win.undo", None);
+    assert_eq!(
+        range(first).start,
+        f(40),
+        "nudges in a row are one undo step"
+    );
+    act(&window, "win.redo", None);
+    act(&window, "win.nudge-left-second", None);
+    assert_eq!(range(timeline.selection().unwrap()).start, f(17));
+
+    // Up a track, then trimmed to the playhead at both ends.
+    act(&window, "win.move-to-track-above", None);
+    let up = timeline.selection().unwrap();
+    assert_ne!(up.track, first.track);
+    act(&window, "win.seek", Some(20i64.to_variant()));
+    act(&window, "win.trim-start-to-playhead", None);
+    act(&window, "win.seek", Some(50i64.to_variant()));
+    act(&window, "win.trim-end-to-playhead", None);
+    let up = timeline.selection().unwrap();
+    assert_eq!((range(up).start, range(up).end()), (f(20), f(50)));
+    close(window);
+}
+
 /// A graph on the Effects page: a key of a still's blue half masks a blur.
 /// The page shows the clip's nodes with a thumbnail each, and the viewer a
 /// frame. Needs the GPU (effects run there).
@@ -374,4 +424,33 @@ fn masked_blur(item: &mut Item) -> (String, String) {
     item.connect(&key, "matte", &blur, "mask").unwrap();
     item.set_effects_output(Some(nox_project::Connection::new(&blur, "picture")));
     (key, blur)
+}
+
+/// Ctrl+? (app.shortcuts) shows libadwaita's shortcuts dialog over the
+/// window, and the main menu has its item.
+#[cfg(feature = "adw-1-8")]
+#[gtk::test]
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "GTK must be initialized on the main thread on macOS"
+)]
+fn keyboard_shortcuts_dialog() {
+    use adw::prelude::*;
+    let window = open(&Timeline::new("t", FPS));
+    let items = window.imp().standard_items.get();
+    let actions: Vec<String> = (0..items.n_items())
+        .filter_map(|i| {
+            items
+                .item_attribute_value(i, "action", None)
+                .and_then(|v| v.get::<String>())
+        })
+        .collect();
+    assert_eq!(actions, ["app.preferences", "app.shortcuts", "app.about"]);
+    act(&window, "app.shortcuts", None);
+    wait_for("the shortcuts dialog", || {
+        window
+            .visible_dialog()
+            .is_some_and(|d| d.is::<adw::ShortcutsDialog>())
+    });
+    close(window);
 }

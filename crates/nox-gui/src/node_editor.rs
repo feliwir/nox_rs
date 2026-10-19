@@ -301,6 +301,8 @@ mod imp {
 
     #[derive(Default)]
     pub struct NodeEditor {
+        /// Shown while there are no nodes (no video clip selected).
+        pub placeholder: OnceCell<adw::StatusPage>,
         pub timeline: OnceCell<TimelineView>,
         pub inspector: OnceCell<glib::WeakRef<Inspector>>,
         pub layout: RefCell<Layout>,
@@ -345,6 +347,20 @@ mod imp {
             obj.set_vexpand(true);
             obj.update_property(&[gtk::accessible::Property::Label(&gettext("Effect graph"))]);
             obj.set_up_input();
+            let placeholder = adw::StatusPage::builder()
+                .icon_name("applications-graphics-symbolic")
+                .title(gettext("No Clip Selected"))
+                .description(gettext("Select a video clip to see its effects"))
+                .css_classes(["compact"])
+                .build();
+            placeholder.set_parent(&*obj);
+            let _ = self.placeholder.set(placeholder);
+        }
+
+        fn dispose(&self) {
+            if let Some(placeholder) = self.placeholder.get() {
+                placeholder.unparent();
+            }
         }
     }
 
@@ -355,6 +371,9 @@ mod imp {
 
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
             self.parent_size_allocate(width, height, baseline);
+            if let Some(placeholder) = self.placeholder.get() {
+                placeholder.allocate(width, height, baseline, None);
+            }
             // Laid out before it had a size (a page not shown yet): fit now.
             self.obj().fit_if_new();
         }
@@ -520,6 +539,9 @@ impl NodeEditor {
         let selected = imp.selected.borrow().clone();
         if selected.is_some_and(|key| !layout.nodes.iter().any(|n| n.key == key)) {
             self.select(None);
+        }
+        if let Some(placeholder) = imp.placeholder.get() {
+            placeholder.set_visible(layout.nodes.is_empty());
         }
         imp.layout.replace(layout);
         self.fit_if_new();
@@ -901,16 +923,9 @@ impl NodeEditor {
         let imp = self.imp();
         let layout = imp.layout.borrow();
         if layout.nodes.is_empty() {
-            let text = gettext("Select a video clip to see its effects.");
-            let pango = self.create_pango_layout(Some(&text));
-            let (w, h) = pango.pixel_size();
-            snapshot.save();
-            snapshot.translate(&graphene::Point::new(
-                (self.width() - w) as f32 / 2.0,
-                (self.height() - h) as f32 / 2.0,
-            ));
-            snapshot.append_layout(&pango, &DIM_TEXT);
-            snapshot.restore();
+            if let Some(placeholder) = imp.placeholder.get() {
+                self.snapshot_child(placeholder, snapshot);
+            }
             return;
         }
         let (px, py) = imp.pan.get();

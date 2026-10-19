@@ -14,6 +14,8 @@ crates/nox-gui/resources/ui/rename-track.ui
 crates/nox-gui/resources/ui/scopes-panel.ui
 crates/nox-gui/resources/ui/viewer.ui
 crates/nox-gui/resources/ui/window.ui
+crates/nox-gui/src/about.rs
+crates/nox-gui/src/alert.rs
 crates/nox-gui/src/clip_strip.rs
 crates/nox-gui/src/color_wheels.rs
 crates/nox-gui/src/effect_controls.rs
@@ -32,6 +34,7 @@ crates/nox-gui/src/preferences.rs
 crates/nox-gui/src/project.rs
 crates/nox-gui/src/scopes.rs
 crates/nox-gui/src/settings_dialog.rs
+crates/nox-gui/src/shortcuts.rs
 crates/nox-gui/src/timeline/drag.rs
 crates/nox-gui/src/timeline/draw.rs
 crates/nox-gui/src/timeline/input.rs

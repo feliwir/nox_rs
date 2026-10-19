@@ -2,13 +2,16 @@
 //! top, the timeline below. The template holds the layout; `Ui` holds the
 //! project and implements the window's actions.
 
-use gtk::{CompositeTemplate, gdk, gio, glib, prelude::*, subclass::prelude::*};
+use adw::prelude::AdwApplicationWindowExt;
+use adw::subclass::prelude::*;
+use gtk::{CompositeTemplate, gdk, gio, glib, prelude::*};
 use nox_project::{BlendMode, Edge, Rational, Time, TrackKind, supports_drop_frame};
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+use crate::alert::Look;
 use crate::clip_strip::ClipStrip;
 use crate::color_wheels::ColorWheels;
 use crate::i18n::{fill, gettext, ngettext};
@@ -55,6 +58,14 @@ mod imp {
         #[template_child]
         pub inspector_toggle: TemplateChild<gtk::ToggleButton>,
         #[template_child]
+        pub window_title: TemplateChild<adw::WindowTitle>,
+        #[template_child]
+        pub offline_banner: TemplateChild<adw::Banner>,
+        #[template_child]
+        pub toasts: TemplateChild<adw::ToastOverlay>,
+        #[template_child]
+        pub standard_items: TemplateChild<gio::Menu>,
+        #[template_child]
         pub clip_strip: TemplateChild<ClipStrip>,
         #[template_child]
         pub color_paned: TemplateChild<gtk::Paned>,
@@ -68,7 +79,7 @@ mod imp {
     impl ObjectSubclass for Window {
         const NAME: &'static str = "NoxWindow";
         type Type = super::Window;
-        type ParentType = gtk::ApplicationWindow;
+        type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
             MediaPool::ensure_type();
@@ -92,11 +103,12 @@ mod imp {
     impl WidgetImpl for Window {}
     impl WindowImpl for Window {}
     impl ApplicationWindowImpl for Window {}
+    impl AdwApplicationWindowImpl for Window {}
 }
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)
-        @extends gtk::ApplicationWindow, gtk::Window, gtk::Widget,
+        @extends adw::ApplicationWindow, gtk::ApplicationWindow, gtk::Window, gtk::Widget,
         @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable,
             gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
@@ -149,6 +161,12 @@ pub fn build(app: &gtk::Application, files: &[gio::File]) -> Window {
             }
         }
     ));
+    #[cfg(feature = "adw-1-8")]
+    window.imp().standard_items.insert(
+        1,
+        Some(&gettext("_Keyboard Shortcuts")),
+        Some("app.shortcuts"),
+    );
     window.imp().inspector.set_timeline(&timeline);
     window.imp().inspector.set_playback(&ui.playback);
     window.imp().clip_strip.set_up(&timeline, &pool);
@@ -243,12 +261,39 @@ impl Ui {
     fn update(&self) {
         let project = &self.project;
         self.window.set_title(Some(&project.title()));
+        // The header bar: the name (marked when there are unsaved
+        // changes) over the project's folder.
+        if let Some(window) = self.window.downcast_ref::<Window>() {
+            let title = &window.imp().window_title;
+            let name = project.name();
+            title.set_title(&if project.is_modified() {
+                format!("• {name}") // no-i18n: a mark and a name
+            } else {
+                name
+            });
+            let folder = project.path().and_then(|p| p.parent().map(display_folder));
+            title.set_subtitle(folder.as_deref().unwrap_or_default());
+        }
         let undo = self.action("undo");
         undo.set_enabled(project.undo_label().is_some());
         let redo = self.action("redo");
         redo.set_enabled(project.redo_label().is_some());
-        self.action("relink-offline")
-            .set_enabled(!project.timeline().offline_files().is_empty());
+        let offline = project.timeline().offline_files().len();
+        self.action("relink-offline").set_enabled(offline > 0);
+        if let Some(window) = self.window.downcast_ref::<Window>() {
+            let banner = &window.imp().offline_banner;
+            if offline > 0 {
+                banner.set_title(&fill(
+                    &ngettext(
+                        "{n} media file is offline; its clips show black",
+                        "{n} media files are offline; their clips show black",
+                        offline as u32,
+                    ),
+                    &[("n", &offline)],
+                ));
+            }
+            banner.set_revealed(offline > 0);
+        }
 
         let fps = project.frame_rate();
         self.action("frame-rate")
@@ -267,14 +312,28 @@ impl Ui {
         }
     }
 
+    /// An error about the project's file (opening, saving): told in a
+    /// dialog.
     fn show_error(&self, message: &str, detail: &str) {
         tracing::warn!("{message}: {detail}");
-        gtk::AlertDialog::builder()
-            .message(message)
-            .detail(detail)
-            .modal(true)
-            .build()
-            .show(Some(&self.window));
+        crate::alert::tell(&self.window, message, detail);
+    }
+
+    /// Feedback that needs no answer, such as an edit that couldn't be
+    /// made: a toast at the bottom of the window.
+    fn toast(&self, message: &str) {
+        if let Some(window) = self.window.downcast_ref::<Window>() {
+            window.imp().toasts.add_toast(adw::Toast::new(message));
+        }
+    }
+
+    /// An edit that couldn't be made, and why: a toast.
+    fn toast_error(&self, message: &str, reason: &str) {
+        tracing::warn!("{message}: {reason}");
+        self.toast(&fill(
+            &gettext("{message}: {reason}"),
+            &[("message", &message), ("reason", &reason)],
+        ));
     }
 
     fn open(self: &Rc<Self>, path: &Path) {
@@ -304,38 +363,9 @@ impl Ui {
         self.timeline.set_selection(None);
         self.timeline.set_playhead(0);
         if missing > 0 {
+            // The banner (update) tells it and offers to relink.
             tracing::warn!("{missing} media files of {} are missing", path.display());
-            self.offer_relink(missing);
         }
-    }
-
-    /// Tells that `missing` media files are offline, offering to look for
-    /// them in a folder.
-    fn offer_relink(self: &Rc<Self>, missing: usize) {
-        let message = fill(
-            &ngettext(
-                "{n} media file is offline",
-                "{n} media files are offline",
-                missing as u32,
-            ),
-            &[("n", &missing)],
-        );
-        let dialog = gtk::AlertDialog::builder()
-            .message(message)
-            .detail(gettext(
-                "Their clips show black. Choose a folder to look for the files in.",
-            ))
-            .buttons([gettext("Not Now"), gettext("Relink…")])
-            .cancel_button(0)
-            .default_button(1)
-            .modal(true)
-            .build();
-        let ui = self.clone();
-        dialog.choose(Some(&self.window), gio::Cancellable::NONE, move |result| {
-            if result == Ok(1) {
-                ui.choose_relink_folder();
-            }
-        });
     }
 
     /// Asks for a folder and relinks the offline media found in it.
@@ -357,7 +387,7 @@ impl Ui {
     fn relink_from_folder(&self, folder: &Path) {
         let offline = self.project.timeline().offline_files();
         if offline.is_empty() {
-            self.show_info(&gettext("No media is offline"), "");
+            self.toast(&gettext("No media is offline"));
             return;
         }
         let found = nox_project::relink::find_in_folder(
@@ -374,17 +404,7 @@ impl Ui {
             ),
             &[("found", &found.len()), ("n", &offline.len())],
         );
-        let detail = if found.is_empty() {
-            fill(
-                &gettext("No files of the same name are in {folder}."),
-                &[("folder", &folder.display())],
-            )
-        } else if found.len() < offline.len() {
-            gettext("The others are still offline.")
-        } else {
-            String::new()
-        };
-        self.show_info(&message, &detail);
+        self.toast(&message);
     }
 
     /// Asks for a new file for the selected clip's media. Other offline
@@ -452,15 +472,6 @@ impl Ui {
                 }
             }
         }
-    }
-
-    fn show_info(&self, message: &str, detail: &str) {
-        gtk::AlertDialog::builder()
-            .message(message)
-            .detail(detail)
-            .modal(true)
-            .build()
-            .show(Some(&self.window));
     }
 
     /// Saves to the project's file, or asks for one. Calls `then` after a
@@ -535,22 +546,19 @@ impl Ui {
             proceed();
             return;
         }
-        let dialog = gtk::AlertDialog::builder()
-            .message(gettext("Save changes to the project?"))
-            .detail(gettext("Unsaved changes will be lost otherwise."))
-            .buttons([gettext("Cancel"), gettext("Discard"), gettext("Save")])
-            .cancel_button(0)
-            .default_button(2)
-            .modal(true)
-            .build();
         let ui = self.clone();
-        dialog.choose(
-            Some(&self.window),
-            gio::Cancellable::NONE,
-            move |result| match result {
-                Ok(1) => proceed(),
-                Ok(2) => ui.save(Some(Box::new(proceed))),
-                _ => {}
+        crate::alert::ask(
+            &self.window,
+            &gettext("Save changes to the project?"),
+            &gettext("Unsaved changes will be lost otherwise."),
+            &[
+                ("cancel", gettext("Cancel"), Look::Plain),
+                ("discard", gettext("Discard"), Look::Destructive),
+                ("save", gettext("Save"), Look::Suggested),
+            ],
+            move |answer| match answer {
+                "discard" => proceed(),
+                _ => ui.save(Some(Box::new(proceed))),
             },
         );
     }
@@ -580,7 +588,7 @@ impl Ui {
             t.add_text_clip(at, duration, parameters)
         }) {
             Ok(item) => self.timeline.set_selection(Some(item)),
-            Err(err) => self.show_error(&gettext("Cannot add text"), &err.to_string()),
+            Err(err) => self.toast_error(&gettext("Cannot add text"), &err.to_string()),
         }
     }
 
@@ -619,7 +627,7 @@ impl Ui {
             }
             Ok((false, trims)) => trims,
             Err(err) => {
-                self.show_error(&cannot, &err.to_string());
+                self.toast_error(&cannot, &err.to_string());
                 return;
             }
         };
@@ -636,28 +644,30 @@ impl Ui {
                 ),
             ],
         );
-        let dialog = gtk::AlertDialog::builder()
-            .message(gettext("Not enough media for the dissolve"))
-            .detail(detail)
-            .buttons([gettext("Cancel"), gettext("Trim Clips")])
-            .cancel_button(0)
-            .default_button(1)
-            .modal(true)
-            .build();
         let ui = self.clone();
-        dialog.choose(Some(&self.window), gio::Cancellable::NONE, move |result| {
-            if result != Ok(1) {
-                return;
-            }
-            let zero = Time::zero(one_second.timebase);
-            let dissolve =
-                nox_project::Transition::new(nox_project::DISSOLVE, "Cross Dissolve", zero, zero);
-            if let Err(err) = ui.project.edit(&label, |t| {
-                t.add_transition_making_room(item, edge, one_second, &dissolve)
-            }) {
-                ui.show_error(&cannot, &err.to_string());
-            }
-        });
+        crate::alert::ask(
+            &self.window,
+            &gettext("Not enough media for the dissolve"),
+            &detail,
+            &[
+                ("cancel", gettext("Cancel"), Look::Plain),
+                ("trim", gettext("Trim Clips"), Look::Suggested),
+            ],
+            move |_| {
+                let zero = Time::zero(one_second.timebase);
+                let dissolve = nox_project::Transition::new(
+                    nox_project::DISSOLVE,
+                    "Cross Dissolve",
+                    zero,
+                    zero,
+                );
+                if let Err(err) = ui.project.edit(&label, |t| {
+                    t.add_transition_making_room(item, edge, one_second, &dissolve)
+                }) {
+                    ui.toast_error(&cannot, &err.to_string());
+                }
+            },
+        );
     }
 
     /// Changes the In/Out marks as an undoable edit; `change` gets the
@@ -985,15 +995,11 @@ fn add_project_actions(ui: &Rc<Ui>) {
         // The topmost dialog over the window (project settings, export).
         ui.window
             .add_action(&with_path("screenshot-dialog", |ui, path| {
-                let dialog = gtk::Window::list_toplevels()
-                    .into_iter()
-                    .filter_map(|w| w.downcast::<gtk::Window>().ok())
-                    .find(|w| {
-                        w.is_visible() && w.transient_for().as_ref() == Some(ui.window.upcast_ref())
-                    });
-                match dialog.and_then(|d| d.child()) {
+                // libadwaita's dialogs are widgets inside the window.
+                let window = ui.window.downcast_ref::<adw::ApplicationWindow>();
+                match window.and_then(|w| w.visible_dialog()) {
                     Some(content) => {
-                        if let Err(err) = screenshot(&content, path) {
+                        if let Err(err) = screenshot(content.upcast_ref(), path) {
                             tracing::warn!("screenshot failed: {err}");
                         }
                     }
@@ -1002,14 +1008,24 @@ fn add_project_actions(ui: &Rc<Ui>) {
             }));
         ui.window.add_action(&with_path("screenshot", |ui, path| {
             // A paintable of the toplevel itself renders nothing.
-            let content = ui.window.child().expect("window content");
+            let content = ui
+                .window
+                .downcast_ref::<adw::ApplicationWindow>()
+                .and_then(|w| w.content())
+                .expect("window content");
             if let Err(err) = screenshot(&content, path) {
                 tracing::warn!("screenshot failed: {err}");
             }
         }));
         ui.window
             .add_action(&with_path("screenshot-titlebar", |ui, path| {
-                let titlebar = ui.window.titlebar().expect("header bar");
+                let titlebar = ui
+                    .window
+                    .downcast_ref::<adw::ApplicationWindow>()
+                    .and_then(|w| w.content())
+                    .and_downcast::<adw::ToolbarView>()
+                    .and_then(|view| view.first_child())
+                    .expect("header bar");
                 if let Err(err) = screenshot(&titlebar, path) {
                     tracing::warn!("screenshot failed: {err}");
                 }
@@ -1105,20 +1121,44 @@ fn add_project_actions(ui: &Rc<Ui>) {
     ));
     ui.window.add_action(&snapping);
 
-    // The inspector can be hidden, giving the viewer its room.
-    let inspector = gio::SimpleAction::new_stateful("show-inspector", None, &true.to_variant());
+    // The inspector can be hidden, giving the viewer its room. It starts
+    // hidden, with nothing to inspect, and the first selection shows it,
+    // unless the button was used already (then that choice stays). It
+    // never hides by itself, so the viewer doesn't jump.
+    let window = ui.window.downcast_ref::<Window>().expect("Nox window");
+    window.imp().inspector.set_visible(false);
+    let chosen = Rc::new(std::cell::Cell::new(false));
+    let inspector = gio::SimpleAction::new_stateful("show-inspector", None, &false.to_variant());
     inspector.connect_activate(glib::clone!(
         #[weak]
         ui,
+        #[strong]
+        chosen,
         move |action, _| {
             let window = ui.window.downcast_ref::<Window>().expect("Nox window");
             let inspector = window.imp().inspector.get();
             let shown = !inspector.is_visible();
             inspector.set_visible(shown);
             action.set_state(&shown.to_variant());
+            chosen.set(true);
         }
     ));
     ui.window.add_action(&inspector);
+    ui.timeline.connect_selection_changed(glib::clone!(
+        #[weak]
+        ui,
+        #[weak]
+        inspector,
+        move |timeline| {
+            if chosen.get() || timeline.selection().is_none() {
+                return;
+            }
+            let window = ui.window.downcast_ref::<Window>().expect("Nox window");
+            window.imp().inspector.set_visible(true);
+            inspector.set_state(&true.to_variant());
+            chosen.set(true);
+        }
+    ));
 }
 
 /// Renders `widget` with GTK's renderer and saves it as PNG.
@@ -1417,5 +1457,31 @@ fn add_transport_actions(
         timeline_entry("previous-marker", |t| t.go_to_marker(false)),
         timeline_entry("next-marker", |t| t.go_to_marker(true)),
         timeline_entry("delete-marker", TimelineView::delete_selected_marker),
+        // Editing clips by keyboard (window.ui has the keys).
+        timeline_entry("nudge-left", |t| t.nudge_selection(-1)),
+        timeline_entry("nudge-right", |t| t.nudge_selection(1)),
+        timeline_entry("nudge-left-second", |t| {
+            t.nudge_selection(-(nox_project::nominal_fps(t.project().frame_rate()) as i64))
+        }),
+        timeline_entry("nudge-right-second", |t| {
+            t.nudge_selection(nox_project::nominal_fps(t.project().frame_rate()) as i64)
+        }),
+        timeline_entry("move-to-track-above", |t| t.move_selection_to_track(true)),
+        timeline_entry("move-to-track-below", |t| t.move_selection_to_track(false)),
+        timeline_entry("trim-start-to-playhead", |t| {
+            t.trim_selection_to_playhead(Edge::Start)
+        }),
+        timeline_entry("trim-end-to-playhead", |t| {
+            t.trim_selection_to_playhead(Edge::End)
+        }),
     ]);
+}
+
+/// `folder` for people: under the home folder as `~/…`.
+fn display_folder(folder: &Path) -> String {
+    match folder.strip_prefix(glib::home_dir()) {
+        Ok(inside) if inside.as_os_str().is_empty() => "~".to_owned(),
+        Ok(inside) => format!("~/{}", inside.display()),
+        Err(_) => folder.display().to_string(),
+    }
 }

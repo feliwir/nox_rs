@@ -694,7 +694,7 @@ msgid "Timeline _frame rate"
 msgstr ""
 
 #: resources/ui/project-settings.ui:197
-msgid "Use _drop frame timecode"
+msgid "Use _Drop Frame Timecode"
 msgstr ""
 
 #: resources/ui/project-settings.ui:240
@@ -1098,7 +1098,7 @@ msgid "Timeline Tools"
 msgstr ""
 
 #: resources/ui/window.ui
-msgid "Insert the selected media at the playhead (F9)"
+msgid "Insert Selected Media at Playhead (F9)"
 msgstr ""
 
 #: resources/ui/window.ui
@@ -1106,7 +1106,7 @@ msgid "Insert"
 msgstr ""
 
 #: resources/ui/window.ui
-msgid "Overwrite at the playhead with the selected media (F10)"
+msgid "Overwrite at Playhead with Selected Media (F10)"
 msgstr ""
 
 #: resources/ui/window.ui
@@ -1114,15 +1114,15 @@ msgid "Overwrite"
 msgstr ""
 
 #: resources/ui/window.ui
-msgid "Split at the playhead (Ctrl+B)"
+msgid "Split at Playhead (Ctrl+B)"
 msgstr ""
 
 #: resources/ui/window.ui
-msgid "Ripple delete the selected clips (Shift+Delete)"
+msgid "Ripple Delete Selected Clips (Shift+Delete)"
 msgstr ""
 
 #: resources/ui/window.ui
-msgid "Add a dissolve to the selected clip (Ctrl+T)"
+msgid "Add Dissolve to Selected Clip (Ctrl+T)"
 msgstr ""
 
 #: resources/ui/window.ui
@@ -1146,7 +1146,7 @@ msgid "Fades"
 msgstr ""
 
 #: resources/ui/inspector.ui
-msgid "Seconds; also set by dragging the handles at the clip's top corners"
+msgid "Seconds; also set by dragging the handles at the clip’s top corners"
 msgstr ""
 
 #: src/inspector.rs
@@ -1195,11 +1195,11 @@ msgid "Crop Bottom"
 msgstr ""
 
 #: resources/ui/inspector.ui
-msgid "Pixels right of center, in the timeline's resolution"
+msgid "Pixels right of center, in the timeline’s resolution"
 msgstr ""
 
 #: resources/ui/inspector.ui
-msgid "Pixels below center, in the timeline's resolution"
+msgid "Pixels below center, in the timeline’s resolution"
 msgstr ""
 
 #: resources/ui/inspector.ui
@@ -1227,7 +1227,7 @@ msgid "Change Easing"
 msgstr ""
 
 #: resources/ui/inspector.ui
-msgid "Keyframe at the playhead"
+msgid "Keyframe at Playhead"
 msgstr ""
 
 #: resources/ui/inspector.ui
@@ -1314,7 +1314,7 @@ msgid "Move what follows"
 msgstr ""
 
 #: resources/ui/inspector.ui
-msgid "When the speed changes the clip's length, move the clips after it (as Resolve's Ripple Sequence); otherwise leave a gap or cover them"
+msgid "When the speed changes the clip’s length, move the clips after it (as Resolve’s Ripple Sequence); otherwise leave a gap or cover them"
 msgstr ""
 
 #: resources/ui/inspector.ui
@@ -1367,7 +1367,7 @@ msgid "Move Keyframe"
 msgstr ""
 
 #: resources/ui/color-wheels.ui
-msgid "Grade keyframe at the playhead"
+msgid "Grade Keyframe at Playhead"
 msgstr ""
 
 #: src/export_dialog.rs
@@ -1539,7 +1539,7 @@ msgid "Add Effect…"
 msgstr ""
 
 #: crates/nox-gui/resources/ui/inspector.ui
-msgid "Adds an effect to the clip, after its other effects"
+msgid "Add Effect"
 msgstr ""
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1553,7 +1553,7 @@ msgid "{name} (not supported)"
 msgstr ""
 
 #: crates/nox-gui/src/inspector/effects.rs
-msgid "Turns the effect on or off"
+msgid "Turn Effect On or Off"
 msgstr ""
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1577,7 +1577,7 @@ msgid "Remove"
 msgstr ""
 
 #: crates/nox-gui/src/inspector/effects.rs
-msgid "Effect actions"
+msgid "Effect Actions"
 msgstr ""
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1617,7 +1617,7 @@ msgid "In percent"
 msgstr ""
 
 #: crates/nox-gui/src/inspector/effects.rs
-msgid "In percent of the picture's height"
+msgid "In percent of the picture’s height"
 msgstr ""
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1758,11 +1758,11 @@ msgid "On"
 msgstr ""
 
 #: crates/nox-gui/src/node_panel.rs
-msgid "Source: the clip's picture"
+msgid "Source: the clip’s picture"
 msgstr ""
 
 #: crates/nox-gui/src/node_panel.rs
-msgid "Output: what's composited"
+msgid "Output: what’s composited"
 msgstr ""
 
 #: crates/nox-gui/src/node_panel.rs
@@ -1990,7 +1990,7 @@ msgid "{transition}, {length}"
 msgstr ""
 
 #: crates/nox-gui/resources/ui/inspector.ui
-msgid "Choose the transition"
+msgid "Choose Transition"
 msgstr ""
 
 #: crates/nox-gui/src/window.rs
@@ -2197,7 +2197,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: crates/nox-gui/src/preferences.rs
-msgid "{file} couldn't be loaded: {problem}"
+msgid "{file} couldn’t be loaded: {problem}"
 msgstr ""
 
 #: crates/nox-gui/resources/ui/preferences.ui
@@ -2312,5 +2312,205 @@ msgid "Cannot add text"
 msgstr ""
 
 #: crates/nox-gui/resources/ui/window.ui
-msgid "Add text at the playhead (Ctrl+Shift+T)"
+msgid "Add Text at Playhead (Ctrl+Shift+T)"
+msgstr ""
+
+#: crates/nox-gui/src/alert.rs
+msgid "Close"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "_About Nox"
+msgstr ""
+
+#: crates/nox-gui/src/about.rs
+msgid "SIL Open Font License, version 1.1"
+msgstr ""
+
+#. Translators: your names, one per line, as "Name <email>".
+#: crates/nox-gui/src/about.rs
+msgid "translator-credits"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "_Thumbnails on Video Clips"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "_Waveforms on Audio Clips"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Downloaded Models"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Delete Downloaded Models"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Transitions"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Open the Effects Folder"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Open the Transitions Folder"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "{message}: {reason}"
+msgstr ""
+
+#: crates/nox-gui/src/node_editor.rs
+msgid "No Clip Selected"
+msgstr ""
+
+#: crates/nox-gui/src/node_editor.rs
+msgid "Select a video clip to see its effects"
+msgstr ""
+
+#: crates/nox-gui/src/node_panel.rs
+msgid "No Node Selected"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/media-pool.ui
+msgid "No Media"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/media-pool.ui
+msgid "Drop video, audio or image files here"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/media-pool.ui
+msgid "_Import Media…"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/inspector.ui
+msgid "Select a clip on the timeline to see its properties"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/color-wheels.ui
+msgid "Select a video clip to grade it"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "_New Project"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "Save Project _As…"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "Export Timeline (Ctrl+E)"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "_Relink…"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/menus.ui
+msgid "Trim Start to Playhead"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/menus.ui
+msgid "Trim End to Playhead"
+msgstr ""
+
+#: crates/nox-gui/src/timeline/input.rs
+msgid "Left and Right step one frame, Up and Down jump to edit points, Shift+V selects the clip at the playhead, Ctrl+A all clips and Escape none. Ctrl+Left and Ctrl+Right move the selected clips a frame (with Shift a second), Ctrl+Up and Ctrl+Down to the track above or below; braces trim the clip's start or end to the playhead. Shift+F10 opens the clip menu (in a track header, the track menu), Delete removes the selected clips."
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+#, python-brace-format
+msgid "{n} media file is offline; its clips show black"
+msgid_plural "{n} media files are offline; their clips show black"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Close Window"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Editing"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Go to Start or End"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Insert Media at Playhead"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Marks and Markers"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Move a Frame Earlier or Later"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Move a Second Earlier or Later"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Move to the Track Above or Below"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Overwrite at Playhead"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Pages"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Play or Pause"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Previous or Next Edit"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Previous or Next Frame"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Previous or Next Marker"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Project"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Project Settings"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Quit"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Select All Clips"
+msgstr ""
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Select Clip at Playhead"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "_Keyboard Shortcuts"
 msgstr ""

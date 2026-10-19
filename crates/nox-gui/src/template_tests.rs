@@ -2,7 +2,8 @@
 //! broken file fails here rather than when the user opens a dialog. Needs a
 //! display, as `ui_tests` (it runs on their GTK thread).
 
-use gtk::{glib, prelude::*};
+use adw::prelude::*;
+use gtk::glib;
 
 use crate::clip_strip::ClipStrip;
 use crate::color_wheels::ColorWheels;
@@ -10,7 +11,7 @@ use crate::export_dialog::ExportDialog;
 use crate::inspector::Inspector;
 use crate::media_cell::MediaCell;
 use crate::media_pool::MediaPool;
-use crate::preferences::PreferencesWindow;
+use crate::preferences::PreferencesDialog;
 use crate::project::Project;
 use crate::scopes::ScopesPanel;
 use crate::settings_dialog::ProjectSettings;
@@ -35,7 +36,14 @@ fn templates_build() {
     let project = Project::new();
     let timeline = window.imp_children().2;
     timeline.set_project(project.clone());
-    assert!(window.titlebar().is_some(), "header bar");
+    let content = window.content().expect("window content");
+    let toolbar = content
+        .downcast_ref::<adw::ToolbarView>()
+        .expect("a toolbar view");
+    assert!(
+        toolbar.first_child().is_some() && toolbar.content().is_some(),
+        "header bar and pages"
+    );
     // Bare keys run after the focused widget (bubble phase), not as
     // application accelerators, which would take them from spin buttons
     // and focused buttons.
@@ -89,24 +97,16 @@ fn templates_build() {
     let dialog: gtk::Window = rename.object("dialog").expect("rename dialog");
     assert!(rename.object::<gtk::Entry>("name").is_some(), "name entry");
 
-    let settings = glib::Object::builder::<ProjectSettings>()
-        .property("transient-for", &window)
-        .build();
+    let settings = glib::Object::new::<ProjectSettings>();
     settings.load(&project);
-    let export = glib::Object::builder::<ExportDialog>()
-        .property("transient-for", &window)
-        .build();
+    let export = glib::Object::new::<ExportDialog>();
     export.load(&project);
-    let preferences = glib::Object::builder::<PreferencesWindow>()
-        .property("transient-for", &window)
-        .build();
+    let preferences = glib::Object::new::<PreferencesDialog>();
 
     let css = gtk::CssProvider::new();
     css.load_from_resource("/io/github/feliwir/Nox/style.css");
 
-    settings.destroy();
-    export.destroy();
-    preferences.destroy();
+    drop(preferences);
     dialog.destroy();
     window.destroy();
     glib::log_set_always_fatal(before);

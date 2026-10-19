@@ -49,9 +49,20 @@
           <object class="GtkStackPage">
             <property name="name">empty</property>
             <property name="child">
-              <object class="GtkLabel">
-                <property name="label" translatable="yes">Drop media files here</property>
-                <style><class name="dim-label"/></style>
+              <object class="AdwStatusPage">
+                <property name="icon-name">folder-videos-symbolic</property>
+                <property name="title" translatable="yes">No Media</property>
+                <property name="description" translatable="yes">Drop video, audio or image files here</property>
+                <style><class name="compact"/></style>
+                <property name="child">
+                  <object class="GtkButton">
+                    <property name="label" translatable="yes">_Import Media…</property>
+                    <property name="use-underline">true</property>
+                    <property name="halign">center</property>
+                    <style><class name="pill"/></style>
+                    <signal name="clicked" handler="on_import_clicked" swapped="true"/>
+                  </object>
+                </property>
               </object>
             </property>
           </object>

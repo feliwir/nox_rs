@@ -820,6 +820,72 @@ impl TimelineView {
         self.set_selection(found);
     }
 
+    /// Moves the selected clips (and their linked clips) by `frames`
+    /// (Ctrl+Left/Right); presses in a row make one undo step.
+    pub fn nudge_selection(&self, frames: i64) {
+        let (Some(primary), items) = (self.selection(), self.selected_items()) else {
+            return;
+        };
+        let project = self.project();
+        let offset = Time::from_frames(frames, project.frame_rate());
+        let label = crate::i18n::ngettext("Move Clip", "Move Clips", items.len() as u32);
+        match project.edit_merging(&label, "keyboard-move", |t| {
+            t.move_items(&items, primary, primary.track, offset)
+        }) {
+            Ok(moved) => self.select_items(moved),
+            Err(_) => self.error_bell(),
+        }
+    }
+
+    /// Moves the selected clips to the next track of their kind above
+    /// (`up`) or below (Ctrl+Up/Down).
+    pub fn move_selection_to_track(&self, up: bool) {
+        let (Some(primary), items) = (self.selection(), self.selected_items()) else {
+            return;
+        };
+        let project = self.project();
+        let target = {
+            let model = project.timeline();
+            let kind = model.track(primary.track).map(|t| t.kind.clone());
+            let same: Vec<usize> = rows(&model)
+                .into_iter()
+                .filter(|&t| model.track(t).map(|t| t.kind.clone()) == kind)
+                .collect();
+            same.iter()
+                .position(|&t| t == primary.track)
+                .and_then(|at| if up { at.checked_sub(1) } else { Some(at + 1) })
+                .and_then(|at| same.get(at).copied())
+        };
+        let Some(target) = target else {
+            self.error_bell();
+            return;
+        };
+        let zero = Time::from_frames(0, project.frame_rate());
+        let label = crate::i18n::ngettext("Move Clip", "Move Clips", items.len() as u32);
+        match project.edit(&label, |t| t.move_items(&items, primary, target, zero)) {
+            Ok(moved) => self.select_items(moved),
+            Err(_) => self.error_bell(),
+        }
+    }
+
+    /// Trims the selected clip's `edge` to the playhead (`{` and `}`, as
+    /// Resolve's Shift+[ and Shift+]).
+    pub fn trim_selection_to_playhead(&self, edge: Edge) {
+        let Some(item) = self.selection() else {
+            return;
+        };
+        let project = self.project();
+        let to = Time::from_frames(self.playhead(), project.frame_rate());
+        if project
+            .edit(&crate::i18n::gettext("Trim Clip"), |t| {
+                t.trim_item(item, edge, to)
+            })
+            .is_err()
+        {
+            self.error_bell();
+        }
+    }
+
     /// Moves the playhead to the next (or previous) clip boundary.
     pub fn go_to_edit_point(&self, forward: bool) {
         let project = self.project();

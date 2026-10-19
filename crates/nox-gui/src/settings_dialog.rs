@@ -2,7 +2,9 @@
 //! Resolve's: categories in a sidebar, the settings of one category on the
 //! right, Cancel and Save. Saving applies everything as one undoable edit.
 
-use gtk::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use adw::prelude::*;
+use adw::subclass::prelude::*;
+use gtk::{CompositeTemplate, glib};
 use nox_project::{Rational, ScalingMode, supports_drop_frame};
 use std::rc::Rc;
 
@@ -45,19 +47,19 @@ mod imp {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub name: TemplateChild<gtk::Entry>,
+        pub name: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub resolution: TemplateChild<gtk::DropDown>,
+        pub resolution: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub width: TemplateChild<gtk::SpinButton>,
+        pub width: TemplateChild<adw::SpinRow>,
         #[template_child]
-        pub height: TemplateChild<gtk::SpinButton>,
+        pub height: TemplateChild<adw::SpinRow>,
         #[template_child]
-        pub frame_rate: TemplateChild<gtk::DropDown>,
+        pub frame_rate: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub drop_frame: TemplateChild<gtk::CheckButton>,
+        pub drop_frame: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub scaling: TemplateChild<gtk::DropDown>,
+        pub scaling: TemplateChild<adw::ComboRow>,
         pub project: OnceCell<Rc<Project>>,
     }
 
@@ -65,17 +67,11 @@ mod imp {
     impl ObjectSubclass for ProjectSettings {
         const NAME: &'static str = "NoxProjectSettings";
         type Type = super::ProjectSettings;
-        type ParentType = gtk::Window;
+        type ParentType = adw::Dialog;
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
             klass.bind_template_instance_callbacks();
-            // Escape closes, as for GTK's own dialogs.
-            klass.add_binding_action(
-                gtk::gdk::Key::Escape,
-                gtk::gdk::ModifierType::empty(),
-                "window.close",
-            );
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -85,23 +81,21 @@ mod imp {
 
     impl ObjectImpl for ProjectSettings {}
     impl WidgetImpl for ProjectSettings {}
-    impl WindowImpl for ProjectSettings {}
+    impl AdwDialogImpl for ProjectSettings {}
 }
 
 glib::wrapper! {
     pub struct ProjectSettings(ObjectSubclass<imp::ProjectSettings>)
-        @extends gtk::Window, gtk::Widget,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native,
-            gtk::Root, gtk::ShortcutManager;
+        @extends adw::Dialog, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget,
+            gtk::ShortcutManager;
 }
 
 /// Opens the dialog for `project` over `parent`.
 pub fn show(parent: &gtk::Window, project: &Rc<Project>) {
-    let dialog: ProjectSettings = glib::Object::builder()
-        .property("transient-for", parent)
-        .build();
+    let dialog = glib::Object::new::<ProjectSettings>();
     dialog.load(project);
-    dialog.present();
+    dialog.present(Some(parent));
 }
 
 #[gtk::template_callbacks]
@@ -112,10 +106,10 @@ impl ProjectSettings {
         assert!(imp.project.set(project.clone()).is_ok(), "loaded once");
         let timeline = project.timeline().clone();
         let settings = &timeline.settings;
-        self.set_title(Some(&fill(
+        self.set_title(&fill(
             &gettext("Project Settings: {name}"),
             &[("name", &timeline.name)],
-        )));
+        ));
         imp.name.set_text(&timeline.name);
 
         let mut resolutions: Vec<String> = RESOLUTIONS
@@ -189,6 +183,13 @@ impl ProjectSettings {
         self.imp()
             .drop_frame
             .set_sensitive(rate.is_some_and(supports_drop_frame));
+    }
+
+    /// Closes the dialog, changing nothing. (Not `window.close`: the
+    /// dialog lives in the main window, which that would close.)
+    #[template_callback]
+    fn on_cancel_clicked(&self) {
+        self.close();
     }
 
     #[template_callback]

@@ -1,4 +1,4 @@
-# Sets up MSYS2 with what Nox builds against (GTK, librsvg, codecs, LLVM
+# Sets up MSYS2 with what Nox builds against (GTK, libadwaita, librsvg, codecs, LLVM
 # for bindgen, glslang) and FFmpeg from packaging/ffmpeg/build.sh (cached),
 # and Rust for the matching gnullvm target. Run the build steps with
 # `shell: msys2 {0}`.
@@ -24,7 +24,7 @@ runs:
         # The environment's packages (mingw-w64-clang-x86_64-…, or
         # -aarch64-…), named with its prefix.
         packages=""
-        for name in toolchain clang pkgconf gtk4 librsvg adwaita-icon-theme gettext \
+        for name in toolchain clang pkgconf gtk4 libadwaita librsvg adwaita-icon-theme gettext \
             glslang x264 x265 dav1d vulkan-headers libjxl svt-av1 libvpx opus lame; do
           packages="$packages $MINGW_PACKAGE_PREFIX-$name"
         done

@@ -1,4 +1,4 @@
-# Sets up Homebrew with what Nox builds against (GTK, librsvg, codecs,
+# Sets up Homebrew with what Nox builds against (GTK, libadwaita, librsvg, codecs,
 # Vulkan loader and MoltenVK, glslang) and FFmpeg from
 # packaging/ffmpeg/build.sh (cached) in ~/ffmpeg.
 name: macOS build environment
@@ -9,7 +9,7 @@ runs:
     - name: Homebrew packages
       shell: bash
       run: |
-        brew install gtk4 librsvg adwaita-icon-theme gettext glslang pkgconf \
+        brew install gtk4 libadwaita librsvg adwaita-icon-theme gettext glslang pkgconf \
             x264 x265 dav1d svt-av1 libvpx jpeg-xl opus lame nasm \
             molten-vk vulkan-loader vulkan-headers
     - name: FFmpeg cache

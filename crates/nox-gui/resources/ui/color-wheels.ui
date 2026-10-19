@@ -60,9 +60,9 @@
         <child>
           <object class="GtkToggleButton" id="grade_key">
             <property name="icon-name">nox-keyframe-symbolic</property>
-            <property name="tooltip-text" translatable="yes">Grade keyframe at the playhead</property>
+            <property name="tooltip-text" translatable="yes">Grade Keyframe at Playhead</property>
             <accessibility>
-              <property name="label" translatable="yes">Grade keyframe at the playhead</property>
+              <property name="label" translatable="yes">Grade Keyframe at Playhead</property>
             </accessibility>
             <signal name="toggled" handler="on_grade_key_toggled" swapped="true"/>
             <style>
@@ -92,11 +92,11 @@
           <object class="GtkStackPage">
             <property name="name">empty</property>
             <property name="child">
-              <object class="GtkLabel">
-                <property name="label" translatable="yes">Select a video clip to grade it.</property>
-                <property name="margin-top">24</property>
-                <property name="margin-bottom">24</property>
-                <style><class name="dim-label"/></style>
+              <object class="AdwStatusPage">
+                <property name="icon-name">preferences-color-symbolic</property>
+                <property name="title" translatable="yes">No Clip Selected</property>
+                <property name="description" translatable="yes">Select a video clip to grade it</property>
+                <style><class name="compact"/></style>
               </object>
             </property>
           </object>

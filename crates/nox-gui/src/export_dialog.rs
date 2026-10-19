@@ -7,7 +7,9 @@
 //! chosen codec and dynamic range (`nox_engine::available_encoders`, probed
 //! on a thread when the dialog first opens), each with what it's good at.
 
-use gtk::{CompositeTemplate, gio, glib, prelude::*, subclass::prelude::*};
+use adw::prelude::*;
+use adw::subclass::prelude::*;
+use gtk::{CompositeTemplate, gio, glib};
 use nox_engine::{
     AudioCodec, Container, EncodeQuality, EncoderProbe, Export, ExportEvent, ExportSettings,
     VideoCodec,
@@ -143,37 +145,31 @@ mod imp {
     #[template(resource = "/io/github/feliwir/Nox/ui/export-dialog.ui")]
     pub struct ExportDialog {
         #[template_child]
-        pub settings: TemplateChild<gtk::Grid>,
+        pub settings: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub preset: TemplateChild<gtk::DropDown>,
+        pub preset: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub path: TemplateChild<gtk::Entry>,
+        pub path: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub container: TemplateChild<gtk::DropDown>,
+        pub container: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub codec: TemplateChild<gtk::DropDown>,
+        pub codec: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub dynamic_range: TemplateChild<gtk::DropDown>,
+        pub dynamic_range: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub peak: TemplateChild<gtk::SpinButton>,
+        pub peak: TemplateChild<adw::SpinRow>,
         #[template_child]
-        pub peak_label: TemplateChild<gtk::Label>,
+        pub quality: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub peak_box: TemplateChild<gtk::Box>,
+        pub encoder: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub quality: TemplateChild<gtk::DropDown>,
+        pub audio: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub encoder: TemplateChild<gtk::DropDown>,
+        pub audio_codec: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub encoder_info: TemplateChild<gtk::Label>,
+        pub range: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub audio: TemplateChild<gtk::CheckButton>,
-        #[template_child]
-        pub audio_codec: TemplateChild<gtk::DropDown>,
-        #[template_child]
-        pub range: TemplateChild<gtk::DropDown>,
-        #[template_child]
-        pub summary: TemplateChild<gtk::Label>,
+        pub summary: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub progress: TemplateChild<gtk::ProgressBar>,
         #[template_child]
@@ -210,16 +206,11 @@ mod imp {
     impl ObjectSubclass for ExportDialog {
         const NAME: &'static str = "NoxExportDialog";
         type Type = super::ExportDialog;
-        type ParentType = gtk::Window;
+        type ParentType = adw::Dialog;
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
             klass.bind_template_instance_callbacks();
-            klass.add_binding_action(
-                gtk::gdk::Key::Escape,
-                gtk::gdk::ModifierType::empty(),
-                "window.close",
-            );
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -236,34 +227,30 @@ mod imp {
 
     impl WidgetImpl for ExportDialog {}
 
-    impl WindowImpl for ExportDialog {
-        fn close_request(&self) -> glib::Propagation {
-            // Closing (or Escape) first cancels a running export and keeps
-            // the dialog, so its outcome stays visible; closing again
-            // closes it.
+    impl AdwDialogImpl for ExportDialog {
+        /// Closing (or Escape) while an export runs (`can-close` is off
+        /// then) cancels it and keeps the dialog, so its outcome stays
+        /// visible; closing again closes it.
+        fn close_attempt(&self) {
             if let Some(export) = self.running.borrow().as_ref() {
                 export.cancel();
-                return glib::Propagation::Stop;
             }
-            self.parent_close_request()
         }
     }
 }
 
 glib::wrapper! {
     pub struct ExportDialog(ObjectSubclass<imp::ExportDialog>)
-        @extends gtk::Window, gtk::Widget,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native,
-            gtk::Root, gtk::ShortcutManager;
+        @extends adw::Dialog, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget,
+            gtk::ShortcutManager;
 }
 
 /// Opens the dialog for `project` over `parent`.
 pub fn show(parent: &gtk::Window, project: &Rc<Project>) {
-    let dialog: ExportDialog = glib::Object::builder()
-        .property("transient-for", parent)
-        .build();
+    let dialog = glib::Object::new::<ExportDialog>();
     dialog.load(project);
-    dialog.present();
+    dialog.present(Some(parent));
 }
 
 #[gtk::template_callbacks]
@@ -311,7 +298,7 @@ impl ExportDialog {
                 dialog.to_custom();
             }
         ));
-        imp.peak.connect_value_changed(glib::clone!(
+        imp.peak.connect_value_notify(glib::clone!(
             #[weak(rename_to = dialog)]
             self,
             move |_| dialog.to_custom()
@@ -589,15 +576,14 @@ impl ExportDialog {
                 text
             }
         };
-        imp.encoder_info.set_text(&text);
+        imp.encoder.set_subtitle(&text);
     }
 
     /// The mastering peak matters for HDR10 only.
     fn show_peak(&self) {
         let imp = self.imp();
         let pq = RANGES[imp.dynamic_range.selected() as usize].1 == OutputEncoding::Pq;
-        imp.peak_label.set_visible(pq);
-        imp.peak_box.set_visible(pq);
+        imp.peak.set_visible(pq);
     }
 
     fn to_custom(&self) {
@@ -701,7 +687,7 @@ impl ExportDialog {
                 gettext(RANGES[imp.dynamic_range.selected() as usize].0)
             );
         }
-        imp.summary.set_text(&summary);
+        imp.summary.set_subtitle(&summary);
     }
 
     #[template_callback]
@@ -721,7 +707,8 @@ impl ExportDialog {
             dialog.set_initial_folder(Some(&gio::File::for_path(dir)));
         }
         let entry = self.imp().path.get();
-        dialog.save(Some(self), gio::Cancellable::NONE, move |result| {
+        let window = self.root().and_downcast::<gtk::Window>();
+        dialog.save(window.as_ref(), gio::Cancellable::NONE, move |result| {
             if let Ok(Some(path)) = result.map(|f| f.path()) {
                 entry.set_text(&path.to_string_lossy());
             }
@@ -731,8 +718,9 @@ impl ExportDialog {
     #[template_callback]
     fn on_open_folder_clicked(&self) {
         let file = gio::File::for_path(self.imp().path.text().as_str());
+        let window = self.root().and_downcast::<gtk::Window>();
         gtk::FileLauncher::new(Some(&file)).open_containing_folder(
-            Some(self),
+            window.as_ref(),
             gio::Cancellable::NONE,
             |result| {
                 if let Err(err) = result {
@@ -746,7 +734,9 @@ impl ExportDialog {
     fn on_cancel_clicked(&self) {
         match self.imp().running.borrow().as_ref() {
             Some(export) => export.cancel(),
-            None => self.close(),
+            None => {
+                self.close();
+            }
         }
     }
 
@@ -755,6 +745,7 @@ impl ExportDialog {
         let imp = self.imp();
         imp.settings.set_sensitive(!running);
         imp.start.set_sensitive(!running);
+        self.set_can_close(!running);
     }
 
     #[template_callback]

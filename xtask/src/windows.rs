@@ -134,14 +134,14 @@ pub fn dist(dist: &Path) -> Result<(PathBuf, PathBuf)> {
     Ok((stage, archive))
 }
 
-/// GTK's and GLib's translations, for the languages Nox has.
+/// GTK's, libadwaita's and GLib's translations, for the languages Nox has.
 fn copy_system_translations(from: &Path, to: &Path) -> Result {
     let ours: BTreeSet<String> = std::fs::read_dir(to)
         .map_err(|e| e.to_string())?
         .filter_map(|e| e.ok()?.file_name().into_string().ok())
         .collect();
     for lang in ours {
-        for domain in ["gtk40", "glib20"] {
+        for domain in ["gtk40", "libadwaita", "glib20"] {
             let file = from
                 .join(&lang)
                 .join("LC_MESSAGES")

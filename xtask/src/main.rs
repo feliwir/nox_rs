@@ -118,6 +118,11 @@ fn build_release() -> Result {
     for package in ["nox-gui", "nox-cli"] {
         command.args(["--package", package]);
     }
+    // MSYS2 and Homebrew have libadwaita 1.8 or newer; the Linux package's
+    // Debian 13 has 1.7.
+    if cfg!(any(windows, target_os = "macos")) {
+        command.args(["--features", "nox-gui/adw-1-8"]);
+    }
     run(&mut command)
 }
 

@@ -40,7 +40,7 @@ What works today:
   - Clicking one selects it. The inspector then edits its name, color and note, and Delete removes it.
   - Markers on clips from imported files show as dots on the clips.
   - They are OTIO markers (on the top-level stack), saved with the project.
-- **In/Out marks** (DaVinci Resolve's keys): I and O mark In and Out at the playhead, Alt+I and Alt+O clear one, Alt+X both. The range shows on the ruler with everything outside it shaded. Marks are undoable edits and are saved with the project. Right-clicking the ruler moves the playhead there and offers Mark In, Mark Out, Add Marker and the Clear actions, as in Premiere.
+- **In/Out marks** (DaVinci Resolve's keys): I and O mark In and Out at the playhead, Shift+I and Shift+O clear one, Shift+X both (Resolve uses Alt, which the GNOME HIG leaves to access keys). The range shows on the ruler with everything outside it shaded. Marks are undoable edits and are saved with the project. Right-clicking the ruler moves the playhead there and offers Mark In, Mark Out, Add Marker and the Clear actions, as in Premiere.
 - **Track controls:** each track header shows the track's name and toggles: mute (video tracks: show/hide), solo (audio tracks), lock and sync lock. They are real buttons, reached with Tab and toggled with Space. Right-click a header, or press Shift+F10 in it, for the track menu: rename, delete and the same toggles. While any audio track is soloed, only soloed tracks are heard. Sync-locked tracks move along with ripple edits on other tracks (gaps open or close on them), so their clips stay in step. Muted audio tracks aren't mixed and hidden video tracks aren't composited, in playback and export (OTIO's `enabled`). Locked tracks are striped and reject every edit, including edits of clips linked to their clips.
 - **Projects:** `.otio` files (OpenTimelineIO) open and save, from the header bar or with `nox edit.otio`. Opening a project imports its media into the pool. Relative media paths are resolved against the `.otio` file's folder, as other OTIO tools do. Saving to another folder writes those as absolute `file://` URLs, so they keep working. Clips whose files are missing show red and are labelled "Offline". If a project opens with missing media, Nox offers to search a folder for them. Relinking works in two ways:
   - **Relink Offline Media…** (a button in the media pool's header, shown while media is offline) searches a folder and its subfolders, up to 6 levels deep, for files of the same name.
@@ -87,7 +87,7 @@ crates/
                rasterization (Vello CPU); pure Rust
   nox-engine   render worker (decoder pool, compositing, frame cache), audio
                mixer and output (cpal), playback clock
-  nox-gui      GTK4 app, binary `nox`; layouts in resources/ui/*.ui
+  nox-gui      GTK4 and libadwaita app, binary `nox`; layouts in resources/ui/*.ui
   nox-cli      headless tools (`nox-cli probe`, `nox-cli render`, `nox-cli version`)
 ```
 
@@ -166,7 +166,7 @@ Dependency direction: `gui → {engine, otio, fx, text}`, `engine → {media, gp
     - **The rule:** application-wide, only shortcuts with Ctrl or Alt, in `main.rs`. Keys that type a character or navigate live in a window-level `GtkShortcutController` declared in `window.ui`, in the bubble phase, so the focused widget gets them first. That covers Space, L, K, I, O, the arrows, Home/End, Up/Down, Shift+V and the Shift+digit page keys.
     - **Buttons** name their keys in the tooltip ("Add Marker (M)") and in the accessible `key-shortcuts` property.
     - **Shift+4, Shift+6, Shift+9** (pages, project settings) are matched by the physical key in `window.rs`, not by `<Shift>6` triggers. On most layouts Shift plus a digit key types another character (`^` on US English, `&` on German), and the triggers never matched. Real key input in the headless session showed this; until then they had only been tried through D-Bus.
-    - **Dialogs** are separate windows without the application accelerators, so they can use mnemonics (`_Preset`, `_Save`). In the main window, labels are linked with `labelled-by` instead, because a mnemonic such as Alt+O would collide with Clear Out.
+    - **Dialogs** are separate windows without the application accelerators, so they can use mnemonics (`_Preset`, `_Save`). In the main window, labels are linked with `labelled-by` instead.
 23. **Accessibility basics.**
     - Icon-only buttons have accessible names.
     - Form labels are linked to their controls.
@@ -174,8 +174,7 @@ Dependency direction: `gui → {engine, otio, fx, text}`, `engine → {media, gp
     - The timeline, drawn in code, is one accessible element (role Group) with a name, a description of its keys and a focus ring. It announces the selected clip ("name, start to end").
     - Keyboard: Up/Down jump to edit points, Shift+V selects the clip at the playhead (Resolve), and Shift+F10 or the Menu key opens its menu.
     - Track headers are widgets (`track_header.rs`, children of the timeline), with toggle buttons whose accessible names include the track ("Mute A1") and which announce their pressed state. Shift+F10 in a header opens its track menu.
-    - *Not done yet:*
-      - Clips can't be moved or trimmed by keyboard.
+    - Clips by keyboard: Ctrl+Left/Right move the selected clips a frame (with Shift a second; presses in a row are one undo step), Ctrl+Up/Down to the track above or below, and `{`/`}` trim the clip's start or end to the playhead (Resolve's Shift+[ and Shift+], matched by character so they work on other layouts). Edits that can't be made sound the error bell.
 
 24. **Scopes are counted on the GPU, then drawn** (`nox_gpu::scopes`, after Aras Pranckevičius's Blender GPU scopes: "This many points is surely out of scope", https://aras-p.info/blog/2025/08/24/This-many-points-is-surely-out-of-scope/).
     - **Why not draw points:** drawing one blended point per pixel stalls where points pile up, and most pixels sit near the vectorscope's center.
@@ -282,7 +281,7 @@ Dependency direction: `gui → {engine, otio, fx, text}`, `engine → {media, gp
       - In the CLI the container comes from the extension (`.avi` and `.webm` too). `--audio aac|opus|mp3|flac|pcm16|pcm24` picks the audio codec.
       - The audio decoder now discards the file's other streams. Otherwise, seeks in Matroska files stopped at video blocks ("keyframes not correctly marked").
       - Tested: every container with every audio codec it holds (`audio_codecs_in_every_container`), and exports to MKV (HEVC) and AVI.
-    - **Preferences** (asked for): the app's settings, for every window, in a Preferences window (main menu or Ctrl+,). They're kept in `nox/preferences.ini` in the user's config folder (a GLib key file, so no schema to install), saved when they change, and applied at once.
+    - **Preferences** (asked for): the app's settings, for every window, in a Preferences dialog (libadwaita's, main menu or Ctrl+,). They're kept in `nox/preferences.ini` in the user's config folder (a GLib key file, so no schema to install), saved when they change, and applied at once.
       - Timeline: thumbnails on video clips and waveforms on audio clips, each on or off.
       - Playback: video decoding. Automatic, processor only, Vulkan Video, NVDEC (not on macOS) or VAAPI (Linux). `NOX_DECODE` still overrides it for a session, and the window says so. The engine takes the choice at runtime (`Engine::set_hw_decode`): open decoders close and the frames render again. Exports decode the same way (`ExportSettings::decode`).
     - **Timeline thumbnails** (asked for): video clips show a filmstrip below their name. Each thumbnail shows the media at its left edge, at the clip's speed and trim.
@@ -362,6 +361,20 @@ Dependency direction: `gui → {engine, otio, fx, text}`, `engine → {media, gp
     - **Porting:** DMA-BUF (`DmabufFd`, GTK's DMA-BUF textures) is Linux-only; elsewhere `ExportPool::new` reports it unsupported and the viewer reads frames back. The workspace type-checks for Windows (MinGW headers for bindgen, in a container) and macOS ARM64 from Linux. Building, testing and packaging on those systems happens only in CI and hasn't run yet.
     - **CI:** `.github/workflows/ci.yml` runs on every push. Linux checks formatting, clippy and the tests in the Debian image; GPU tests run on Mesa's lavapipe, with Vulkan Video and DMA-BUF parts skipping themselves. The GUI tests run on a Broadway display (`with-display.sh`). That test run is measured with `cargo llvm-cov` and its coverage uploaded to Codecov (`codecov.yml`; the repository secret `CODECOV_TOKEN`). Windows x64 and macOS run clippy and the tests. The Flatpak is built. `release.yml` (on `v*` tags, or by hand) builds all packages, and on tags writes them with `SHA256SUMS.txt` into a draft release.
 
+30. **libadwaita, for the GNOME HIG** (decided with the user, to qualify for GNOME Circle eventually; its criteria require GTK 4 with libadwaita).
+    - **Application and window:** `adw::Application` (it loads `style.css` and the app's icons from the resource base path, also under the tests' app id) and `adw::ApplicationWindow` with a toolbar view and `AdwHeaderBar`. The style manager prefers dark (a video editor shows pictures; the system can still ask for light), and high contrast applies.
+    - **Dialogs:** messages and questions are `adw::AlertDialog`s (`alert.rs`: a heading, a body, answers by id; the default one suggested, Discard destructive). Preferences is an `AdwPreferencesDialog` with switch, combo and action rows; Export and Project Settings are `AdwDialog`s with a header bar (Export can't close while it runs: closing cancels the export first). About Nox is an `AdwAboutDialog` with the bundled third-party work.
+    - **Standard shortcuts:** Ctrl+Q quits (closing each window, so each asks about unsaved changes), Ctrl+W closes the window. No shortcut uses Alt (the HIG leaves it to access keys).
+    - **Header bar** (HIG): Open, Save, Undo, Redo and the pages, groups apart by spacing rather than linked; the project's name over its folder (`AdwWindowTitle`); Export (with an icon, not the suggested style), the inspector and the main menu. New and Save As are in the main menu, which ends with Preferences and About Nox.
+    - **Feedback:** edits that can't be made and relink results are toasts; errors opening or saving a project stay dialogs. Offline media is an `AdwBanner` under the header bar with Relink, for as long as files are missing, instead of a dialog on opening.
+    - **Empty states** are placeholder pages (`AdwStatusPage`): the media pool (with Import Media), the inspector, the color wheels, the node editor.
+    - **Dialogs' content** is in boxed lists (preference groups with combo, entry, spin and switch rows), Export's buttons in a bottom bar. Cancel closes the dialog itself: `window.close` would close the main window, which libadwaita's dialogs live in.
+    - **Inspector:** hidden at startup, with nothing to inspect; the first selection shows it, unless its button was used already. It never hides by itself.
+    - **Writing:** tooltips that name a control use header capitalization ("Split at Playhead (Ctrl+B)"), field labels sentence capitalization, apostrophes are typographic (’). The timecode uses tabular digits in the system font.
+    - **Styles:** `style.css` uses libadwaita's color variables and sizes relative to the font. Only the viewer's surroundings stay black, as the picture's own letterbox.
+    - **Version:** libadwaita 1.7, Debian 13's, which the Linux package bundles. The `adw-1-8` feature of nox-gui adds 1.8's Keyboard Shortcuts dialog (`shortcuts.rs`, Ctrl+?, in the main menu between Preferences and About); the Flatpak, the Windows and macOS packages (`xtask`) and their CI build with it, the Linux package and CI without. Locally: `cargo run --features nox-gui/adw-1-8` with libadwaita 1.8 or newer. Windows (MSYS2) and macOS (Homebrew) install it in CI and bundle it like GTK; the Windows package also takes its translations.
+    - *Not done yet:* the timeline, scopes and node editor draw in fixed colors, which high contrast doesn't change.
+
 ### Display formats
 
 GTK's Vulkan renderer on the development machine imports these DMA-BUF formats: `AB24`, `XB24`, `AR24`, `XR24` (8-bit RGB), `AB4H` (16-bit float RGBA), `AYUV`/`XYUV`/`AVUY`/`XVUY` (packed 8-bit YUV) and `R8`. Nox outputs `AB4H` (half float) when GTK offers it, else `AB24`, in both cases tagged sRGB (decision 20). A headless GNOME Shell session on the development machine imported `AB4H` with NVIDIA's tiled modifiers, zero copy. Handing GTK the decoder's YUV directly isn't useful for an editor, since it would bypass compositing and color management.
@@ -371,7 +384,7 @@ GTK's Vulkan renderer on the development machine imports these DMA-BUF formats: 
 Linux (system libraries):
 
 ```sh
-sudo apt install libgtk-4-dev libavcodec-dev libavformat-dev libavutil-dev \
+sudo apt install libgtk-4-dev libadwaita-1-dev libavcodec-dev libavformat-dev libavutil-dev \
                  libavfilter-dev libavdevice-dev libswscale-dev libswresample-dev \
                  libasound2-dev glslang-tools libxml2-utils gettext
 cargo run -- clip.mp4 photo.jpg      # starts Nox and imports the files

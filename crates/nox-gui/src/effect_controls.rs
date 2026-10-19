@@ -177,7 +177,7 @@ fn param_control(
             let unit = match unit {
                 Unit::Plain => None,
                 Unit::Percent => Some(gettext("In percent")),
-                Unit::PictureHeight => Some(gettext("In percent of the picture's height")),
+                Unit::PictureHeight => Some(gettext("In percent of the picture’s height")),
             };
             spin.set_tooltip_text(unit.as_deref());
             scale.set_tooltip_text(unit.as_deref());
@@ -187,7 +187,7 @@ fn param_control(
             let keyframe = offer.keyframes.then(|| {
                 let keyframe = gtk::ToggleButton::new();
                 keyframe.set_icon_name("nox-keyframe-symbolic");
-                keyframe.set_tooltip_text(Some(&gettext("Keyframe at the playhead")));
+                keyframe.set_tooltip_text(Some(&gettext("Keyframe at Playhead")));
                 keyframe.add_css_class("keyframe");
                 keyframe.add_css_class("flat");
                 keyframe.update_relation(&labelled);

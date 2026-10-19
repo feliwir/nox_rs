@@ -829,10 +829,11 @@ impl Inspector {
             .collect::<Vec<_>>()
             .join(", ");
         let size: u64 = models.iter().map(|m| m.size).sum();
-        let dialog = gtk::AlertDialog::builder()
-            .modal(true)
-            .message(gettext("Download the background removal model?"))
-            .detail(fill(
+        let inspector = self.downgrade();
+        crate::alert::ask(
+            self.upcast_ref::<gtk::Widget>(),
+            &gettext("Download the background removal model?"),
+            &fill(
                 &gettext(
                     "Removing backgrounds uses {models}, {size} MB downloaded once into {folder}.",
                 ),
@@ -841,24 +842,20 @@ impl Inspector {
                     ("size", &(size / 1_000_000)),
                     ("folder", &dir.display()),
                 ],
-            ))
-            .buttons([gettext("Cancel"), gettext("Download")])
-            .cancel_button(0)
-            .default_button(1)
-            .build();
-        let window = self.root().and_downcast::<gtk::Window>();
-        dialog.choose(
-            window.as_ref(),
-            gtk::gio::Cancellable::NONE,
-            glib::clone!(
-                #[weak(rename_to = inspector)]
-                self,
-                move |answer| {
-                    if answer == Ok(1) {
-                        inspector.download_models(models, then.clone());
-                    }
-                }
             ),
+            &[
+                ("cancel", gettext("Cancel"), crate::alert::Look::Plain),
+                (
+                    "download",
+                    gettext("Download"),
+                    crate::alert::Look::Suggested,
+                ),
+            ],
+            move |_| {
+                if let Some(inspector) = inspector.upgrade() {
+                    inspector.download_models(models, then);
+                }
+            },
         );
     }
 

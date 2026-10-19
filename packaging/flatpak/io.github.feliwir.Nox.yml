@@ -117,7 +117,7 @@ modules:
   - name: nox
     buildsystem: simple
     build-commands:
-      - cargo build --release --locked --package nox-gui --package nox-cli
+      - cargo build --release --locked --package nox-gui --package nox-cli --features nox-gui/adw-1-8
       # Fail if the programs linked another FFmpeg than ours (whose headers
       # the bindings came from).
       - |

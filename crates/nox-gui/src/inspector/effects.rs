@@ -208,7 +208,7 @@ impl Inspector {
             ),
         };
         let enabled = gtk::CheckButton::new();
-        enabled.set_tooltip_text(Some(&gettext("Turns the effect on or off")));
+        enabled.set_tooltip_text(Some(&gettext("Turn Effect On or Off")));
         let name = gtk::Label::new(Some(&title));
         name.set_xalign(0.0);
         name.set_hexpand(true);
@@ -230,7 +230,7 @@ impl Inspector {
         menu_button.set_icon_name("view-more-symbolic");
         menu_button.set_menu_model(Some(&menu));
         menu_button.add_css_class("flat");
-        menu_button.set_tooltip_text(Some(&gettext("Effect actions")));
+        menu_button.set_tooltip_text(Some(&gettext("Effect Actions")));
         let header = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         header.append(&enabled);
         header.append(&name);

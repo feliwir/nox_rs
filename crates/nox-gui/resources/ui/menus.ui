@@ -88,6 +88,16 @@
         <attribute name="action">win.split</attribute>
       </item>
       <item>
+        <attribute name="label" translatable="yes">Trim Start to Playhead</attribute>
+        <attribute name="action">win.trim-start-to-playhead</attribute>
+        <attribute name="accel">braceleft</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Trim End to Playhead</attribute>
+        <attribute name="action">win.trim-end-to-playhead</attribute>
+        <attribute name="accel">braceright</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">Delete</attribute>
         <attribute name="action">win.delete-clip</attribute>
       </item>
@@ -128,14 +138,17 @@
       <item>
         <attribute name="label" translatable="yes">Clear In</attribute>
         <attribute name="action">win.clear-in</attribute>
+        <attribute name="accel">&lt;Shift&gt;i</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">Clear Out</attribute>
         <attribute name="action">win.clear-out</attribute>
+        <attribute name="accel">&lt;Shift&gt;o</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">Clear In and Out</attribute>
         <attribute name="action">win.clear-in-out</attribute>
+        <attribute name="accel">&lt;Shift&gt;x</attribute>
       </item>
     </section>
   </menu>

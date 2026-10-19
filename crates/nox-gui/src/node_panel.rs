@@ -52,7 +52,7 @@ mod imp {
             title.set_wrap(true);
             title.add_css_class("heading");
             let enabled = gtk::CheckButton::with_label(&gettext("On"));
-            enabled.set_tooltip_text(Some(&gettext("Turns the effect on or off")));
+            enabled.set_tooltip_text(Some(&gettext("Turn Effect On or Off")));
             enabled.connect_toggled(glib::clone!(
                 #[weak]
                 obj,
@@ -197,9 +197,9 @@ impl NodePanel {
         imp.updating.set(true);
         let Some(effect) = effect else {
             title.set_text(&match key.as_deref() {
-                Some(SOURCE) => gettext("Source: the clip's picture"),
-                Some(OUTPUT) => gettext("Output: what's composited"),
-                _ => gettext("Select a node to change it."),
+                Some(SOURCE) => gettext("Source: the clip’s picture"),
+                Some(OUTPUT) => gettext("Output: what’s composited"),
+                _ => gettext("No Node Selected"),
             });
             enabled.set_visible(false);
             while let Some(child) = grid.first_child() {

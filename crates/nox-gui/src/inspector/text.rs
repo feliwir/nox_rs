@@ -64,7 +64,7 @@ impl Inspector {
 
         let size = gtk::SpinButton::with_range(1.0, 100.0, 0.5);
         size.set_digits(1);
-        size.set_tooltip_text(Some(&gettext("In percent of the picture's height")));
+        size.set_tooltip_text(Some(&gettext("In percent of the picture’s height")));
         let weight = gtk::SpinButton::with_range(100.0, 900.0, 100.0);
         weight.set_tooltip_text(Some(&gettext("400 is regular, 700 bold")));
         let italic = gtk::CheckButton::with_label(&gettext("Italic"));

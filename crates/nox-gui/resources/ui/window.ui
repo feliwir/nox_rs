@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface domain="nox">
-  <template class="NoxWindow" parent="GtkApplicationWindow">
+  <template class="NoxWindow" parent="AdwApplicationWindow">
     <property name="default-width">1400</property>
     <property name="default-height">860</property>
     <!-- Keys that type text or navigate. Unlike the application's
@@ -119,33 +119,96 @@
             <property name="action">action(win.set-out)</property>
           </object>
         </child>
+        <!-- Clips by keyboard: Ctrl+Left/Right nudge the selection a frame
+             (with Shift a second), Ctrl+Up/Down move it to the track above
+             or below, { and } trim the clip's start or end to the playhead
+             (Resolve's Shift+[ and Shift+]; matched by character, so they
+             work on layouts where the brackets are elsewhere). -->
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Control&gt;Left</property>
+            <property name="action">action(win.nudge-left)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Control&gt;Right</property>
+            <property name="action">action(win.nudge-right)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Control&gt;&lt;Shift&gt;Left</property>
+            <property name="action">action(win.nudge-left-second)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Control&gt;&lt;Shift&gt;Right</property>
+            <property name="action">action(win.nudge-right-second)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Control&gt;Up</property>
+            <property name="action">action(win.move-to-track-above)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Control&gt;Down</property>
+            <property name="action">action(win.move-to-track-below)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">braceleft</property>
+            <property name="action">action(win.trim-start-to-playhead)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">braceright</property>
+            <property name="action">action(win.trim-end-to-playhead)</property>
+          </object>
+        </child>
+        <!-- Clearing the marks: Shift with the mark's key (Resolve uses
+             Alt, which the GNOME HIG leaves to access keys). -->
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Shift&gt;i</property>
+            <property name="action">action(win.clear-in)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Shift&gt;o</property>
+            <property name="action">action(win.clear-out)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <property name="trigger">&lt;Shift&gt;x</property>
+            <property name="action">action(win.clear-in-out)</property>
+          </object>
+        </child>
         <!-- Shift+4, Shift+5, Shift+6 and Shift+9 (pages, project settings) are
              matched by physical key in window.rs: a <Shift>6 trigger misses
              on layouts where Shift+6 types another character (^ on US). -->
       </object>
     </child>
-    <property name="titlebar">
-      <object class="GtkHeaderBar">
-        <!-- No main menu: as in Resolve and Premiere, what an editor uses
-             all the time is a button. File actions and the pages on the
-             left, the project's name in the middle, export and project
-             settings on the right.
-             Tooltips name the shortcuts. -->
-        <child type="start">
-          <object class="GtkBox">
-            <style><class name="linked"/></style>
-            <child>
-              <object class="GtkButton">
-                <property name="icon-name">document-new-symbolic</property>
-                <property name="action-name">win.new</property>
-                <property name="tooltip-text" translatable="yes">New Project (Ctrl+N)</property>
-                <accessibility>
-                  <property name="label" translatable="yes">New Project</property>
-                  <property name="key-shortcuts">Control+N</property>
-                </accessibility>
-              </object>
-            </child>
-            <child>
+    <property name="content">
+      <!-- The header bar over the pages (libadwaita's toolbar view). -->
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <!-- As in Resolve and Premiere, what an editor uses all the time
+                 is a button: Open, Save, Undo, Redo and the pages on the
+                 left (groups apart by spacing, as the HIG asks), the
+                 project in the middle, Export, the inspector and the main
+                 menu (New, Save As, settings) on the right. Tooltips name
+                 the shortcuts. -->
+            <child type="start">
               <object class="GtkButton">
                 <property name="icon-name">document-open-symbolic</property>
                 <property name="action-name">win.open</property>
@@ -156,7 +219,7 @@
                 </accessibility>
               </object>
             </child>
-            <child>
+            <child type="start">
               <object class="GtkButton">
                 <property name="icon-name">document-save-symbolic</property>
                 <property name="action-name">win.save</property>
@@ -167,24 +230,12 @@
                 </accessibility>
               </object>
             </child>
-            <child>
-              <object class="GtkButton">
-                <property name="icon-name">document-save-as-symbolic</property>
-                <property name="action-name">win.save-as</property>
-                <property name="tooltip-text" translatable="yes">Save Project As (Ctrl+Shift+S)</property>
-                <accessibility>
-                  <property name="label" translatable="yes">Save Project As</property>
-                  <property name="key-shortcuts">Control+Shift+S</property>
-                </accessibility>
+            <child type="start">
+              <object class="GtkSeparator">
+                <style><class name="spacer"/></style>
               </object>
             </child>
-          </object>
-        </child>
-        <child type="start">
-          <object class="GtkBox">
-            <property name="margin-start">6</property>
-            <style><class name="linked"/></style>
-            <child>
+            <child type="start">
               <object class="GtkButton">
                 <property name="icon-name">edit-undo-symbolic</property>
                 <property name="action-name">win.undo</property>
@@ -195,7 +246,7 @@
                 </accessibility>
               </object>
             </child>
-            <child>
+            <child type="start">
               <object class="GtkButton">
                 <property name="icon-name">edit-redo-symbolic</property>
                 <property name="action-name">win.redo</property>
@@ -206,388 +257,433 @@
                 </accessibility>
               </object>
             </child>
+            <child type="start">
+              <object class="GtkSeparator">
+                <style><class name="spacer"/></style>
+              </object>
+            </child>
+            <child type="start">
+              <object class="GtkStackSwitcher">
+                <property name="stack">pages</property>
+              </object>
+            </child>
+            <!-- The project's name, and its folder (window.rs). -->
+            <property name="title-widget">
+              <object class="AdwWindowTitle" id="window_title"/>
+            </property>
+            <child type="end">
+              <object class="GtkMenuButton">
+                <property name="icon-name">open-menu-symbolic</property>
+                <property name="menu-model">primary_menu</property>
+                <property name="primary">true</property>
+                <property name="tooltip-text" translatable="yes">Main Menu</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Main Menu</property>
+                </accessibility>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton">
+                <property name="action-name">win.export</property>
+                <property name="tooltip-text" translatable="yes">Export Timeline (Ctrl+E)</property>
+                <property name="child">
+                  <object class="AdwButtonContent">
+                    <property name="icon-name">document-send-symbolic</property>
+                    <property name="label" translatable="yes">_Export</property>
+                    <property name="use-underline">true</property>
+                  </object>
+                </property>
+                <accessibility>
+                  <property name="key-shortcuts">Control+E</property>
+                </accessibility>
+              </object>
+            </child>
+            <!-- Shown on the Edit page only (window.rs); the Color page has
+                 no inspector. -->
+            <child type="end">
+              <object class="GtkToggleButton" id="inspector_toggle">
+                <property name="icon-name">sidebar-show-right-symbolic</property>
+                <property name="action-name">win.show-inspector</property>
+                <property name="tooltip-text" translatable="yes">Show Inspector</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Show Inspector</property>
+                </accessibility>
+              </object>
+            </child>
           </object>
         </child>
-        <child type="start">
-          <object class="GtkStackSwitcher">
-            <property name="stack">pages</property>
-            <property name="margin-start">12</property>
+        <!-- Offline media, while there is some (window.rs). -->
+        <child type="top">
+          <object class="AdwBanner" id="offline_banner">
+            <property name="button-label" translatable="yes">_Relink…</property>
+            <property name="action-name">win.relink-offline</property>
+            <property name="use-markup">false</property>
           </object>
         </child>
-        <child type="end">
-          <object class="GtkMenuButton">
-            <property name="icon-name">open-menu-symbolic</property>
-            <property name="menu-model">primary_menu</property>
-            <property name="primary">true</property>
-            <property name="tooltip-text" translatable="yes">Main Menu</property>
-            <accessibility>
-              <property name="label" translatable="yes">Main Menu</property>
-            </accessibility>
-          </object>
-        </child>
-        <child type="end">
-          <object class="GtkButton">
-            <property name="label" translatable="yes">Export</property>
-            <property name="action-name">win.export</property>
-            <property name="tooltip-text" translatable="yes">Export the timeline (Ctrl+E)</property>
-            <accessibility>
-              <property name="key-shortcuts">Control+E</property>
-            </accessibility>
-            <style><class name="suggested-action"/></style>
-          </object>
-        </child>
-        <!-- Shown on the Edit page only (window.rs); the Color page has
-             no inspector. -->
-        <child type="end">
-          <object class="GtkToggleButton" id="inspector_toggle">
-            <property name="icon-name">sidebar-show-right-symbolic</property>
-            <property name="action-name">win.show-inspector</property>
-            <property name="tooltip-text" translatable="yes">Show Inspector</property>
-            <accessibility>
-              <property name="label" translatable="yes">Show Inspector</property>
-            </accessibility>
-          </object>
-        </child>
-      </object>
-    </property>
-    <property name="child">
-      <!-- Pages as in DaVinci Resolve; the one viewer moves to the visible
-           page (see window.rs). -->
-      <object class="GtkStack" id="pages">
-        <property name="transition-type">crossfade</property>
-        <!-- Size to the visible page only; the pages' layouts differ. -->
-        <property name="hhomogeneous">false</property>
-        <property name="vhomogeneous">false</property>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">edit</property>
-            <property name="title" translatable="yes">Edit</property>
+        <property name="content">
+          <!-- Toasts: feedback that needs no answer (window.rs). -->
+          <object class="AdwToastOverlay" id="toasts">
             <property name="child">
-              <object class="GtkPaned">
-                <property name="orientation">vertical</property>
-                <property name="position">500</property>
-                <property name="shrink-end-child">false</property>
-                <!-- A thin handle's invisible grab area covers the top of the ruler. -->
-                <property name="wide-handle">true</property>
-                <property name="start-child">
-                  <object class="GtkPaned">
-                    <property name="orientation">horizontal</property>
-                    <property name="position">340</property>
-                    <property name="resize-start-child">false</property>
-                    <property name="shrink-start-child">false</property>
-                    <property name="wide-handle">true</property>
-                    <property name="start-child">
-                      <object class="NoxMediaPool" id="media_pool"/>
-                    </property>
-                    <property name="end-child">
+              <!-- Pages as in DaVinci Resolve; the one viewer moves to the visible
+                   page (see window.rs). -->
+              <object class="GtkStack" id="pages">
+                <property name="transition-type">crossfade</property>
+                <!-- Size to the visible page only; the pages' layouts differ. -->
+                <property name="hhomogeneous">false</property>
+                <property name="vhomogeneous">false</property>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">edit</property>
+                    <property name="title" translatable="yes">Edit</property>
+                    <property name="child">
                       <object class="GtkPaned">
-                        <property name="orientation">horizontal</property>
-                        <property name="resize-end-child">false</property>
+                        <property name="orientation">vertical</property>
+                        <property name="position">500</property>
                         <property name="shrink-end-child">false</property>
+                        <!-- A thin handle's invisible grab area covers the top of the ruler. -->
                         <property name="wide-handle">true</property>
                         <property name="start-child">
-                          <object class="GtkBox" id="edit_viewer_slot">
-                            <property name="hexpand">true</property>
-                            <child>
-                              <object class="NoxViewer" id="viewer">
-                                <property name="hexpand">true</property>
-                                <property name="vexpand">true</property>
+                          <object class="GtkPaned">
+                            <property name="orientation">horizontal</property>
+                            <property name="position">340</property>
+                            <property name="resize-start-child">false</property>
+                            <property name="shrink-start-child">false</property>
+                            <property name="wide-handle">true</property>
+                            <property name="start-child">
+                              <object class="NoxMediaPool" id="media_pool"/>
+                            </property>
+                            <property name="end-child">
+                              <object class="GtkPaned">
+                                <property name="orientation">horizontal</property>
+                                <property name="resize-end-child">false</property>
+                                <property name="shrink-end-child">false</property>
+                                <property name="wide-handle">true</property>
+                                <property name="start-child">
+                                  <object class="GtkBox" id="edit_viewer_slot">
+                                    <property name="hexpand">true</property>
+                                    <child>
+                                      <object class="NoxViewer" id="viewer">
+                                        <property name="hexpand">true</property>
+                                        <property name="vexpand">true</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </property>
+                                <property name="end-child">
+                                  <object class="NoxInspector" id="inspector"/>
+                                </property>
                               </object>
-                            </child>
+                            </property>
                           </object>
                         </property>
                         <property name="end-child">
-                          <object class="NoxInspector" id="inspector"/>
+                          <!-- External scrolling: the paned may measure this pane below the
+                               toolbar's height (as on the Color page); it never scrolls. -->
+                          <object class="GtkScrolledWindow">
+                            <property name="hscrollbar-policy">never</property>
+                            <property name="vscrollbar-policy">external</property>
+                            <property name="child">
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <!-- Timeline tools, as above Resolve's timeline and in
+                                       Premiere's timeline panel. -->
+                                  <object class="GtkBox">
+                                    <property name="spacing">8</property>
+                                    <property name="accessible-role">toolbar</property>
+                                    <accessibility>
+                                      <property name="label" translatable="yes">Timeline Tools</property>
+                                    </accessibility>
+                                    <style><class name="timeline-toolbar"/></style>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="valign">center</property>
+                                        <style><class name="flat-group"/></style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">nox-insert-symbolic</property>
+                                            <property name="action-name">win.insert-media</property>
+                                            <property name="tooltip-text" translatable="yes">Insert Selected Media at Playhead (F9)</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Insert</property>
+                                              <property name="key-shortcuts">F9</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">nox-overwrite-symbolic</property>
+                                            <property name="action-name">win.overwrite-media</property>
+                                            <property name="tooltip-text" translatable="yes">Overwrite at Playhead with Selected Media (F10)</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Overwrite</property>
+                                              <property name="key-shortcuts">F10</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="valign">center</property>
+                                        <style><class name="flat-group"/></style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">edit-cut-symbolic</property>
+                                            <property name="action-name">win.split</property>
+                                            <property name="tooltip-text" translatable="yes">Split at Playhead (Ctrl+B)</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Split at Playhead</property>
+                                              <property name="key-shortcuts">Control+B</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">nox-ripple-delete-symbolic</property>
+                                            <property name="action-name">win.ripple-delete</property>
+                                            <property name="tooltip-text" translatable="yes">Ripple Delete Selected Clips (Shift+Delete)</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Ripple Delete</property>
+                                              <property name="key-shortcuts">Shift+Delete</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">nox-dissolve-symbolic</property>
+                                            <property name="action-name">win.add-dissolve</property>
+                                            <property name="tooltip-text" translatable="yes">Add Dissolve to Selected Clip (Ctrl+T)</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Add Dissolve</property>
+                                              <property name="key-shortcuts">Control+T</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">insert-text-symbolic</property>
+                                            <property name="action-name">win.add-text</property>
+                                            <property name="tooltip-text" translatable="yes">Add Text at Playhead (Ctrl+Shift+T)</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Add Text</property>
+                                              <property name="key-shortcuts">Control+Shift+T</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="valign">center</property>
+                                        <style><class name="flat-group"/></style>
+                                        <child>
+                                          <object class="GtkToggleButton">
+                                            <property name="icon-name">nox-snapping-symbolic</property>
+                                            <property name="action-name">win.snapping</property>
+                                            <property name="tooltip-text" translatable="yes">Snapping (N)</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Snapping</property>
+                                              <property name="key-shortcuts">N</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="hexpand">true</property>
+                                        <property name="halign">end</property>
+                                        <property name="valign">center</property>
+                                        <style><class name="flat-group"/></style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">nox-add-video-track-symbolic</property>
+                                            <property name="action-name">win.add-video-track</property>
+                                            <property name="tooltip-text" translatable="yes">Add Video Track</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Add Video Track</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">nox-add-audio-track-symbolic</property>
+                                            <property name="action-name">win.add-audio-track</property>
+                                            <property name="tooltip-text" translatable="yes">Add Audio Track</property>
+                                            <accessibility>
+                                              <property name="label" translatable="yes">Add Audio Track</property>
+                                            </accessibility>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="NoxTimelineView" id="timeline">
+                                    <property name="hexpand">true</property>
+                                    <property name="vexpand">true</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                          </object>
                         </property>
                       </object>
                     </property>
                   </object>
-                </property>
-                <property name="end-child">
-                  <!-- External scrolling: the paned may measure this pane below the
-                       toolbar's height (as on the Color page); it never scrolls. -->
-                  <object class="GtkScrolledWindow">
-                    <property name="hscrollbar-policy">never</property>
-                    <property name="vscrollbar-policy">external</property>
+                </child>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">effects</property>
+                    <property name="title" translatable="yes">Effects</property>
                     <property name="child">
-                      <object class="GtkBox">
+                      <!-- The viewer and the selected node's controls above, the
+                           clips and the node editor below (as the Color page). -->
+                      <object class="GtkPaned" id="effects_paned">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <!-- Timeline tools, as above Resolve's timeline and in
-                               Premiere's timeline panel. -->
-                          <object class="GtkBox">
-                            <property name="spacing">8</property>
-                            <property name="accessible-role">toolbar</property>
-                            <accessibility>
-                              <property name="label" translatable="yes">Timeline Tools</property>
-                            </accessibility>
-                            <style><class name="timeline-toolbar"/></style>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="valign">center</property>
-                                <style><class name="flat-group"/></style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">nox-insert-symbolic</property>
-                                    <property name="action-name">win.insert-media</property>
-                                    <property name="tooltip-text" translatable="yes">Insert the selected media at the playhead (F9)</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Insert</property>
-                                      <property name="key-shortcuts">F9</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">nox-overwrite-symbolic</property>
-                                    <property name="action-name">win.overwrite-media</property>
-                                    <property name="tooltip-text" translatable="yes">Overwrite at the playhead with the selected media (F10)</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Overwrite</property>
-                                      <property name="key-shortcuts">F10</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="valign">center</property>
-                                <style><class name="flat-group"/></style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">edit-cut-symbolic</property>
-                                    <property name="action-name">win.split</property>
-                                    <property name="tooltip-text" translatable="yes">Split at the playhead (Ctrl+B)</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Split at Playhead</property>
-                                      <property name="key-shortcuts">Control+B</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">nox-ripple-delete-symbolic</property>
-                                    <property name="action-name">win.ripple-delete</property>
-                                    <property name="tooltip-text" translatable="yes">Ripple delete the selected clips (Shift+Delete)</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Ripple Delete</property>
-                                      <property name="key-shortcuts">Shift+Delete</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">nox-dissolve-symbolic</property>
-                                    <property name="action-name">win.add-dissolve</property>
-                                    <property name="tooltip-text" translatable="yes">Add a dissolve to the selected clip (Ctrl+T)</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Add Dissolve</property>
-                                      <property name="key-shortcuts">Control+T</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">insert-text-symbolic</property>
-                                    <property name="action-name">win.add-text</property>
-                                    <property name="tooltip-text" translatable="yes">Add text at the playhead (Ctrl+Shift+T)</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Add Text</property>
-                                      <property name="key-shortcuts">Control+Shift+T</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="valign">center</property>
-                                <style><class name="flat-group"/></style>
-                                <child>
-                                  <object class="GtkToggleButton">
-                                    <property name="icon-name">nox-snapping-symbolic</property>
-                                    <property name="action-name">win.snapping</property>
-                                    <property name="tooltip-text" translatable="yes">Snapping (N)</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Snapping</property>
-                                      <property name="key-shortcuts">N</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkBox">
+                        <property name="resize-end-child">false</property>
+                        <property name="shrink-end-child">true</property>
+                        <property name="wide-handle">true</property>
+                        <property name="start-child">
+                          <object class="GtkPaned">
+                            <property name="orientation">horizontal</property>
+                            <property name="resize-end-child">false</property>
+                            <property name="shrink-end-child">false</property>
+                            <property name="wide-handle">true</property>
+                            <property name="start-child">
+                              <object class="GtkBox" id="effects_viewer_slot">
                                 <property name="hexpand">true</property>
-                                <property name="halign">end</property>
-                                <property name="valign">center</property>
-                                <style><class name="flat-group"/></style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">nox-add-video-track-symbolic</property>
-                                    <property name="action-name">win.add-video-track</property>
-                                    <property name="tooltip-text" translatable="yes">Add Video Track</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Add Video Track</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">nox-add-audio-track-symbolic</property>
-                                    <property name="action-name">win.add-audio-track</property>
-                                    <property name="tooltip-text" translatable="yes">Add Audio Track</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Add Audio Track</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
                               </object>
+                            </property>
+                            <property name="end-child">
+                              <object class="GtkScrolledWindow">
+                                <property name="width-request">320</property>
+                                <property name="hscrollbar-policy">never</property>
+                                <property name="child">
+                                  <object class="NoxNodePanel" id="node_panel"/>
+                                </property>
+                              </object>
+                            </property>
+                          </object>
+                        </property>
+                        <property name="end-child">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="NoxClipStrip" id="effects_clip_strip"/>
+                            </child>
+                            <child>
+                              <object class="GtkSeparator"/>
+                            </child>
+                            <child>
+                              <object class="NoxNodeEditor" id="node_editor"/>
                             </child>
                           </object>
-                        </child>
-                        <child>
-                          <object class="NoxTimelineView" id="timeline">
-                            <property name="hexpand">true</property>
-                            <property name="vexpand">true</property>
-                          </object>
-                        </child>
-                      </object>
-                    </property>
-                  </object>
-                </property>
-              </object>
-            </property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">effects</property>
-            <property name="title" translatable="yes">Effects</property>
-            <property name="child">
-              <!-- The viewer and the selected node's controls above, the
-                   clips and the node editor below (as the Color page). -->
-              <object class="GtkPaned" id="effects_paned">
-                <property name="orientation">vertical</property>
-                <property name="resize-end-child">false</property>
-                <property name="shrink-end-child">true</property>
-                <property name="wide-handle">true</property>
-                <property name="start-child">
-                  <object class="GtkPaned">
-                    <property name="orientation">horizontal</property>
-                    <property name="resize-end-child">false</property>
-                    <property name="shrink-end-child">false</property>
-                    <property name="wide-handle">true</property>
-                    <property name="start-child">
-                      <object class="GtkBox" id="effects_viewer_slot">
-                        <property name="hexpand">true</property>
-                      </object>
-                    </property>
-                    <property name="end-child">
-                      <object class="GtkScrolledWindow">
-                        <property name="width-request">320</property>
-                        <property name="hscrollbar-policy">never</property>
-                        <property name="child">
-                          <object class="NoxNodePanel" id="node_panel"/>
                         </property>
                       </object>
                     </property>
                   </object>
-                </property>
-                <property name="end-child">
-                  <object class="GtkBox">
-                    <property name="orientation">vertical</property>
-                    <child>
-                      <object class="NoxClipStrip" id="effects_clip_strip"/>
-                    </child>
-                    <child>
-                      <object class="GtkSeparator"/>
-                    </child>
-                    <child>
-                      <object class="NoxNodeEditor" id="node_editor"/>
-                    </child>
-                  </object>
-                </property>
-              </object>
-            </property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">color</property>
-            <property name="title" translatable="yes">Color</property>
-            <property name="child">
-              <!-- The bottom may shrink below its natural height (it
-                   scrolls). Not shrinkable, the paned handed it one pixel
-                   less than its minimum when GTK computed the window's
-                   minimum size, and GTK warned on every resize. -->
-              <object class="GtkPaned" id="color_paned">
-                <property name="orientation">vertical</property>
-                <property name="resize-end-child">false</property>
-                <property name="shrink-end-child">true</property>
-                <property name="wide-handle">true</property>
-                <property name="start-child">
-                  <object class="GtkPaned">
-                    <property name="orientation">horizontal</property>
-                    <property name="resize-end-child">false</property>
-                    <property name="shrink-end-child">false</property>
-                    <property name="wide-handle">true</property>
-                    <property name="start-child">
-                      <object class="GtkBox" id="color_viewer_slot">
-                        <property name="hexpand">true</property>
-                      </object>
-                    </property>
-                    <property name="end-child">
-                      <object class="NoxScopesPanel" id="scopes">
-                        <property name="width-request">420</property>
-                      </object>
-                    </property>
-                  </object>
-                </property>
-                <property name="end-child">
-                  <!-- Scrolls on small windows rather than forcing a
-                       minimum height on the page. -->
-                  <object class="GtkScrolledWindow">
-                    <property name="hscrollbar-policy">never</property>
-                    <property name="propagate-natural-height">true</property>
+                </child>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">color</property>
+                    <property name="title" translatable="yes">Color</property>
                     <property name="child">
-                      <object class="GtkBox">
+                      <!-- The bottom may shrink below its natural height (it
+                           scrolls). Not shrinkable, the paned handed it one pixel
+                           less than its minimum when GTK computed the window's
+                           minimum size, and GTK warned on every resize. -->
+                      <object class="GtkPaned" id="color_paned">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <object class="NoxClipStrip" id="clip_strip"/>
-                        </child>
-                        <child>
-                          <object class="GtkSeparator"/>
-                        </child>
-                        <child>
-                          <object class="NoxColorWheels" id="color_wheels">
-                            <property name="vexpand">true</property>
+                        <property name="resize-end-child">false</property>
+                        <property name="shrink-end-child">true</property>
+                        <property name="wide-handle">true</property>
+                        <property name="start-child">
+                          <object class="GtkPaned">
+                            <property name="orientation">horizontal</property>
+                            <property name="resize-end-child">false</property>
+                            <property name="shrink-end-child">false</property>
+                            <property name="wide-handle">true</property>
+                            <property name="start-child">
+                              <object class="GtkBox" id="color_viewer_slot">
+                                <property name="hexpand">true</property>
+                              </object>
+                            </property>
+                            <property name="end-child">
+                              <object class="NoxScopesPanel" id="scopes">
+                                <property name="width-request">420</property>
+                              </object>
+                            </property>
                           </object>
-                        </child>
+                        </property>
+                        <property name="end-child">
+                          <!-- Scrolls on small windows rather than forcing a
+                               minimum height on the page. -->
+                          <object class="GtkScrolledWindow">
+                            <property name="hscrollbar-policy">never</property>
+                            <property name="propagate-natural-height">true</property>
+                            <property name="child">
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <object class="NoxClipStrip" id="clip_strip"/>
+                                </child>
+                                <child>
+                                  <object class="GtkSeparator"/>
+                                </child>
+                                <child>
+                                  <object class="NoxColorWheels" id="color_wheels">
+                                    <property name="vexpand">true</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                          </object>
+                        </property>
                       </object>
                     </property>
                   </object>
-                </property>
+                </child>
               </object>
             </property>
           </object>
-        </child>
+        </property>
       </object>
     </property>
   </template>
+  <!-- HIG: the app's own items first, then Preferences and About. -->
   <menu id="primary_menu">
     <section>
       <item>
-        <attribute name="label" translatable="yes">_Preferences</attribute>
-        <attribute name="action">app.preferences</attribute>
+        <attribute name="label" translatable="yes">_New Project</attribute>
+        <attribute name="action">win.new</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">Save Project _As…</attribute>
+        <attribute name="action">win.save-as</attribute>
+      </item>
+    </section>
+    <section>
       <item>
         <attribute name="label" translatable="yes">Project _Settings</attribute>
         <attribute name="action">win.project-settings</attribute>
         <!-- Shown only: Shift+9 is the window's own key (window.rs), not
              an application accelerator. -->
         <attribute name="accel">&lt;Shift&gt;9</attribute>
+      </item>
+    </section>
+    <!-- With the adw-1-8 feature, Keyboard Shortcuts goes between the
+         two (window.rs). -->
+    <section id="standard_items">
+      <item>
+        <attribute name="label" translatable="yes">_Preferences</attribute>
+        <attribute name="action">app.preferences</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_About Nox</attribute>
+        <attribute name="action">app.about</attribute>
       </item>
     </section>
   </menu>

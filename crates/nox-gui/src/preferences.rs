@@ -5,7 +5,9 @@
 //!
 //! The preferences window (`resources/ui/preferences.ui`) edits them.
 
-use gtk::{CompositeTemplate, gio, glib, prelude::*, subclass::prelude::*};
+use adw::prelude::*;
+use adw::subclass::prelude::*;
+use gtk::{CompositeTemplate, gio, glib};
 use nox_engine::HwDecode;
 use std::path::PathBuf;
 
@@ -167,40 +169,33 @@ mod imp {
 
     #[derive(Default, CompositeTemplate)]
     #[template(resource = "/io/github/feliwir/Nox/ui/preferences.ui")]
-    pub struct PreferencesWindow {
+    pub struct PreferencesDialog {
         #[template_child]
-        pub thumbnails: TemplateChild<gtk::Switch>,
+        pub thumbnails: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub waveforms: TemplateChild<gtk::Switch>,
+        pub waveforms: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub decoding: TemplateChild<gtk::DropDown>,
+        pub decoding: TemplateChild<adw::ComboRow>,
         #[template_child]
-        pub decoding_info: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub models_info: TemplateChild<gtk::Label>,
+        pub models_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub delete_models: TemplateChild<gtk::Button>,
         #[template_child]
-        pub transitions_info: TemplateChild<gtk::Label>,
+        pub transitions_row: TemplateChild<adw::ActionRow>,
         #[template_child]
-        pub effects_info: TemplateChild<gtk::Label>,
+        pub effects_row: TemplateChild<adw::ActionRow>,
         pub choices: RefCell<Vec<(HwDecode, &'static str, &'static str)>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for PreferencesWindow {
-        const NAME: &'static str = "NoxPreferencesWindow";
-        type Type = super::PreferencesWindow;
-        type ParentType = gtk::Window;
+    impl ObjectSubclass for PreferencesDialog {
+        const NAME: &'static str = "NoxPreferencesDialog";
+        type Type = super::PreferencesDialog;
+        type ParentType = adw::PreferencesDialog;
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
             klass.bind_template_instance_callbacks();
-            klass.add_binding_action(
-                gtk::gdk::Key::Escape,
-                gtk::gdk::ModifierType::empty(),
-                "window.close",
-            );
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -208,42 +203,57 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for PreferencesWindow {
+    impl ObjectImpl for PreferencesDialog {
         fn constructed(&self) {
             self.parent_constructed();
             self.obj().setup();
         }
     }
 
-    impl WidgetImpl for PreferencesWindow {}
-    impl WindowImpl for PreferencesWindow {}
+    impl WidgetImpl for PreferencesDialog {}
+    impl AdwDialogImpl for PreferencesDialog {}
+    impl PreferencesDialogImpl for PreferencesDialog {}
 }
 
 glib::wrapper! {
-    pub struct PreferencesWindow(ObjectSubclass<imp::PreferencesWindow>)
-        @extends gtk::Window, gtk::Widget,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native,
-            gtk::Root, gtk::ShortcutManager;
+    pub struct PreferencesDialog(ObjectSubclass<imp::PreferencesDialog>)
+        @extends adw::PreferencesDialog, adw::Dialog, gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget,
+            gtk::ShortcutManager;
 }
 
 /// Shows the preferences over `parent`.
 pub fn show(parent: Option<&gtk::Window>) {
-    let window: PreferencesWindow = glib::Object::builder()
-        .property("transient-for", parent)
-        .build();
-    window.present();
+    glib::Object::new::<PreferencesDialog>().present(parent);
 }
 
 #[gtk::template_callbacks]
-impl PreferencesWindow {
+impl PreferencesDialog {
     #[template_callback]
     fn on_open_effects_clicked(&self) {
-        open_folder(self, &nox_fx::shader_effects::packages_dir());
+        self.open_folder(&nox_fx::shader_effects::packages_dir());
     }
 
     #[template_callback]
     fn on_open_transitions_clicked(&self) {
-        open_folder(self, &nox_fx::shader_transitions::packages_dir());
+        self.open_folder(&nox_fx::shader_transitions::packages_dir());
+    }
+
+    /// Opens `dir` (made first, if need be) in the file manager.
+    fn open_folder(&self, dir: &std::path::Path) {
+        if let Err(err) = std::fs::create_dir_all(dir) {
+            tracing::warn!("cannot create {}: {err}", dir.display());
+        }
+        let window = self.root().and_downcast::<gtk::Window>();
+        gtk::FileLauncher::new(Some(&gio::File::for_path(dir))).launch(
+            window.as_ref(),
+            gio::Cancellable::NONE,
+            |result| {
+                if let Err(err) = result {
+                    tracing::warn!("cannot open the folder: {err}");
+                }
+            },
+        );
     }
 
     #[template_callback]
@@ -343,8 +353,8 @@ impl PreferencesWindow {
             &nox_fx::shader_transitions::packages_dir(),
             nox_fx::shader_transitions::package_problems(),
         );
-        self.imp().effects_info.set_text(&effects_text);
-        self.imp().transitions_info.set_text(&transitions_text);
+        self.imp().effects_row.set_subtitle(&effects_text);
+        self.imp().transitions_row.set_subtitle(&transitions_text);
     }
 
     /// Which AI models are downloaded, and how big they are.
@@ -370,7 +380,7 @@ impl PreferencesWindow {
                 ],
             )
         };
-        imp.models_info.set_text(&text);
+        imp.models_row.set_subtitle(&text);
         imp.delete_models.set_sensitive(!present.is_empty());
     }
 
@@ -380,7 +390,7 @@ impl PreferencesWindow {
         let imp = self.imp();
         if let Some(hw) = HwDecode::env_override() {
             imp.decoding.set_sensitive(false);
-            imp.decoding_info.set_text(&fill(
+            imp.decoding.set_subtitle(&fill(
                 &gettext("Set by the NOX_DECODE environment variable ({value}) for this session."),
                 &[("value", &hw.key())],
             ));
@@ -391,24 +401,8 @@ impl PreferencesWindow {
             .get(imp.decoding.selected() as usize)
             .map(|&(.., description)| gettext(description))
             .unwrap_or_default();
-        imp.decoding_info.set_text(&text);
+        imp.decoding.set_subtitle(&text);
     }
-}
-
-/// Opens `dir` (made first, if need be) in the file manager.
-fn open_folder(parent: &impl IsA<gtk::Window>, dir: &std::path::Path) {
-    if let Err(err) = std::fs::create_dir_all(dir) {
-        tracing::warn!("cannot create {}: {err}", dir.display());
-    }
-    gtk::FileLauncher::new(Some(&gio::File::for_path(dir))).launch(
-        Some(parent),
-        gio::Cancellable::NONE,
-        |result| {
-            if let Err(err) = result {
-                tracing::warn!("cannot open the folder: {err}");
-            }
-        },
-    );
 }
 
 /// What a packages row says: `loaded` (a template with `{count}` and
@@ -433,7 +427,7 @@ fn packages_text(
             .to_string_lossy();
         text.push('\n');
         text.push_str(&fill(
-            &gettext("{file} couldn't be loaded: {problem}"),
+            &gettext("{file} couldn’t be loaded: {problem}"),
             &[("file", &name), ("problem", &problem.message.trim())],
         ));
     }

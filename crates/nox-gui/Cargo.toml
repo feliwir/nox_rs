@@ -14,6 +14,7 @@ path = "src/main.rs"
 gettext-rs.workspace = true
 async-channel.workspace = true
 gtk.workspace = true
+adw.workspace = true
 nox-ai.workspace = true
 nox-fx.workspace = true
 nox-text.workspace = true
@@ -23,6 +24,12 @@ nox-otio.workspace = true
 nox-project.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+[features]
+# libadwaita 1.8's Keyboard Shortcuts dialog (Ctrl+?). On where the
+# libadwaita built against is 1.8 or newer: the Flatpak, Windows and macOS
+# packages and CI. Off for the Linux package (Debian 13 has 1.7).
+adw-1-8 = ["adw/v1_8"]
 
 [build-dependencies]
 glib-build-tools.workspace = true

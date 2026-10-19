@@ -2,11 +2,12 @@
 //! clip in a landscape timeline or the other way round): asks first how to
 //! fit it, as Premiere's clip mismatch warning does.
 
-use gtk::{gio, prelude::*};
+use gtk::prelude::*;
 use nox_media::MediaInfo;
 use nox_project::EditError;
 use std::rc::Rc;
 
+use crate::alert::Look;
 use crate::i18n::{fill, gettext};
 use crate::project::{Framing, Project};
 
@@ -58,29 +59,25 @@ pub fn add_media(
             ("clip_height", &video.height),
         ],
     );
-    let dialog = gtk::AlertDialog::builder()
-        .message(message)
-        .detail(detail)
-        .buttons([
-            gettext("Cancel"),
-            gettext("Fit"),
-            gettext("Fill"),
-            gettext("Change Timeline"),
-        ])
-        .cancel_button(0)
-        .default_button(2)
-        .modal(true)
-        .build();
-    let window = parent.root().and_downcast::<gtk::Window>();
     let project = project.clone();
-    dialog.choose(window.as_ref(), gio::Cancellable::NONE, move |answer| {
-        let framing = match answer {
-            Ok(1) => Framing::Keep,
-            Ok(2) => Framing::Fill,
-            Ok(3) => Framing::MatchTimeline,
-            _ => return,
-        };
-        let result = project.add_media(&media, track, frame, insert, framing);
-        done(result, Some(framing));
-    });
+    crate::alert::ask(
+        parent,
+        &message,
+        &detail,
+        &[
+            ("cancel", gettext("Cancel"), Look::Plain),
+            ("fit", gettext("Fit"), Look::Plain),
+            ("fill", gettext("Fill"), Look::Suggested),
+            ("timeline", gettext("Change Timeline"), Look::Plain),
+        ],
+        move |answer| {
+            let framing = match answer {
+                "fit" => Framing::Keep,
+                "fill" => Framing::Fill,
+                _ => Framing::MatchTimeline,
+            };
+            let result = project.add_media(&media, track, frame, insert, framing);
+            done(result, Some(framing));
+        },
+    );
 }

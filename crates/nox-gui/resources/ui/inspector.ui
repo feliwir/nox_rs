@@ -117,15 +117,11 @@
           <object class="GtkStackPage">
             <property name="name">empty</property>
             <property name="child">
-              <object class="GtkLabel">
-                <property name="label" translatable="yes">Select a clip on the timeline to see its properties.</property>
-                <property name="wrap">true</property>
-                <property name="justify">center</property>
-                <property name="margin-start">16</property>
-                <property name="margin-end">16</property>
-                <style>
-                  <class name="dim-label"/>
-                </style>
+              <object class="AdwStatusPage">
+                <property name="icon-name">edit-select-symbolic</property>
+                <property name="title" translatable="yes">No Clip Selected</property>
+                <property name="description" translatable="yes">Select a clip on the timeline to see its properties</property>
+                <style><class name="compact"/></style>
               </object>
             </property>
           </object>
@@ -359,7 +355,7 @@
                             <child>
                               <object class="GtkToggleButton" id="opacity_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">opacity_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -418,7 +414,7 @@
                         </child>
                         <child>
                           <object class="GtkMenuButton" id="transition_type">
-                            <property name="tooltip-text" translatable="yes">Choose the transition</property>
+                            <property name="tooltip-text" translatable="yes">Choose Transition</property>
                             <accessibility>
                               <relation name="labelled-by">transition_type_label</relation>
                             </accessibility>
@@ -494,7 +490,7 @@
                           <object class="GtkMenuButton" id="add_effect">
                             <property name="label" translatable="yes">Add Effect…</property>
                             <property name="halign">start</property>
-                            <property name="tooltip-text" translatable="yes">Adds an effect to the clip, after its other effects</property>
+                            <property name="tooltip-text" translatable="yes">Add Effect</property>
                           </object>
                         </child>
                         <child>
@@ -564,7 +560,7 @@
                                 </accessibility>
                                 <property name="digits">0</property>
                                 <property name="width-chars">6</property>
-                                <property name="tooltip-text" translatable="yes">Pixels right of center, in the timeline's resolution</property>
+                                <property name="tooltip-text" translatable="yes">Pixels right of center, in the timeline’s resolution</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">0</property>
@@ -574,7 +570,7 @@
                             <child>
                               <object class="GtkToggleButton" id="position_x_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">position_x_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -609,7 +605,7 @@
                                 </accessibility>
                                 <property name="digits">0</property>
                                 <property name="width-chars">6</property>
-                                <property name="tooltip-text" translatable="yes">Pixels below center, in the timeline's resolution</property>
+                                <property name="tooltip-text" translatable="yes">Pixels below center, in the timeline’s resolution</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">1</property>
@@ -619,7 +615,7 @@
                             <child>
                               <object class="GtkToggleButton" id="position_y_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">position_y_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -664,7 +660,7 @@
                             <child>
                               <object class="GtkToggleButton" id="zoom_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">zoom_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -709,7 +705,7 @@
                             <child>
                               <object class="GtkToggleButton" id="rotation_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">rotation_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -754,7 +750,7 @@
                             <child>
                               <object class="GtkToggleButton" id="crop_left_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">crop_left_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -799,7 +795,7 @@
                             <child>
                               <object class="GtkToggleButton" id="crop_right_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">crop_right_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -844,7 +840,7 @@
                             <child>
                               <object class="GtkToggleButton" id="crop_top_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">crop_top_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -889,7 +885,7 @@
                             <child>
                               <object class="GtkToggleButton" id="crop_bottom_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">crop_bottom_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>
@@ -957,7 +953,7 @@
                           <object class="GtkCheckButton" id="speed_ripple">
                             <property name="label" translatable="yes">Move what follows</property>
                             <property name="active">true</property>
-                            <property name="tooltip-text" translatable="yes">When the speed changes the clip's length, move the clips after it (as Resolve's Ripple Sequence); otherwise leave a gap or cover them</property>
+                            <property name="tooltip-text" translatable="yes">When the speed changes the clip’s length, move the clips after it (as Resolve’s Ripple Sequence); otherwise leave a gap or cover them</property>
                           </object>
                         </child>
                         <child>
@@ -1005,7 +1001,7 @@
                                 </accessibility>
                                 <property name="digits">2</property>
                                 <property name="width-chars">5</property>
-                                <property name="tooltip-text" translatable="yes">Seconds; also set by dragging the handles at the clip's top corners</property>
+                                <property name="tooltip-text" translatable="yes">Seconds; also set by dragging the handles at the clip’s top corners</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">0</property>
@@ -1031,7 +1027,7 @@
                                 </accessibility>
                                 <property name="digits">2</property>
                                 <property name="width-chars">5</property>
-                                <property name="tooltip-text" translatable="yes">Seconds; also set by dragging the handles at the clip's top corners</property>
+                                <property name="tooltip-text" translatable="yes">Seconds; also set by dragging the handles at the clip’s top corners</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">1</property>
@@ -1103,7 +1099,7 @@
                             <child>
                               <object class="GtkToggleButton" id="volume_key">
                                 <property name="icon-name">nox-keyframe-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Keyframe at the playhead</property>
+                                <property name="tooltip-text" translatable="yes">Keyframe at Playhead</property>
                                 <accessibility>
                                   <relation name="labelled-by">volume_label</relation>
                                   <property name="description" translatable="yes">Adds or removes a keyframe at the playhead</property>

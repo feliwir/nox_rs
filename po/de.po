@@ -693,7 +693,7 @@ msgid "Timeline _frame rate"
 msgstr "Timeline-_Bildrate"
 
 #: resources/ui/project-settings.ui:197
-msgid "Use _drop frame timecode"
+msgid "Use _Drop Frame Timecode"
 msgstr "_Drop-Frame-Timecode verwenden"
 
 #: resources/ui/project-settings.ui:240
@@ -1097,7 +1097,7 @@ msgid "Timeline Tools"
 msgstr "Timeline-Werkzeuge"
 
 #: resources/ui/window.ui
-msgid "Insert the selected media at the playhead (F9)"
+msgid "Insert Selected Media at Playhead (F9)"
 msgstr "Ausgewählte Medien am Abspielkopf einfügen (F9)"
 
 #: resources/ui/window.ui
@@ -1105,7 +1105,7 @@ msgid "Insert"
 msgstr "Einfügen"
 
 #: resources/ui/window.ui
-msgid "Overwrite at the playhead with the selected media (F10)"
+msgid "Overwrite at Playhead with Selected Media (F10)"
 msgstr "Am Abspielkopf mit den ausgewählten Medien überschreiben (F10)"
 
 #: resources/ui/window.ui
@@ -1113,15 +1113,15 @@ msgid "Overwrite"
 msgstr "Überschreiben"
 
 #: resources/ui/window.ui
-msgid "Split at the playhead (Ctrl+B)"
+msgid "Split at Playhead (Ctrl+B)"
 msgstr "Am Abspielkopf teilen (Strg+B)"
 
 #: resources/ui/window.ui
-msgid "Ripple delete the selected clips (Shift+Delete)"
+msgid "Ripple Delete Selected Clips (Shift+Delete)"
 msgstr "Ausgewählte Clips mit Lückenschluss löschen (Umschalt+Entf)"
 
 #: resources/ui/window.ui
-msgid "Add a dissolve to the selected clip (Ctrl+T)"
+msgid "Add Dissolve to Selected Clip (Ctrl+T)"
 msgstr "Dem ausgewählten Clip eine Überblendung hinzufügen (Strg+T)"
 
 #: resources/ui/window.ui
@@ -1145,7 +1145,7 @@ msgid "Fades"
 msgstr "Blenden"
 
 #: resources/ui/inspector.ui
-msgid "Seconds; also set by dragging the handles at the clip's top corners"
+msgid "Seconds; also set by dragging the handles at the clip’s top corners"
 msgstr "Sekunden; auch durch Ziehen der Griffe an den oberen Ecken des Clips"
 
 #: src/inspector.rs
@@ -1194,11 +1194,11 @@ msgid "Crop Bottom"
 msgstr "Unten beschneiden"
 
 #: resources/ui/inspector.ui
-msgid "Pixels right of center, in the timeline's resolution"
+msgid "Pixels right of center, in the timeline’s resolution"
 msgstr "Pixel rechts der Mitte, in der Auflösung der Timeline"
 
 #: resources/ui/inspector.ui
-msgid "Pixels below center, in the timeline's resolution"
+msgid "Pixels below center, in the timeline’s resolution"
 msgstr "Pixel unter der Mitte, in der Auflösung der Timeline"
 
 #: resources/ui/inspector.ui
@@ -1226,7 +1226,7 @@ msgid "Change Easing"
 msgstr "Interpolation ändern"
 
 #: resources/ui/inspector.ui
-msgid "Keyframe at the playhead"
+msgid "Keyframe at Playhead"
 msgstr "Keyframe am Abspielkopf"
 
 #: resources/ui/inspector.ui
@@ -1313,7 +1313,7 @@ msgid "Move what follows"
 msgstr "Nachfolgendes verschieben"
 
 #: resources/ui/inspector.ui
-msgid "When the speed changes the clip's length, move the clips after it (as Resolve's Ripple Sequence); otherwise leave a gap or cover them"
+msgid "When the speed changes the clip’s length, move the clips after it (as Resolve’s Ripple Sequence); otherwise leave a gap or cover them"
 msgstr "Wenn die Geschwindigkeit die Länge des Clips ändert, die folgenden Clips verschieben (wie Resolves „Ripple Sequence“); sonst eine Lücke lassen oder sie überdecken"
 
 #: resources/ui/inspector.ui
@@ -1366,7 +1366,7 @@ msgid "Move Keyframe"
 msgstr "Keyframe verschieben"
 
 #: resources/ui/color-wheels.ui
-msgid "Grade keyframe at the playhead"
+msgid "Grade Keyframe at Playhead"
 msgstr "Grading-Keyframe am Abspielkopf"
 
 #: src/export_dialog.rs
@@ -1538,7 +1538,7 @@ msgid "Add Effect…"
 msgstr "Effekt hinzufügen …"
 
 #: crates/nox-gui/resources/ui/inspector.ui
-msgid "Adds an effect to the clip, after its other effects"
+msgid "Add Effect"
 msgstr "Fügt dem Clip einen Effekt nach seinen anderen Effekten hinzu"
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1552,7 +1552,7 @@ msgid "{name} (not supported)"
 msgstr "{name} (nicht unterstützt)"
 
 #: crates/nox-gui/src/inspector/effects.rs
-msgid "Turns the effect on or off"
+msgid "Turn Effect On or Off"
 msgstr "Schaltet den Effekt ein oder aus"
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1576,7 +1576,7 @@ msgid "Remove"
 msgstr "Entfernen"
 
 #: crates/nox-gui/src/inspector/effects.rs
-msgid "Effect actions"
+msgid "Effect Actions"
 msgstr "Effektaktionen"
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1616,7 +1616,7 @@ msgid "In percent"
 msgstr "In Prozent"
 
 #: crates/nox-gui/src/inspector/effects.rs
-msgid "In percent of the picture's height"
+msgid "In percent of the picture’s height"
 msgstr "In Prozent der Bildhöhe"
 
 #: crates/nox-gui/src/inspector/effects.rs
@@ -1757,11 +1757,11 @@ msgid "On"
 msgstr "Ein"
 
 #: crates/nox-gui/src/node_panel.rs
-msgid "Source: the clip's picture"
+msgid "Source: the clip’s picture"
 msgstr "Quelle: das Bild des Clips"
 
 #: crates/nox-gui/src/node_panel.rs
-msgid "Output: what's composited"
+msgid "Output: what’s composited"
 msgstr "Ausgabe: was zusammengesetzt wird"
 
 #: crates/nox-gui/src/node_panel.rs
@@ -1989,7 +1989,7 @@ msgid "{transition}, {length}"
 msgstr "{transition}, {length}"
 
 #: crates/nox-gui/resources/ui/inspector.ui
-msgid "Choose the transition"
+msgid "Choose Transition"
 msgstr "Übergang wählen"
 
 #: crates/nox-gui/src/window.rs
@@ -2196,7 +2196,7 @@ msgstr[0] "{count} Übergangspaket aus {folder}; Nox lädt sie beim Start."
 msgstr[1] "{count} Übergangspakete aus {folder}; Nox lädt sie beim Start."
 
 #: crates/nox-gui/src/preferences.rs
-msgid "{file} couldn't be loaded: {problem}"
+msgid "{file} couldn’t be loaded: {problem}"
 msgstr "{file} konnte nicht geladen werden: {problem}"
 
 #: crates/nox-gui/resources/ui/preferences.ui
@@ -2311,5 +2311,205 @@ msgid "Cannot add text"
 msgstr "Text kann nicht hinzugefügt werden"
 
 #: crates/nox-gui/resources/ui/window.ui
-msgid "Add text at the playhead (Ctrl+Shift+T)"
+msgid "Add Text at Playhead (Ctrl+Shift+T)"
 msgstr "Text am Abspielkopf hinzufügen (Strg+Umschalt+T)"
+
+#: crates/nox-gui/src/alert.rs
+msgid "Close"
+msgstr "Schließen"
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "_About Nox"
+msgstr "_Info zu Nox"
+
+#: crates/nox-gui/src/about.rs
+msgid "SIL Open Font License, version 1.1"
+msgstr "SIL Open Font License, Version 1.1"
+
+#. Translators: your names, one per line, as "Name <email>".
+#: crates/nox-gui/src/about.rs
+msgid "translator-credits"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "_Thumbnails on Video Clips"
+msgstr "_Vorschaubilder auf Videoclips"
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "_Waveforms on Audio Clips"
+msgstr "_Wellenformen auf Audioclips"
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Downloaded Models"
+msgstr "Heruntergeladene Modelle"
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Delete Downloaded Models"
+msgstr "Heruntergeladene Modelle löschen"
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Transitions"
+msgstr "Übergänge"
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Open the Effects Folder"
+msgstr "Effektordner öffnen"
+
+#: crates/nox-gui/resources/ui/preferences.ui
+msgid "Open the Transitions Folder"
+msgstr "Übergangsordner öffnen"
+
+#: crates/nox-gui/src/window.rs
+msgid "{message}: {reason}"
+msgstr "{message}: {reason}"
+
+#: crates/nox-gui/src/node_editor.rs
+msgid "No Clip Selected"
+msgstr "Kein Clip ausgewählt"
+
+#: crates/nox-gui/src/node_editor.rs
+msgid "Select a video clip to see its effects"
+msgstr "Wählen Sie einen Videoclip, um seine Effekte zu sehen"
+
+#: crates/nox-gui/src/node_panel.rs
+msgid "No Node Selected"
+msgstr "Kein Knoten ausgewählt"
+
+#: crates/nox-gui/resources/ui/media-pool.ui
+msgid "No Media"
+msgstr "Keine Medien"
+
+#: crates/nox-gui/resources/ui/media-pool.ui
+msgid "Drop video, audio or image files here"
+msgstr "Video-, Audio- oder Bilddateien hier ablegen"
+
+#: crates/nox-gui/resources/ui/media-pool.ui
+msgid "_Import Media…"
+msgstr "Medien _importieren…"
+
+#: crates/nox-gui/resources/ui/inspector.ui
+msgid "Select a clip on the timeline to see its properties"
+msgstr "Wählen Sie einen Clip in der Timeline, um seine Eigenschaften zu sehen"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui
+msgid "Select a video clip to grade it"
+msgstr "Wählen Sie einen Videoclip, um ihn zu graden"
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "_New Project"
+msgstr "_Neues Projekt"
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "Save Project _As…"
+msgstr "Projekt speichern _unter…"
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "Export Timeline (Ctrl+E)"
+msgstr "Timeline exportieren (Strg+E)"
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "_Relink…"
+msgstr "_Neu verknüpfen…"
+
+#: crates/nox-gui/resources/ui/menus.ui
+msgid "Trim Start to Playhead"
+msgstr "Anfang bis zum Abspielkopf kürzen"
+
+#: crates/nox-gui/resources/ui/menus.ui
+msgid "Trim End to Playhead"
+msgstr "Ende bis zum Abspielkopf kürzen"
+
+#: crates/nox-gui/src/timeline/input.rs
+msgid "Left and Right step one frame, Up and Down jump to edit points, Shift+V selects the clip at the playhead, Ctrl+A all clips and Escape none. Ctrl+Left and Ctrl+Right move the selected clips a frame (with Shift a second), Ctrl+Up and Ctrl+Down to the track above or below; braces trim the clip's start or end to the playhead. Shift+F10 opens the clip menu (in a track header, the track menu), Delete removes the selected clips."
+msgstr "Links und Rechts gehen ein Bild weiter, Hoch und Runter springen zu Schnittpunkten, Umschalt+V wählt den Clip am Abspielkopf, Strg+A alle Clips und Escape keinen. Strg+Links und Strg+Rechts verschieben die gewählten Clips um ein Bild (mit Umschalt um eine Sekunde), Strg+Hoch und Strg+Runter auf die Spur darüber oder darunter; geschweifte Klammern kürzen Anfang oder Ende des Clips bis zum Abspielkopf. Umschalt+F10 öffnet das Clipmenü (in einem Spurkopf das Spurmenü), Entfernen löscht die gewählten Clips."
+
+#: crates/nox-gui/src/window.rs
+#, python-brace-format
+msgid "{n} media file is offline; its clips show black"
+msgid_plural "{n} media files are offline; their clips show black"
+msgstr[0] "{n} Mediendatei ist offline; ihre Clips sind schwarz"
+msgstr[1] "{n} Mediendateien sind offline; ihre Clips sind schwarz"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Close Window"
+msgstr "Fenster schließen"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Editing"
+msgstr "Bearbeiten"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Go to Start or End"
+msgstr "Zum Anfang oder Ende"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Insert Media at Playhead"
+msgstr "Medien am Abspielkopf einfügen"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Keyboard Shortcuts"
+msgstr "Tastenkürzel"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Marks and Markers"
+msgstr "Marken und Marker"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Move a Frame Earlier or Later"
+msgstr "Ein Bild früher oder später"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Move a Second Earlier or Later"
+msgstr "Eine Sekunde früher oder später"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Move to the Track Above or Below"
+msgstr "Auf die Spur darüber oder darunter"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Overwrite at Playhead"
+msgstr "Am Abspielkopf überschreiben"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Pages"
+msgstr "Seiten"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Play or Pause"
+msgstr "Wiedergabe oder Pause"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Previous or Next Edit"
+msgstr "Vorheriger oder nächster Schnitt"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Previous or Next Frame"
+msgstr "Vorheriges oder nächstes Bild"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Previous or Next Marker"
+msgstr "Vorheriger oder nächster Marker"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Project"
+msgstr "Projekt"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Project Settings"
+msgstr "Projekteinstellungen"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Quit"
+msgstr "Beenden"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Select All Clips"
+msgstr "Alle Clips auswählen"
+
+#: crates/nox-gui/src/shortcuts.rs
+msgid "Select Clip at Playhead"
+msgstr "Clip am Abspielkopf auswählen"
+
+#: crates/nox-gui/src/window.rs
+msgid "_Keyboard Shortcuts"
+msgstr "_Tastenkürzel"

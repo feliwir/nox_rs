@@ -14,9 +14,11 @@ impl imp::TimelineView {
             gtk::accessible::Property::Description(&crate::i18n::gettext(
                 "Left and Right step one frame, Up and Down jump to edit points, \
                  Shift+V selects the clip at the playhead, Ctrl+A all clips and \
-                 Escape none, Shift+F10 opens the clip menu (in a track header, the \
-                 track menu), Delete removes the \
-                 selected clips.",
+                 Escape none. Ctrl+Left and Ctrl+Right move the selected clips a \
+                 frame (with Shift a second), Ctrl+Up and Ctrl+Down to the track \
+                 above or below; braces trim the clip's start or end to the \
+                 playhead. Shift+F10 opens the clip menu (in a track header, the \
+                 track menu), Delete removes the selected clips.",
             )),
         ]);
 

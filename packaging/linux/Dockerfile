@@ -14,7 +14,7 @@ FROM debian:13
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ca-certificates curl git pkg-config clang libclang-dev \
-        nasm libgtk-4-dev librsvg2-common \
+        nasm libgtk-4-dev libadwaita-1-dev librsvg2-common \
         libx264-dev libx265-dev libdav1d-dev libsvtav1enc-dev libvpx-dev \
         libjxl-dev libopus-dev libmp3lame-dev libvulkan-dev libva-dev \
         libasound2-dev glslang-tools glslc libxml2-utils patchelf \

@@ -1,26 +1,37 @@
-.media-pool { background: #1e1f22; }
-.media-pool:drop(active) { box-shadow: inset 0 0 0 2px #3584e4; }
+/* Nox's styles on top of libadwaita's: its color variables (so the dark
+   and light styles and high contrast apply) and sizes relative to the
+   font (so large text scales them). */
+
+:root {
+  /* Toggles that are on (snapping, keyframes, solo), as in Resolve. */
+  --nox-on-color: #f08a40;
+}
+
+.media-pool { background: var(--view-bg-color); }
+.media-pool:drop(active) { box-shadow: inset 0 0 0 2px var(--accent-bg-color); }
 .pane-title { font-weight: bold; padding: 6px 8px; }
 .media-pool gridview > child { padding: 6px; }
-.thumbnail-frame { background: #111214; border-radius: 4px; }
-.media-summary { font-size: 8pt; opacity: 0.7; }
+.thumbnail-frame { background: var(--card-bg-color); border-radius: 4px; }
+.media-summary { font-size: 0.8em; opacity: var(--dim-opacity); }
+/* Around the picture: black, as the picture's own letterbox. */
 .viewer-canvas { background: black; }
-.timecode { font-family: monospace; font-size: 13pt; padding: 0 8px; }
-timeline { font-size: 8pt; }
+/* Tabular digits in the system font, as libadwaita's .numeric. */
+.timecode { font-feature-settings: "tnum"; font-size: 1.3em; padding: 0 8px; }
+timeline { font-size: 0.8em; }
 .inspector-name { font-weight: bold; }
-timeline:focus-visible { outline: 2px solid #3584e4; outline-offset: -2px; }
-.track-header { background: #2b2c31; padding: 1px 4px; }
-.track-header .track-name { font-size: 8pt; color: #b0b2b8; }
-.track-header button { min-height: 20px; min-width: 22px; padding: 0; border: none; border-radius: 3px; background: none; box-shadow: none; color: #808288; }
-.track-header button:hover { background: alpha(white, 0.08); }
-.track-header button:checked { color: #f08a40; }
+timeline:focus-visible { outline: 2px solid var(--accent-color); outline-offset: -2px; }
+.track-header { background: var(--sidebar-bg-color); padding: 1px 4px; }
+.track-header .track-name { font-size: 0.8em; opacity: var(--dim-opacity); }
+.track-header button { min-height: 20px; min-width: 22px; padding: 0; border: none; border-radius: 3px; background: none; box-shadow: none; color: alpha(currentColor, 0.6); }
+.track-header button:hover { background: alpha(currentColor, 0.08); }
+.track-header button:checked { color: var(--nox-on-color); }
 .track-header button image { -gtk-icon-size: 14px; }
-.timeline-toolbar { padding: 3px 6px; border-bottom: 1px solid #121315; min-height: 28px; }
-.timeline-toolbar .flat-group { border-right: 1px solid alpha(white, 0.08); padding-right: 6px; }
+.timeline-toolbar { padding: 3px 6px; border-bottom: 1px solid var(--border-color); min-height: 28px; }
+.timeline-toolbar .flat-group { border-right: 1px solid var(--border-color); padding-right: 6px; }
 .timeline-toolbar .flat-group:last-child { border-right: none; }
 .timeline-toolbar button { min-height: 26px; min-width: 28px; padding: 0 4px; background: none; box-shadow: none; border: none; }
-.timeline-toolbar button:hover { background: alpha(white, 0.08); }
-.timeline-toolbar button:checked { background: alpha(white, 0.14); color: #f08a40; }
+.timeline-toolbar button:hover { background: alpha(currentColor, 0.08); }
+.timeline-toolbar button:checked { background: alpha(currentColor, 0.14); color: var(--nox-on-color); }
 button.keyframe { min-height: 20px; min-width: 20px; padding: 0 2px; color: alpha(currentColor, 0.45); }
 button.keyframe.animated { color: currentColor; }
-button.keyframe:checked { background: none; color: #f08a40; -gtk-icon-shadow: 0 0 2px #f08a40; }
+button.keyframe:checked { background: none; color: var(--nox-on-color); -gtk-icon-shadow: 0 0 2px var(--nox-on-color); }
