@@ -923,6 +923,29 @@ mod tests {
     }
 
     #[test]
+    fn text_clips_round_trip() {
+        let mut timeline = Timeline::new("t", Rational::new(25, 1));
+        let mut parameters = Object::new();
+        parameters.insert("text", "Hello «world»");
+        parameters.insert("align", "start");
+        let text = timeline
+            .add_text_clip(
+                Time::from_frames(5, Rational::new(25, 1)),
+                Time::from_frames(50, Rational::new(25, 1)),
+                parameters.clone(),
+            )
+            .unwrap();
+        let text_out = write_string(&timeline);
+        assert!(text_out.contains("\"GeneratorReference.1\""), "{text_out}");
+        let read = read_str(&text_out).unwrap();
+        assert_eq!(read, timeline);
+        let Composable::Clip(clip) = read.item(text).unwrap() else {
+            panic!("a clip");
+        };
+        assert_eq!(clip.text_parameters(), Some(&parameters));
+    }
+
+    #[test]
     fn transitions_round_trip_with_parameters() {
         let mut timeline = Timeline::new("t", Rational::new(25, 1));
         let zero = Time::zero(Rational::new(1, 25));

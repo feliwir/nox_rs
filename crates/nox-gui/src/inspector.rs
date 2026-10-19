@@ -14,6 +14,7 @@ use crate::timeline::TimelineView;
 use crate::ui_util::string_list;
 
 mod effects;
+mod text;
 mod transition;
 
 mod imp {
@@ -33,6 +34,10 @@ mod imp {
         pub decoder_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub composite_section: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub text_section: TemplateChild<gtk::Box>,
+        /// The Text section's controls (`text.rs`).
+        pub(crate) text_controls: OnceCell<super::text::TextControls>,
         #[template_child]
         pub effects_section: TemplateChild<gtk::Box>,
         #[template_child]
@@ -200,6 +205,7 @@ mod imp {
             });
             self.item_scroller.add_controller(wheel);
             obj.setup_effects();
+            obj.setup_text();
             obj.setup_transitions();
             self.speed.adjustment().connect_value_changed(glib::clone!(
                 #[weak]
@@ -678,11 +684,20 @@ impl Inspector {
                     .track(item.track)
                     .is_some_and(|t| t.kind == TrackKind::Video);
                 imp.name_label.set_text(&clip.item.name);
-                let kind = if video {
+                let text = clip
+                    .text_parameters()
+                    .map(nox_text::Document::from_parameters);
+                let kind = if text.is_some() {
+                    gettext("Text clip")
+                } else if video {
                     gettext("Video clip")
                 } else {
                     gettext("Audio clip")
                 };
+                imp.text_section.set_visible(text.is_some());
+                if let Some(document) = &text {
+                    self.show_text(document);
+                }
                 imp.details_label.set_text(&fill(
                     &gettext("{kind}, {length}"),
                     &[
@@ -721,7 +736,8 @@ impl Inspector {
                 }
                 imp.fade_section.set_visible(true);
                 imp.transition_section.set_visible(false);
-                imp.speed_section.set_visible(true);
+                // Text has no media to speed up or freeze.
+                imp.speed_section.set_visible(text.is_none());
                 let frozen = clip.item.is_frozen();
                 imp.speed.set_value(if frozen {
                     100.0
@@ -780,6 +796,7 @@ impl Inspector {
                 imp.fade_section.set_visible(false);
                 imp.transform_section.set_visible(false);
                 imp.keyframe_section.set_visible(false);
+                imp.text_section.set_visible(false);
             }
             _ => {
                 imp.updating.set(false);

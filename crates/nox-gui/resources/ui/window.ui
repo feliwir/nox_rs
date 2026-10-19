@@ -387,6 +387,17 @@
                                     </accessibility>
                                   </object>
                                 </child>
+                                <child>
+                                  <object class="GtkButton">
+                                    <property name="icon-name">insert-text-symbolic</property>
+                                    <property name="action-name">win.add-text</property>
+                                    <property name="tooltip-text" translatable="yes">Add text at the playhead (Ctrl+Shift+T)</property>
+                                    <accessibility>
+                                      <property name="label" translatable="yes">Add Text</property>
+                                      <property name="key-shortcuts">Control+Shift+T</property>
+                                    </accessibility>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                             <child>

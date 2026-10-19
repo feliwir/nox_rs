@@ -53,3 +53,32 @@ pub fn wait_for(timeout: std::time::Duration, mut condition: impl FnMut() -> boo
     }
     condition()
 }
+
+/// How many engines (each with its own Vulkan device and decoders) tests
+/// run at once: with many more, the driver refuses to create devices.
+const ENGINES: usize = 6;
+
+static RUNNING: (std::sync::Mutex<usize>, std::sync::Condvar) =
+    (std::sync::Mutex::new(0), std::sync::Condvar::new());
+
+/// A place to run an engine in, held until dropped; waits while `ENGINES`
+/// are taken.
+pub struct EngineSlot(());
+
+pub fn engine_slot() -> EngineSlot {
+    let (count, freed) = &RUNNING;
+    let mut count = count.lock().unwrap_or_else(|e| e.into_inner());
+    while *count >= ENGINES {
+        count = freed.wait(count).unwrap_or_else(|e| e.into_inner());
+    }
+    *count += 1;
+    EngineSlot(())
+}
+
+impl Drop for EngineSlot {
+    fn drop(&mut self) {
+        let (count, freed) = &RUNNING;
+        *count.lock().unwrap_or_else(|e| e.into_inner()) -= 1;
+        freed.notify_one();
+    }
+}

@@ -27,3 +27,11 @@ The gl-transitions in `crates/nox-fx/transitions/` (the files with a `Source` li
 | Window Slice | `window_slice.glsl` | gre | MIT | `windowslice.glsl` |
 
 Page Curl is under the BSD 3-Clause License; its full notice is in `page_curl.glsl`.
+
+## Fonts
+
+| Font | Files | Author | License |
+|---|---|---|---|
+| Noto Sans | `crates/nox-text/fonts/NotoSans-Variable.ttf`, `NotoSans-Italic-Variable.ttf` | The Noto Project Authors | SIL Open Font License 1.1 (`crates/nox-text/fonts/OFL.txt`) |
+
+The test fonts in `crates/nox-text/tests/fonts` (Noto Sans Arabic, Source Sans 3) are under the same license and are not shipped.

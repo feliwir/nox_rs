@@ -36,6 +36,9 @@ pub(crate) enum Quality {
     Preview,
 }
 
+/// Rasterized texts kept (each at most an output picture).
+const MAX_TEXTS: usize = 32;
+
 /// Decoding more frames than this for one layer is worth a preview first.
 pub(crate) const PREVIEW_COST: i64 = 8;
 
@@ -144,6 +147,10 @@ pub(crate) struct Renderer {
     effects: Option<nox_fx::Effects>,
     /// Shader transitions' kernels; made when the first one shows.
     shader_kernels: Option<ShaderKernels>,
+    /// Fonts for text clips; loaded when the first one shows.
+    fonts: Option<nox_text::Fonts>,
+    /// Rasterized texts by their still key (`None`: nothing shows).
+    texts: std::collections::HashMap<u64, Option<Arc<nox_text::Picture>>>,
     /// The clip (`Timeline::clip_key`) whose effects' thumbnails are made.
     thumbnail_clip: Option<u64>,
     /// The still (cache key) whose thumbnails were made last: cached, it
@@ -188,6 +195,8 @@ impl Renderer {
             decodings: Default::default(),
             effects: None,
             shader_kernels: None,
+            fonts: None,
+            texts: Default::default(),
             thumbnail_clip: None,
             thumbnailed_still: None,
             thumbnails: None,
@@ -272,7 +281,14 @@ impl Renderer {
             .video_layers(time)
             .into_iter()
             .filter_map(|layer| {
-                let path = timeline.media_path(layer.clip.media_reference()?)?;
+                let text = layer
+                    .clip
+                    .text_parameters()
+                    .map(nox_text::Document::from_parameters);
+                let path = match &text {
+                    Some(_) => PathBuf::new(),
+                    None => timeline.media_path(layer.clip.media_reference()?)?,
+                };
                 let clip = timeline.clip_key(layer.clip)?;
                 let source = layer.source_time.as_seconds();
                 Some(Layer {
@@ -291,6 +307,7 @@ impl Renderer {
                     effects: nox_fx::resolve(&layer.clip.item, source),
                     clip,
                     path,
+                    text,
                 })
             })
             .collect()
@@ -302,8 +319,11 @@ impl Renderer {
         self.decoders.begin_frame();
         let accel = self.gpu.as_ref().map(|(accel, _)| accel.clone());
         let mut cost = 0;
-        for Layer { path, time, .. } in Self::layers(timeline, frame) {
-            if self.failed.contains(&path) {
+        for Layer {
+            path, time, text, ..
+        } in Self::layers(timeline, frame)
+        {
+            if text.is_some() || self.failed.contains(&path) {
                 continue;
             }
             if let Ok((decoder, index)) = self.decoders.get(&path, time, accel.as_ref(), self.hw) {
@@ -464,28 +484,73 @@ impl Renderer {
                 }
             }
             'picture: {
-                if self.failed.contains(path) {
-                    break 'picture;
-                }
-                let decoded = self
-                    .decoders
-                    .get(path, *time, Some(accel), self.hw)
-                    .and_then(|(decoder, index)| {
-                        let still = decoder.is_still();
-                        decode(decoder, index, quality, stop).map(|frame| (frame, still, index))
-                    });
-                let (decoded, still, index) = match decoded {
-                    Ok(decoded) => decoded,
-                    Err(nox_media::Error::Interrupted) => {
-                        return Err(nox_media::Error::Interrupted);
+                // Text is rasterized at the output's size and kept like a
+                // still (keyed by what it shows and the size).
+                let text_key = layer.text.as_ref().map(|document| {
+                    still_key(
+                        Path::new(&format!("nox:text:{document:?}")),
+                        Some(u64::from(width) << 32 | u64::from(height)),
+                    )
+                });
+                let (decoded, still, index, rect, path) = if let (Some(document), Some(key)) =
+                    (&layer.text, text_key)
+                {
+                    if !self.texts.contains_key(&key) {
+                        let fonts = self.fonts.get_or_insert_with(nox_text::Fonts::new);
+                        let laid = nox_text::layout(fonts, document, (width, height));
+                        let picture =
+                            nox_text::render(&laid, laid.centered((width, height)), |_| {
+                                nox_text::Look::default()
+                            });
+                        if self.texts.len() >= MAX_TEXTS {
+                            self.texts.clear();
+                        }
+                        self.texts.insert(key, picture.map(Arc::new));
                     }
-                    Err(err) => {
-                        tracing::warn!("{}: {err}", path.display());
-                        self.failed.insert(path.clone());
+                    let Some(Some(picture)) = self.texts.get(&key) else {
+                        // Nothing to show (empty, or all spaces).
+                        break 'picture;
+                    };
+                    let rect = Rect {
+                        x: picture.x,
+                        y: picture.y,
+                        width: picture.width,
+                        height: picture.height,
+                    };
+                    let frame = nox_media::rgba_frame(picture.width, picture.height, &picture.rgba);
+                    (
+                        frame,
+                        true,
+                        0,
+                        rect,
+                        PathBuf::from(format!("nox:text:{key}")),
+                    )
+                } else {
+                    if self.failed.contains(path) {
                         break 'picture;
                     }
+                    let decoded = self
+                        .decoders
+                        .get(path, *time, Some(accel), self.hw)
+                        .and_then(|(decoder, index)| {
+                            let still = decoder.is_still();
+                            decode(decoder, index, quality, stop).map(|frame| (frame, still, index))
+                        });
+                    let (decoded, still, index) = match decoded {
+                        Ok(decoded) => decoded,
+                        Err(nox_media::Error::Interrupted) => {
+                            return Err(nox_media::Error::Interrupted);
+                        }
+                        Err(err) => {
+                            tracing::warn!("{}: {err}", path.display());
+                            self.failed.insert(path.clone());
+                            break 'picture;
+                        }
+                    };
+                    let rect = framing.place(nox_media::display_size(&decoded), (width, height));
+                    (decoded, still, index, rect, path.clone())
                 };
-                let rect = framing.place(nox_media::display_size(&decoded), (width, height));
+                let path = &path;
                 let style = LayerStyle {
                     opacity: *opacity as f32,
                     mode: blend_mode(*mode),
@@ -599,7 +664,7 @@ impl Renderer {
             stride: width as usize * 4,
             data: [0, 0, 0, 255].repeat(width as usize * height as usize),
         };
-        if let Some(Layer { path, time, .. }) = layers.last() {
+        if let Some(Layer { path, time, .. }) = layers.iter().rev().find(|l| l.text.is_none()) {
             let (decoder, index) = self.decoders.get(path, *time, None, self.hw)?;
             let decoded = decode(decoder, index, quality, stop)?;
             let rect = framing.place(nox_media::display_size(&decoded), (width, height));
@@ -703,6 +768,8 @@ struct Layer {
     effects: nox_fx::Graph,
     /// Identifies the clip (its media and trim), for effects with state.
     clip: u64,
+    /// What a text clip shows (else `path` is its file).
+    text: Option<nox_text::Document>,
 }
 
 fn gpu_transform(t: &nox_project::Transform) -> Transform {

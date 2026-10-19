@@ -218,6 +218,19 @@ pub fn solid_frame(rgb: [u8; 3]) -> frame::Video {
     frame
 }
 
+/// A frame of straight-alpha RGBA8 `rgba` (`width` × `height`, rows
+/// packed), e.g. rasterized text.
+pub fn rgba_frame(width: u32, height: u32, rgba: &[u8]) -> frame::Video {
+    let mut frame = frame::Video::new(format::Pixel::RGBA, width, height);
+    let stride = frame.stride(0);
+    let row = width as usize * 4;
+    let data = frame.data_mut(0);
+    for (y, line) in rgba.chunks_exact(row).enumerate().take(height as usize) {
+        data[y * stride..y * stride + row].copy_from_slice(line);
+    }
+    frame
+}
+
 /// Converts to 8-bit RGBA at `width` × `height` on the CPU, turned upright
 /// (`width` × `height` is the displayed size, as `display_size`).
 pub fn rgba_cpu(frame: &frame::Video, width: u32, height: u32) -> Result<Image> {

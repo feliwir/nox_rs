@@ -191,9 +191,12 @@ impl Timeline {
     /// thumbnails): its media and where it starts in it.
     pub fn clip_key(&self, clip: &Clip) -> Option<u64> {
         use std::hash::{Hash, Hasher};
-        let path = self.media_path(clip.media_reference()?)?;
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        path.hash(&mut hasher);
+        match clip.text_parameters() {
+            // Text: what it says and looks like.
+            Some(parameters) => format!("{parameters:?}").hash(&mut hasher),
+            None => self.media_path(clip.media_reference()?)?.hash(&mut hasher),
+        }
         clip.trimmed_range()
             .map(|r| r.start.as_seconds().to_bits())
             .hash(&mut hasher);
@@ -947,6 +950,28 @@ pub struct Clip {
 }
 
 impl Clip {
+    /// Its text's parameters, if it is a text clip.
+    pub fn text_parameters(&self) -> Option<&Object> {
+        self.media_reference()?.text_parameters()
+    }
+
+    /// Its text's parameters to change, if it is a text clip.
+    pub fn text_parameters_mut(&mut self) -> Option<&mut Object> {
+        let key = self.active_media_reference_key.clone();
+        let reference = self
+            .media_references
+            .iter_mut()
+            .find(|(k, _)| *k == key)
+            .map(|(_, r)| r)?;
+        match &mut reference.kind {
+            ReferenceKind::Generator {
+                generator_kind,
+                parameters,
+            } if generator_kind == TEXT_GENERATOR => Some(parameters),
+            _ => None,
+        }
+    }
+
     pub fn new(name: impl Into<String>, media: MediaReference, source_range: TimeRange) -> Self {
         let mut item = Item::new(name);
         item.source_range = Some(source_range);
@@ -1462,6 +1487,37 @@ impl MediaReference {
     pub fn path(&self) -> Option<PathBuf> {
         match &self.kind {
             ReferenceKind::External { target_url } => url_to_path(target_url),
+            _ => None,
+        }
+    }
+}
+
+/// The `generator_kind` of text clips; their parameters are nox-text's
+/// document.
+pub const TEXT_GENERATOR: &str = "nox.text";
+
+impl MediaReference {
+    /// Generated text described by `parameters` (no media range: as long
+    /// as it's placed).
+    pub fn text(parameters: Object) -> Self {
+        let mut reference = Self::new(
+            ReferenceKind::Generator {
+                generator_kind: TEXT_GENERATOR.into(),
+                parameters,
+            },
+            None,
+        );
+        reference.name = "Text".into();
+        reference
+    }
+
+    /// A text generator's parameters, if it is one.
+    pub fn text_parameters(&self) -> Option<&Object> {
+        match &self.kind {
+            ReferenceKind::Generator {
+                generator_kind,
+                parameters,
+            } if generator_kind == TEXT_GENERATOR => Some(parameters),
             _ => None,
         }
     }

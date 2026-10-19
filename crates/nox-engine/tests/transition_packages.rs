@@ -116,6 +116,7 @@ fn red_to_blue(
         )
         .unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });

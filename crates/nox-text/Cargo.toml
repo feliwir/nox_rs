@@ -1,0 +1,21 @@
+[package]
+name = "nox-text"
+description = "Text: fonts, shaping, layout, per-letter transforms and rasterization"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Without `system`: fontique's system fonts need the fontconfig C library;
+# fontdb finds them in pure Rust.
+parley = { version = "0.12", default-features = false, features = ["std", "complex-scripts"] }
+fontdb = "0.23"
+skrifa = "0.44"
+kurbo = "0.13"
+vello_cpu = "0.3"
+tracing.workspace = true
+nox-project.workspace = true
+
+[lints]
+workspace = true

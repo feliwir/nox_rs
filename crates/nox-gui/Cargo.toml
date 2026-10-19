@@ -16,6 +16,7 @@ async-channel.workspace = true
 gtk.workspace = true
 nox-ai.workspace = true
 nox-fx.workspace = true
+nox-text.workspace = true
 nox-engine.workspace = true
 nox-media.workspace = true
 nox-otio.workspace = true

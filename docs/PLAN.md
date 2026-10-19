@@ -18,6 +18,7 @@ Nox is a video editor written in Rust: a GTK4 UI, FFmpeg for media I/O, and Vulk
 | M7 – Editing depth | ✅ done |
 | M8 – Motion and keyframes | ✅ done |
 | M9 – Effects | 🚧 clip effect stacks and graphs done; output effects and groups open (see M9) |
+| M10 – Text | 🚧 text clips with a basic inspector done; spans, reveal and transforms open (see M10) |
 
 What works today:
 - **Import:** drag files onto the media pool (or use the import button, or `nox file…`). Each file is probed in the background and gets a thumbnail, its duration as timecode, and a tooltip with stream and color details.
@@ -60,6 +61,7 @@ What works today:
 - **Clip menu** (right-click): opacity, blend mode, volume, add dissolve (also Ctrl+T, at the selected clip's edge nearest the playhead), split, delete. Dissolves can be selected and deleted.
 - **Project settings** (Shift+9, Resolve-style: categories in a sidebar, Cancel/Save, one undoable edit): project name; timeline resolution (presets or custom), frame rate and drop-frame timecode; image scaling for mismatched sources (scale to fit, scale with crop, center crop 1:1, stretch). The first clip in an empty sequence sets frame rate and resolution (like Shotcut's "Automatic" video mode). A later clip whose orientation differs (a portrait clip in a landscape timeline or the other way round) asks first, as Premiere's clip mismatch warning does (`framing.rs`). The choices are Fit (black bars), Fill (zoomed to cover the frame, as an ordinary transform), or Change Timeline (to the clip's size), and adding the clip is one undo step with the choice. When several clips are added at once (F9/F10), the answer holds for the rest of them. Only asked while the image scaling is "Scale entire image to fit".
 - **Export** (Ctrl+E): presets (H.264 master, YouTube/web, HEVC, HDR10 master, HLG, ProRes 422 HQ, review copy) or custom format, quality, hardware encoding and audio; progress, cancel, Open Folder. With hardware encoding the compositor writes straight into the Vulkan Video encoder's images (zero copy): 1080p exports of the test footage run at about 190 fps, against 57 fps with x264. The range is the whole timeline or In to Out (the default when both marks are set, as on Resolve's Deliver page). Timelines without audio in the range export without an audio track (the option is greyed out). `nox-cli render project.otio out.mp4` does the same headless; `--in-out` renders only the marked range, `--frames` any range. **HDR:** the dialog's Dynamic range (or `nox-cli render --hdr pq|hlg [--peak NITS]`) exports HDR10 or HLG as 10-bit BT.2020 HEVC or ProRes, with HDR sources keeping their highlights and SDR clips at 203 nits (decision 27). There are presets for an HDR10 master and for HLG.
+- **Text:** Add Text (toolbar, ruler menu, Ctrl+Shift+T) puts a five-second text clip at the playhead on the top video track (or a new one above it). The inspector edits its text, font, size (percent of the picture's height), weight, italic, color and alignment; long lines wrap at 90 % of the picture's width. Text clips take effects, transforms, grades and dissolves like any other clip.
 - **Translations:** every user-visible string goes through gettext; a German catalog (`po/de.po`) is the first. Run with `LANGUAGE=de` to see it.
 - **Color management (M6, first part):** pictures are composited in linear ACEScg. Each source enters through its transfer function and primaries (BT.601, BT.709, BT.2020, P3 and others are converted rather than shown as is), so opacity, blend modes and dissolves work in linear light. The viewer gets half-float frames (`AB4H`) with an explicit color state, so 10-bit sources are no longer rounded to 8 bit before the screen. SDR BT.709 footage looks exactly as before.
 - **Frame path on Linux/NVIDIA:** frames never leave the GPU between decoder and screen. Vulkan Video decodes, a compute shader converts to RGB directly on FFmpeg's images, and the result goes to GTK as a DMA-BUF texture.
@@ -81,13 +83,15 @@ crates/
                Vulkan device creation, zero-copy access to decoded frames
   nox-ai       ONNX models on the GPU (Vulkan compute): background removal
   nox-fx       effects: registry and parameters, effect stacks on the GPU
+  nox-text     text: fonts, shaping and layout (Parley), outlines (Skrifa),
+               rasterization (Vello CPU); pure Rust
   nox-engine   render worker (decoder pool, compositing, frame cache), audio
                mixer and output (cpal), playback clock
   nox-gui      GTK4 app, binary `nox`; layouts in resources/ui/*.ui
   nox-cli      headless tools (`nox-cli probe`, `nox-cli render`, `nox-cli version`)
 ```
 
-Dependency direction: `gui → {engine, otio, fx}`, `engine → {media, gpu, project, fx}`, `fx → {ai, gpu, project, color}`, `otio → project`, `project → color`, `media → {gpu, color, project}`, and `gpu → color`. `nox-color`, `nox-project` and `nox-otio` have no heavy dependencies. Nothing below `nox-gui` depends on GTK or GLib, so the core can be tested headless and used by the CLI.
+Dependency direction: `gui → {engine, otio, fx, text}`, `engine → {media, gpu, project, fx, text}`, `text → project`, `fx → {ai, gpu, project, color}`, `otio → project`, `project → color`, `media → {gpu, color, project}`, and `gpu → color`. `nox-color`, `nox-project` and `nox-otio` have no heavy dependencies. Nothing below `nox-gui` depends on GTK or GLib, so the core can be tested headless and used by the CLI.
 
 ### Key decisions
 
@@ -666,6 +670,17 @@ Effects are ordered stacks on clips, and later on tracks and the output, as in P
   - **Node thumbnails** (as in Resolve's node previews): while the page shows, every node shows what it outputs at the playhead (its picture, else its matte), with the clip's source and output. The executor writes each node's result into one small RGBA8 buffer as it runs (`thumb_picture`/`thumb_matte`, at most 160×90, sRGB over a checkerboard), read back with the frame; the engine makes them only for the shown clip (`Engine::set_thumbnail_clip`, `EngineEvent::Thumbnails`) and runs a cached still's effects once more for them. Nodes the output doesn't need aren't run and show none.
   - **Checked:** model and graph tests (connections, ordering, cycles, pruning, materializing, linearity, wires), kernels against references (masked blur only where the mask is, apply/invert/feather mattes, output selection, the matte cache with the real models) on NVIDIA and lavapipe, an engine render of a key-masked blur on a still, older background-removal projects unchanged, and the page in a headless GNOME Shell: three nodes added and wired by dragging blurred the background of IMG_5130 and kept the runners sharp; one undo took the last wire back.
 - **Next: groups.** Track effects and adjustment clips (a track rendered into its own picture, its stack run, then blended), generator clips (text) and transitions with two inputs. Each gets its own plan.
+
+### M10 – Text
+Text clips, on pure-Rust crates (decided with the user): Skrifa for TrueType and CFF/CFF2 outlines and variable fonts, Parley (on HarfRust, HarfBuzz's Rust port) for shaping, bidi, line breaking and alignment, Fontique for font matching, fontdb to find system fonts without fontconfig's C library, kurbo for paths and Vello CPU for rasterization.
+- ✅ **Phase 1: text clips.**
+  - **Model:** a text clip is a clip with an OTIO `GeneratorReference` (`generator_kind` `nox.text`) whose `parameters` hold the document (`nox_text::Document`): text, a base style (family, size in percent of the picture's height, weight, italic, color), spans overriding it for byte ranges, alignment, line spacing, tracking and wrap width. Editing the text moves spans with it (`replace_text`). `Timeline::add_text_clip` places it on the top video track where that's free, else on a new track above.
+  - **Layout** (`nox_text::layout`): Parley lines and glyph runs, regrouped into letters (grapheme clusters, in text order, each with its line, word, glyphs and box), so later phases can address, reveal and move single letters. Ligatures keep both letters (the second without glyphs). Missing families fall back to the bundled Noto Sans (OFL), so projects render the same everywhere.
+  - **Rendering:** the engine lays the text out at the output size and rasterizes it (Vello CPU, anti-aliased, unhinted outlines) into a straight-alpha RGBA picture just large enough, cached by document and size, which then enters the compositor as a still layer: effects, transforms, grades and transitions apply unchanged. Measured: layout 0.03 ms, rasterization 0.7 ms for a 1080p title and 2.1 ms at 4K.
+  - **GUI:** Add Text (toolbar, ruler menu, Ctrl+Shift+T) and the inspector's Text section (`inspector/text.rs`); typing in a row is one undo step.
+  - **Checked:** document round trips and span moves; letters, lines and words; clusters, an fi and an ff ligature (TrueType and CFF fonts), Arabic right to left; spans' colors and sizes; variable weights; missing families; coverage against outline area; per-letter hide, recolor and move; an engine render of a text clip with a colored word over a clip; OTIO round trips.
+- **Next: spans and reveal.** Per-range color, font and size from the text selection; reveal by letters, words or lines with keyframes and soft per-letter ramps (live dubbing, typewriter).
+- **Then:** per-glyph stretch, skew and rotation; text on a Bézier path with handles in the viewer; warps (arc, bulge, wave, flag). Then animators with range selectors, outline strokes, color fonts, and word timings (typed, imported from SRT/VTT, later from speech to text) with a "by timing" reveal and caption tracks.
 
 ### Later
 - Grading II: secondaries (qualifiers, power windows), curves, a node graph for several corrections per clip (on M9's effect graph).

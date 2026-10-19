@@ -92,6 +92,7 @@ fn main() -> glib::ExitCode {
     app.set_accels_for_action("win.undo", &["<Control>z"]);
     app.set_accels_for_action("win.split", &["<Control>b"]);
     app.set_accels_for_action("win.add-dissolve", &["<Control>t"]);
+    app.set_accels_for_action("win.add-text", &["<Control><Shift>t"]);
     app.set_accels_for_action("win.export", &["<Control>e"]);
     app.set_accels_for_action("app.preferences", &["<Control>comma"]);
     app.set_accels_for_action("win.redo", &["<Control><Shift>z", "<Control>y"]);

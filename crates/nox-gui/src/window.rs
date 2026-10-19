@@ -569,6 +569,21 @@ impl Ui {
     /// A one-second dissolve at the selected clip's edge nearest the
     /// playhead. If the clips lack media beyond the cut for it, offers to
     /// trim them to make room (as Resolve does).
+    /// Adds a five-second text clip at the playhead (on the top video
+    /// track, or a new one above it) and selects it.
+    fn add_text(&self) {
+        let fps = self.project.frame_rate();
+        let at = Time::from_frames(self.timeline.playhead(), fps);
+        let duration = Time::from_frames(5 * nox_project::nominal_fps(fps) as i64, fps);
+        let parameters = nox_text::Document::new(&gettext("Title")).to_parameters();
+        match self.project.edit(&gettext("Add Text"), |t| {
+            t.add_text_clip(at, duration, parameters)
+        }) {
+            Ok(item) => self.timeline.set_selection(Some(item)),
+            Err(err) => self.show_error(&gettext("Cannot add text"), &err.to_string()),
+        }
+    }
+
     fn add_dissolve(self: &Rc<Self>) {
         let Some(item) = self.timeline.selection() else {
             tracing::info!("select a clip to add a dissolve to");
@@ -1262,6 +1277,13 @@ fn add_clip_actions(ui: &Rc<Ui>) {
         move |_, _| ui.add_dissolve()
     ));
     ui.window.add_action(&dissolve);
+    let text = gio::SimpleAction::new("add-text", None);
+    text.connect_activate(glib::clone!(
+        #[weak]
+        ui,
+        move |_, _| ui.add_text()
+    ));
+    ui.window.add_action(&text);
 }
 
 /// Track actions by stack index, for scripting (the track header menus use

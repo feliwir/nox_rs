@@ -28,5 +28,5 @@ pub use time::{
 pub use timeline::{
     AudioSegment, BlendMode, Clip, Composable, DEFAULT_MEDIA_KEY, DISSOLVE, Effect, EffectKind,
     Gap, InTransition, Item, Marker, MediaReference, ReferenceKind, ResolvedClip, ScalingMode,
-    Settings, Stack, Timeline, Track, TrackKind, Transform, Transition,
+    Settings, Stack, TEXT_GENERATOR, Timeline, Track, TrackKind, Transform, Transition,
 };

@@ -2218,3 +2218,99 @@ msgid "{count} effect package from {folder}; Nox loads them when it starts."
 msgid_plural "{count} effect packages from {folder}; Nox loads them when it starts."
 msgstr[0] ""
 msgstr[1] ""
+
+#: crates/nox-gui/src/inspector/text.rs crates/nox-gui/resources/ui/inspector.ui
+msgid "Text"
+msgstr ""
+
+#: crates/nox-gui/src/inspector.rs
+msgid "Text clip"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "400 is regular, 700 bold"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Italic"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Text Color"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Start"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Center"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "End"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Justify"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Font"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Size"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Weight"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Alignment"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Edit Text"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Font"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Text Size"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Font Weight"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Italic"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Text Color"
+msgstr ""
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Alignment"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "Title"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs crates/nox-gui/resources/ui/menus.ui crates/nox-gui/resources/ui/window.ui
+msgid "Add Text"
+msgstr ""
+
+#: crates/nox-gui/src/window.rs
+msgid "Cannot add text"
+msgstr ""
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "Add text at the playhead (Ctrl+Shift+T)"
+msgstr ""

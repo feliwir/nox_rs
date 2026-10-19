@@ -1612,6 +1612,39 @@ impl Timeline {
         index
     }
 
+    /// Adds a text clip (`parameters`: nox-text's document) at `at` for
+    /// `duration`: on the top video track where that's empty there, else
+    /// on a new video track above it. Returns the clip.
+    pub fn add_text_clip(
+        &mut self,
+        at: Time,
+        duration: Time,
+        parameters: Object,
+    ) -> Result<ItemRef, EditError> {
+        let range = TimeRange::new(at, duration);
+        let top = self
+            .tracks()
+            .filter(|(_, t)| t.kind == TrackKind::Video)
+            .map(|(i, _)| i)
+            .next_back();
+        let free = |track: &Track| {
+            !track.item.locked()
+                && track
+                    .child_ranges()
+                    .all(|(r, child)| child.is_gap() || !r.overlaps(range))
+        };
+        let track = match top {
+            Some(i) if self.track(i).is_some_and(free) => i,
+            _ => self.add_track(TrackKind::Video),
+        };
+        let clip = crate::Clip::new(
+            "Text",
+            crate::MediaReference::text(parameters),
+            TimeRange::new(Time::zero(duration.timebase), duration),
+        );
+        self.place(track, Composable::Clip(clip), at)
+    }
+
     /// Removes the track at stack index `index` with its contents. Clips
     /// linked to its clips stay where they are.
     pub fn remove_track(&mut self, index: usize) -> Result<Track, EditError> {
@@ -2021,6 +2054,38 @@ mod tests {
 
     /// Without media beyond the cut, the clips are trimmed at the cut to
     /// make room (what follows moves up), as Resolve offers.
+    #[test]
+    fn text_clips_go_on_top_where_free() {
+        let mut timeline = Timeline::new("t", Rational::new(24, 1));
+        timeline.place(0, clip("a", 0, 20), f(0)).unwrap();
+        let mut parameters = Object::new();
+        parameters.insert("text", "Hello");
+        // V1 has a clip there: a new track above it.
+        let text = timeline
+            .add_text_clip(f(5), f(10), parameters.clone())
+            .unwrap();
+        assert_ne!(text.track, 0);
+        let Composable::Clip(clip) = timeline.item(text).unwrap() else {
+            panic!("a clip");
+        };
+        assert_eq!(
+            clip.text_parameters().and_then(|p| p.get("text")),
+            Some(&Value::from("Hello"))
+        );
+        assert_eq!(
+            timeline.item_range(text).unwrap(),
+            TimeRange::new(f(5), f(10))
+        );
+        // Free there: the same track.
+        let again = timeline.add_text_clip(f(30), f(10), parameters).unwrap();
+        assert_eq!(again.track, text.track);
+        // Video clips aren't text.
+        let Composable::Clip(video) = timeline.item(ItemRef { track: 0, index: 0 }).unwrap() else {
+            panic!("a clip");
+        };
+        assert!(video.text_parameters().is_none());
+    }
+
     #[test]
     fn transitions_make_room_by_trimming() {
         let mut timeline = Timeline::new("t", Rational::new(24, 1));

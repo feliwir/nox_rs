@@ -76,6 +76,7 @@ fn composites_tracks_and_dissolves() {
     timeline.place(v2, top, f(10)).unwrap();
 
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -190,6 +191,7 @@ fn playback_follows_the_clock_and_renders_ahead() {
     let mut timeline = Timeline::new("t", FPS);
     timeline.place(0, clip(&red, 0, 100), f(0)).unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -261,6 +263,7 @@ fn one_file_on_many_layers() {
         timeline.place(track, layer, f(0)).unwrap();
     }
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -294,6 +297,7 @@ fn scrubbing_previews_and_interrupts() {
         )
         .unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -376,6 +380,7 @@ fn stills_from_the_cache() {
     timeline.place(v2, top, f(35)).unwrap();
 
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -411,6 +416,7 @@ fn scopes_come_with_frames_when_enabled() {
     let mut timeline = Timeline::new("t", FPS);
     timeline.place(0, clip(&red, 0, 20), f(0)).unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -462,6 +468,7 @@ fn clip_grades_are_rendered() {
     timeline.place(0, clip(&gray, 0, 20), f(0)).unwrap();
     timeline.place(0, graded, f(20)).unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -507,6 +514,7 @@ fn clip_transforms_are_rendered() {
         });
     timeline.place(v2, moved, f(0)).unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -603,6 +611,7 @@ fn red_to_blue(
         .add_transition(ItemRef { track: 0, index: 0 }, Edge::End, f(20), &like)
         .unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -771,6 +780,63 @@ fn shaders_draw_from_both_pictures() {
     assert!(end[2] > 0xC0 && end[0] < 0x50, "nearly blue: {end:?}");
 }
 
+/// A text clip over a red clip: its letters white (the second word green,
+/// a span), the red clip around them.
+#[test]
+fn text_clips_render() {
+    if !common::have_gpu() {
+        return;
+    }
+    let Some(red) = solid("red-text.mkv", "0xC03020", "320x180") else {
+        return;
+    };
+    let mut timeline = Timeline::new("t", FPS);
+    timeline.place(0, clip(&red, 0, 50), f(0)).unwrap();
+    let document = nox_text::Document {
+        style: nox_text::Style {
+            size: 20.0,
+            weight: 900.0,
+            ..nox_text::Style::default()
+        },
+        spans: vec![nox_text::Span {
+            start: 3,
+            end: 6,
+            color: Some([0.0, 1.0, 0.0, 1.0]),
+            ..nox_text::Span::default()
+        }],
+        ..nox_text::Document::new("MM MM")
+    };
+    timeline
+        .add_text_clip(f(0), f(50), document.to_parameters())
+        .unwrap();
+    let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
+    let engine = Engine::new(Vec::new(), move |event| {
+        let _ = sender.send(event);
+    });
+    engine.set_size(320, 180);
+    engine.set_timeline(Arc::new(timeline));
+    let frame = render(&engine, &events, 5);
+    let (mut white, mut green, mut red_left) = (0, 0, 0);
+    for y in 0..180 {
+        for x in 0..320 {
+            let p = pixel(&frame, x, y);
+            if p.iter().all(|&c| c > 240) {
+                white += 1;
+                assert!(x < 160, "white on the left: ({x}, {y})");
+            } else if p[1] > 240 && p[0] < 20 && p[2] < 20 {
+                green += 1;
+                assert!(x > 160, "green on the right: ({x}, {y})");
+            } else if close(p, [0xC0, 0x30, 0x20]) && x < 160 {
+                red_left += 1;
+            }
+        }
+    }
+    assert!(white > 300 && green > 300, "white {white}, green {green}");
+    assert!(red_left > 10000, "red around the letters: {red_left}");
+    assert!(close(pixel(&frame, 2, 2), [0xC0, 0x30, 0x20]));
+}
+
 /// The engine tells how each file decodes, and decodes as it's told.
 #[test]
 fn reports_how_files_decode() {
@@ -780,6 +846,7 @@ fn reports_how_files_decode() {
     let mut timeline = Timeline::new("t", FPS);
     timeline.place(0, clip(&red, 0, 50), f(0)).unwrap();
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -842,6 +909,7 @@ fn background_removal_shows_what_is_below() {
     timeline.place(v2, top, f(0)).unwrap();
 
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -892,6 +960,7 @@ fn background_removal_on_stills() {
     timeline.place(v2, top, f(0)).unwrap();
 
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -927,6 +996,7 @@ fn chroma_key_shows_what_is_below() {
     timeline.place(v2, top, f(0)).unwrap();
 
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -976,6 +1046,7 @@ fn blurred_stills_follow_their_effects() {
     timeline.place(0, still, f(0)).unwrap();
 
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });
@@ -1049,6 +1120,7 @@ fn masked_effects_on_a_still() {
     };
 
     let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
     let engine = Engine::new(Vec::new(), move |event| {
         let _ = sender.send(event);
     });

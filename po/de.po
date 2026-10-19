@@ -2217,3 +2217,99 @@ msgid "{count} effect package from {folder}; Nox loads them when it starts."
 msgid_plural "{count} effect packages from {folder}; Nox loads them when it starts."
 msgstr[0] "{count} Effektpaket aus {folder}; Nox lädt sie beim Start."
 msgstr[1] "{count} Effektpakete aus {folder}; Nox lädt sie beim Start."
+
+#: crates/nox-gui/src/inspector/text.rs crates/nox-gui/resources/ui/inspector.ui
+msgid "Text"
+msgstr "Text"
+
+#: crates/nox-gui/src/inspector.rs
+msgid "Text clip"
+msgstr "Textclip"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "400 is regular, 700 bold"
+msgstr "400 ist normal, 700 fett"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Italic"
+msgstr "Kursiv"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Text Color"
+msgstr "Textfarbe"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Start"
+msgstr "Anfang"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Center"
+msgstr "Mitte"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "End"
+msgstr "Ende"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Justify"
+msgstr "Blocksatz"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Font"
+msgstr "Schrift"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Size"
+msgstr "Größe"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Weight"
+msgstr "Stärke"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Alignment"
+msgstr "Ausrichtung"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Edit Text"
+msgstr "Text bearbeiten"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Font"
+msgstr "Schrift ändern"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Text Size"
+msgstr "Textgröße ändern"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Font Weight"
+msgstr "Schriftstärke ändern"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Italic"
+msgstr "Kursiv ändern"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Text Color"
+msgstr "Textfarbe ändern"
+
+#: crates/nox-gui/src/inspector/text.rs
+msgid "Change Alignment"
+msgstr "Ausrichtung ändern"
+
+#: crates/nox-gui/src/window.rs
+msgid "Title"
+msgstr "Titel"
+
+#: crates/nox-gui/src/window.rs crates/nox-gui/resources/ui/menus.ui crates/nox-gui/resources/ui/window.ui
+msgid "Add Text"
+msgstr "Text hinzufügen"
+
+#: crates/nox-gui/src/window.rs
+msgid "Cannot add text"
+msgstr "Text kann nicht hinzugefügt werden"
+
+#: crates/nox-gui/resources/ui/window.ui
+msgid "Add text at the playhead (Ctrl+Shift+T)"
+msgstr "Text am Abspielkopf hinzufügen (Strg+Umschalt+T)"

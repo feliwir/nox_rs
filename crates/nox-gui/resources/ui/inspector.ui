@@ -283,6 +283,22 @@
                         </child>
                       </object>
                     </child>
+                    <!-- Text clips: what they say and how (inspector/text.rs). -->
+                    <child>
+                      <object class="GtkBox" id="text_section">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Text</property>
+                            <property name="xalign">0</property>
+                            <style>
+                              <class name="heading"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                     <child>
                       <object class="GtkBox" id="composite_section">
                         <property name="orientation">vertical</property>

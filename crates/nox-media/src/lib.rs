@@ -22,8 +22,8 @@ pub use encode::{
 };
 pub use ffmpeg;
 pub use frames::{
-    color_tags, display_size, input_transform, orientation, rgba_cpu, solid_frame, to_software,
-    tone_mapping, with_cpu_frame,
+    color_tags, display_size, input_transform, orientation, rgba_cpu, rgba_frame, solid_frame,
+    to_software, tone_mapping, with_cpu_frame,
 };
 pub use hw::HwDevice;
 pub use hwaccel::{Accel, with_gpu_input};
