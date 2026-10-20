@@ -1,6 +1,8 @@
 //! Media pool (`resources/ui/media-pool.ui`): every file imported into the
-//! project, as a thumbnail grid. Files can be dropped onto it or picked
-//! with the import dialog; Delete removes the selection.
+//! project, as a thumbnail grid. Files and folders can be dropped onto it,
+//! or files picked with the import dialog; Delete removes the selection.
+
+use std::path::{Path, PathBuf};
 
 use gtk::{CompositeTemplate, gdk, gio, glib, prelude::*, subclass::prelude::*};
 
@@ -216,15 +218,90 @@ fn open_import_dialog(parent: Option<gtk::Window>, store: gio::ListStore) {
         });
 }
 
+/// How deep a folder import looks below the folder.
+const FOLDER_DEPTH: usize = 6;
+/// The most directory entries a folder import looks at.
+const FOLDER_LIMIT: usize = 20_000;
+
 fn add_file(store: &gio::ListStore, file: &gio::File) {
     let Some(path) = file.path() else {
         tracing::warn!("ignoring non-local file {}", file.uri());
         return;
     };
     if path.is_dir() {
-        tracing::warn!("importing folders is not supported yet: {}", path.display());
-        return;
+        add_folder(store, path);
+    } else {
+        add_path(store, &path);
     }
+}
+
+/// Imports the media files in `folder` and its subfolders, searched in the
+/// background.
+fn add_folder(store: &gio::ListStore, folder: PathBuf) {
+    glib::spawn_future_local(glib::clone!(
+        #[weak]
+        store,
+        async move {
+            tracing::info!("importing the media in {}", folder.display());
+            let Ok(paths) = gio::spawn_blocking(move || media_in_folder(&folder)).await else {
+                return;
+            };
+            for path in paths {
+                add_path(&store, &path);
+            }
+        }
+    ));
+}
+
+/// The video, audio and image files in `folder`, down to `FOLDER_DEPTH`
+/// levels and leaving out hidden ones, sorted.
+fn media_in_folder(folder: &Path) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    let mut level = vec![folder.to_owned()];
+    let mut seen = 0;
+    for _ in 0..=FOLDER_DEPTH {
+        let mut next = Vec::new();
+        for dir in level {
+            let Ok(entries) = std::fs::read_dir(&dir) else {
+                continue;
+            };
+            for path in entries.flatten().map(|e| e.path()) {
+                seen += 1;
+                if seen > FOLDER_LIMIT {
+                    tracing::warn!("{}: too many files, imported some", folder.display());
+                    found.sort();
+                    return found;
+                }
+                if path
+                    .file_name()
+                    .is_some_and(|n| n.as_encoded_bytes().starts_with(b"."))
+                {
+                    continue;
+                }
+                if path.is_dir() {
+                    next.push(path);
+                } else if is_media(&path) {
+                    found.push(path);
+                }
+            }
+        }
+        level = next;
+    }
+    found.sort();
+    found
+}
+
+/// Whether `path`'s name says video, audio or image.
+fn is_media(path: &Path) -> bool {
+    let (content_type, _) = gio::content_type_guess(Some(path), None);
+    let mime = gio::content_type_get_mime_type(&content_type);
+    let mime = mime.as_deref().unwrap_or(content_type.as_str());
+    ["video/", "audio/", "image/"]
+        .iter()
+        .any(|kind| mime.starts_with(kind))
+}
+
+fn add_path(store: &gio::ListStore, path: &Path) {
     let path_str = path.to_string_lossy();
     let already_imported = store
         .iter::<MediaObject>()
@@ -235,5 +312,34 @@ fn add_file(store: &gio::ListStore, file: &gio::File) {
         return;
     }
     tracing::info!("importing {}", path.display());
-    store.append(&MediaObject::import(&path));
+    store.append(&MediaObject::import(path));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::media_in_folder;
+
+    #[test]
+    fn folder_import_finds_media_only() {
+        let dir = std::env::temp_dir().join(format!("nox-media-folder-{}", std::process::id()));
+        for file in [
+            "b.mp4",
+            "a.wav",
+            "notes.txt",
+            ".hidden.mp4",
+            "day 2/c.png",
+            "day 2/d.mov",
+            ".cache/e.mp4",
+        ] {
+            let path = dir.join(file);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, b"").unwrap();
+        }
+        let found: Vec<_> = media_in_folder(&dir)
+            .iter()
+            .map(|p| p.strip_prefix(&dir).unwrap().to_string_lossy().into_owned())
+            .collect();
+        std::fs::remove_dir_all(&dir).unwrap();
+        assert_eq!(found, ["a.wav", "b.mp4", "day 2/c.png", "day 2/d.mov"]);
+    }
 }
