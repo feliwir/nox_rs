@@ -66,6 +66,11 @@
     <mediatype>application/x-opentimelineio</mediatype>
   </provides>
   <releases>
+    <release version="0.1.2" date="2026-10-20">
+      <description>
+        <p>Whole folders can be dropped onto the media pool: Nox imports the video, audio and image files in them and their subfolders, leaving out hidden ones.</p>
+      </description>
+    </release>
     <release version="0.1.1" date="2026-10-20">
       <description>
         <p>Nox now always uses the dark style, and the Flatpak asks for fewer permissions: only the graphics devices, and only the Videos, Music and Pictures folders. Media from elsewhere is opened through the file chooser or drag and drop, and projects still save its real location.</p>

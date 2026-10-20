@@ -337,9 +337,13 @@ mod tests {
         }
         let found: Vec<_> = media_in_folder(&dir)
             .iter()
-            .map(|p| p.strip_prefix(&dir).unwrap().to_string_lossy().into_owned())
+            .map(|p| p.strip_prefix(&dir).unwrap().to_path_buf())
             .collect();
         std::fs::remove_dir_all(&dir).unwrap();
-        assert_eq!(found, ["a.wav", "b.mp4", "day 2/c.png", "day 2/d.mov"]);
+        // Compared as paths: Windows prints `day 2\c.png`, and its paths
+        // take `/` as a separator too.
+        let expected =
+            ["a.wav", "b.mp4", "day 2/c.png", "day 2/d.mov"].map(std::path::PathBuf::from);
+        assert_eq!(found, expected);
     }
 }
