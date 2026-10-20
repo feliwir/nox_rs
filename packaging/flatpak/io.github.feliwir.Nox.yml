@@ -23,11 +23,15 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --socket=pulseaudio
-  # Vulkan, and CUDA for NVENC, which needs /dev/nvidia-uvm besides the
-  # devices --device=dri covers.
-  - --device=all
-  # Projects refer to media files by path, anywhere.
-  - --filesystem=host
+  # Vulkan, VAAPI and CUDA (NVENC): --device=dri also covers /dev/nvidia*,
+  # /dev/nvidia-uvm included.
+  - --device=dri
+  # Projects refer to media files by path. Those in these folders open as
+  # they are; others come through the document portal (file chooser, drag
+  # and drop), and projects store their host paths (sandbox.rs).
+  - --filesystem=xdg-videos
+  - --filesystem=xdg-music:ro
+  - --filesystem=xdg-pictures:ro
   # AI effects download their models the first time they're used.
   - --share=network
 build-options:

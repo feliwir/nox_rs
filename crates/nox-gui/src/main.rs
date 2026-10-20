@@ -17,6 +17,7 @@ mod node_panel;
 mod playback;
 mod preferences;
 mod project;
+mod sandbox;
 mod scopes;
 mod settings_dialog;
 #[cfg(feature = "adw-1-8")]
@@ -45,9 +46,9 @@ const RESOURCES: &str = "/io/github/feliwir/Nox";
 /// What every Nox application sets up when it starts (also the tests'):
 /// the dark style and the application's actions.
 fn set_up(app: &adw::Application) {
-    // A video editor shows pictures: dark around them, as other editors,
-    // unless the system asks for light. High contrast applies either way.
-    adw::StyleManager::default().set_color_scheme(adw::ColorScheme::PreferDark);
+    // A video editor shows pictures: always dark around them, as other
+    // editors, whatever the system prefers. High contrast still applies.
+    adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceDark);
     // Preferences are the application's, for every window.
     let preferences = gio::SimpleAction::new("preferences", None);
     preferences.connect_activate(glib::clone!(

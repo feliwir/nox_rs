@@ -355,9 +355,13 @@ impl Project {
 
     pub fn open(&self, path: &Path) -> Result<(), nox_otio::Error> {
         let mut timeline = nox_otio::read_file(path)?;
+        // Relative media paths are next to the file on the host (its
+        // folder isn't in the document portal), files Nox may only open
+        // through the portal at their document paths.
         timeline.media_dir = std::path::absolute(path)
             .ok()
-            .and_then(|p| p.parent().map(Path::to_owned));
+            .and_then(|p| crate::sandbox::host_path(&p).parent().map(Path::to_owned));
+        crate::sandbox::remap(&mut timeline, crate::sandbox::sandbox_path);
         tracing::info!(
             "opened {} ({} clips, {} fps)",
             path.display(),
@@ -376,10 +380,14 @@ impl Project {
         // Relative media paths only stay valid next to the original file.
         let dir = std::path::absolute(path)
             .ok()
-            .and_then(|p| p.parent().map(Path::to_owned));
-        if timeline.media_dir.is_some() && timeline.media_dir != dir {
+            .and_then(|p| crate::sandbox::host_path(&p).parent().map(Path::to_owned));
+        let moved = timeline.media_dir.is_some() && timeline.media_dir != dir;
+        if moved || crate::sandbox::is_flatpak() {
             let mut copy = timeline.clone();
-            copy.make_media_paths_absolute();
+            if moved {
+                copy.make_media_paths_absolute();
+            }
+            crate::sandbox::use_host_paths(&mut copy);
             nox_otio::write_file(path, &copy)?;
         } else {
             nox_otio::write_file(path, timeline)?;
