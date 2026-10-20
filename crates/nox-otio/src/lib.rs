@@ -946,6 +946,43 @@ mod tests {
     }
 
     #[test]
+    fn subtitle_tracks_round_trip() {
+        let fps = Rational::new(25, 1);
+        let mut timeline = Timeline::new("t", fps);
+        let range = TimeRange::new(Time::from_frames(25, fps), Time::from_frames(50, fps));
+        let reference =
+            MediaReference::from_path(std::path::Path::new("/m/movie.mkv"), None).with_stream(3);
+        let clip = nox_project::Clip::new("movie.mkv", reference, range);
+        let tags = nox_project::StreamTags {
+            language: Some("ger".into()),
+            title: Some("Deutsch".into()),
+            default: true,
+            forced: false,
+            hearing_impaired: true,
+        };
+        let index = timeline
+            .add_subtitle_track("German", &tags, vec![(Time::from_frames(10, fps), clip)])
+            .unwrap();
+        let text = write_string(&timeline);
+        assert!(text.contains("\"kind\": \"Subtitle\""), "{text}");
+        let read = read_str(&text).unwrap();
+        assert_eq!(read, timeline);
+        let track = read.track(index).unwrap();
+        assert_eq!(track.kind, TrackKind::Subtitle);
+        assert_eq!(track.stream_tags(), tags);
+        assert!(track.shown() && !track.burned_in());
+        // Showing from frame 10 for 50 frames, from the file's frame 25.
+        let shown = read.subtitle_clips(Time::from_frames(20, fps));
+        assert_eq!(shown.len(), 1);
+        assert_eq!(shown[0].0, index);
+        assert_eq!(shown[0].1.clip.stream(), Some(3));
+        assert_eq!(shown[0].1.source_time.frame(fps), 35);
+        assert!(read.subtitle_clips(Time::from_frames(5, fps)).is_empty());
+        // Video doesn't show subtitle clips.
+        assert!(read.video_layers(Time::from_frames(20, fps)).is_empty());
+    }
+
+    #[test]
     fn transitions_round_trip_with_parameters() {
         let mut timeline = Timeline::new("t", Rational::new(25, 1));
         let zero = Time::zero(Rational::new(1, 25));

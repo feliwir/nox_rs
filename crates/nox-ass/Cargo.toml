@@ -1,0 +1,13 @@
+[package]
+name = "nox-ass"
+description = "ASS/SSA subtitles: scripts, styles, override tags, and captions as nox-text documents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+nox-text.workspace = true
+
+[lints]
+workspace = true

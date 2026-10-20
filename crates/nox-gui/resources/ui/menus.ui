@@ -111,6 +111,10 @@
         <attribute name="label" translatable="yes">Relink Media…</attribute>
         <attribute name="action">win.relink-clip</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">Import Subtitles…</attribute>
+        <attribute name="action">win.import-subtitles</attribute>
+      </item>
     </section>
   </menu>
   <!-- Right-click menu of the ruler; it moves the playhead to the click
@@ -190,6 +194,10 @@
         <attribute name="label" translatable="yes">Rename Track…</attribute>
         <attribute name="action">track.rename</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">Stream Settings…</attribute>
+        <attribute name="action">track.stream-settings</attribute>
+      </item>
     </section>
     <section>
       <item>
@@ -199,6 +207,54 @@
       <item>
         <attribute name="label" translatable="yes">Solo Track</attribute>
         <attribute name="action">track.solo</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Lock Track</attribute>
+        <attribute name="action">track.locked</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Sync Lock</attribute>
+        <attribute name="action">track.sync</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Delete Track</attribute>
+        <attribute name="action">track.delete</attribute>
+      </item>
+    </section>
+  </menu>
+  <!-- Right-click menu of subtitle track headers; the track.* actions
+       work on the track it was opened for. -->
+  <menu id="subtitle_track_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Rename Track…</attribute>
+        <attribute name="action">track.rename</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Stream Settings…</attribute>
+        <attribute name="action">track.stream-settings</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Show in Viewer</attribute>
+        <attribute name="action">track.shown</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Burn In</attribute>
+        <attribute name="action">track.burn-in</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Convert to Text Clips</attribute>
+        <attribute name="action">track.convert</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Disable Track</attribute>
+        <attribute name="action">track.muted</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">Lock Track</attribute>

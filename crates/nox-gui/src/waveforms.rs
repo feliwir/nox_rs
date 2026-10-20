@@ -19,7 +19,8 @@ enum Entry {
 }
 
 pub struct Waveforms {
-    entries: RefCell<HashMap<PathBuf, Entry>>,
+    /// By file and audio stream (`None`: the best one).
+    entries: RefCell<HashMap<(PathBuf, Option<usize>), Entry>>,
     cache_dir: PathBuf,
     /// Stops the computations still running when this is dropped.
     cancel: Arc<AtomicBool>,
@@ -37,37 +38,39 @@ impl Waveforms {
         })
     }
 
-    /// The waveform of `path` if it's ready; otherwise starts computing it
-    /// (once) and calls `on_ready` when it is.
-    pub fn get(self: &Rc<Self>, path: &Path) -> Option<Rc<Waveform>> {
-        match self.entries.borrow().get(path) {
+    /// The waveform of audio stream `stream` of `path` if it's ready;
+    /// otherwise starts computing it (once) and calls `on_ready` when it
+    /// is.
+    pub fn get(self: &Rc<Self>, path: &Path, stream: Option<usize>) -> Option<Rc<Waveform>> {
+        let key = (path.to_owned(), stream);
+        match self.entries.borrow().get(&key) {
             Some(Entry::Ready(waveform)) => return Some(waveform.clone()),
             Some(_) => return None,
             None => {}
         }
         self.entries
             .borrow_mut()
-            .insert(path.to_owned(), Entry::Pending);
-        let (path, cache_dir, cancel) =
-            (path.to_owned(), self.cache_dir.clone(), self.cancel.clone());
+            .insert(key.clone(), Entry::Pending);
+        let (cache_dir, cancel) = (self.cache_dir.clone(), self.cancel.clone());
         let this = Rc::downgrade(self);
         glib::spawn_future_local(async move {
-            let file = path.clone();
-            let result =
-                gio::spawn_blocking(move || Waveform::load_or_compute(&file, &cache_dir, &cancel))
-                    .await;
+            let file = key.0.clone();
+            let result = gio::spawn_blocking(move || {
+                Waveform::load_or_compute(&file, stream, &cache_dir, &cancel)
+            })
+            .await;
             let Some(this) = this.upgrade() else {
                 return;
             };
             let entry = match result {
                 Ok(Ok(waveform)) => Entry::Ready(Rc::new(waveform)),
                 Ok(Err(err)) => {
-                    tracing::info!("no waveform for {}: {err}", path.display());
+                    tracing::info!("no waveform for {}: {err}", key.0.display());
                     Entry::Failed
                 }
                 Err(_) => Entry::Failed,
             };
-            this.entries.borrow_mut().insert(path, entry);
+            this.entries.borrow_mut().insert(key, entry);
             (this.on_ready)();
         });
         None

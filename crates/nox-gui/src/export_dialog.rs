@@ -165,6 +165,10 @@ mod imp {
         #[template_child]
         pub audio: TemplateChild<adw::SwitchRow>,
         #[template_child]
+        pub audio_per_track: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        pub subtitles: TemplateChild<adw::SwitchRow>,
+        #[template_child]
         pub audio_codec: TemplateChild<adw::ComboRow>,
         #[template_child]
         pub range: TemplateChild<adw::ComboRow>,
@@ -372,10 +376,11 @@ impl ExportDialog {
                 glib::clone!(
                     #[weak(rename_to = dialog)]
                     self,
-                    move |audio, _| dialog
-                        .imp()
-                        .audio_codec
-                        .set_sensitive(audio.is_active() && audio.is_sensitive())
+                    move |audio, _| {
+                        let on = audio.is_active() && audio.is_sensitive();
+                        dialog.imp().audio_codec.set_sensitive(on);
+                        dialog.imp().audio_per_track.set_sensitive(on);
+                    }
                 ),
             );
         }
@@ -771,6 +776,8 @@ impl ExportDialog {
             encoder: self.chosen_encoder().map(|e| e.name.to_owned()),
             range: Some(self.range()),
             audio: imp.audio.is_active(),
+            audio_per_track: imp.audio_per_track.is_active(),
+            subtitles: imp.subtitles.is_active(),
             audio_codec: Some(self.audio_codec()),
             encoding: RANGES[imp.dynamic_range.selected() as usize].1,
             peak_nits: imp.peak.value() as f32,
@@ -840,6 +847,16 @@ impl ExportDialog {
                                 ("encoder", &encoder),
                             ],
                         ));
+                        if !summary.skipped.is_empty() {
+                            imp.status.set_text(&format!(
+                                "{}\n{}",
+                                imp.status.text(),
+                                fill(
+                                    &gettext("Left out: {streams}"),
+                                    &[("streams", &summary.skipped.join("; "))],
+                                )
+                            ));
+                        }
                         imp.cancel.set_label(&gettext("_Close"));
                         imp.open_folder.set_visible(true);
                         imp.open_folder.grab_focus();

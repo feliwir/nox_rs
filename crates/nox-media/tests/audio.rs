@@ -95,7 +95,7 @@ fn waveform_peaks() {
         return;
     };
     let cancel = AtomicBool::new(false);
-    let waveform = Waveform::compute(&path, &cancel).unwrap();
+    let waveform = Waveform::compute(&path, None, &cancel).unwrap();
     assert_eq!(waveform.peaks.len(), 3 * PEAKS_PER_SECOND as usize);
     assert!(waveform.peak(0.1, 0.9) < 0.01);
     assert!(
@@ -113,11 +113,11 @@ fn waveform_peaks() {
 
     let cache = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("waveforms");
     let _ = std::fs::remove_dir_all(&cache);
-    let first = Waveform::load_or_compute(&path, &cache, &cancel).unwrap();
+    let first = Waveform::load_or_compute(&path, None, &cache, &cancel).unwrap();
     assert_eq!(std::fs::read_dir(&cache).unwrap().count(), 1);
-    let cached = Waveform::load_or_compute(&path, &cache, &cancel).unwrap();
+    let cached = Waveform::load_or_compute(&path, None, &cache, &cancel).unwrap();
     assert_eq!((first.clone(), cached), (waveform.clone(), waveform));
     // Cancelled before it starts.
     let cancelled = AtomicBool::new(true);
-    assert!(Waveform::compute(&path, &cancelled).is_err());
+    assert!(Waveform::compute(&path, None, &cancelled).is_err());
 }

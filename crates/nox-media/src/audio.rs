@@ -10,7 +10,7 @@ use crate::{Error, Result};
 /// Output channels: everything is mixed to stereo.
 pub const CHANNELS: usize = 2;
 
-/// Decodes the first audio stream of a file.
+/// Decodes an audio stream of a file.
 pub struct AudioDecoder {
     input: format::context::Input,
     decoder: codec::decoder::Audio,
@@ -30,14 +30,22 @@ pub struct AudioDecoder {
 }
 
 impl AudioDecoder {
-    /// Opens `path`; samples come out at `rate` Hz.
+    /// Opens `path`'s best audio stream; samples come out at `rate` Hz.
     pub fn open(path: &Path, rate: u32) -> Result<Self> {
+        Self::open_stream(path, None, rate)
+    }
+
+    /// Opens audio stream `stream` of `path` (the best one if `None`).
+    pub fn open_stream(path: &Path, stream: Option<usize>, rate: u32) -> Result<Self> {
         crate::init();
         let mut input = format::input(path)?;
-        let stream = input
-            .streams()
-            .best(media::Type::Audio)
-            .ok_or(Error::NoAudioStream)?;
+        let stream = match stream {
+            Some(index) => input
+                .stream(index)
+                .filter(|s| s.parameters().medium() == media::Type::Audio),
+            None => input.streams().best(media::Type::Audio),
+        }
+        .ok_or(Error::NoAudioStream)?;
         let stream_index = stream.index();
         let time_base = stream.time_base();
         let start = crate::stream::start_time(&stream);

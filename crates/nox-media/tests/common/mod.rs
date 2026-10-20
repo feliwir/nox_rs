@@ -65,3 +65,69 @@ pub fn gpu() -> Option<(Accel, Arc<nox_gpu::GpuDevice>)> {
     })
     .clone()
 }
+
+/// A PGS event: its start and end (seconds) and its block (`x`, `y`,
+/// width, height).
+pub type PgsEvent = (f64, f64, (u16, u16, u16, u16));
+
+/// Writes a PGS (`.sup`) file of white blocks on a `canvas`-sized screen:
+/// each event's `(x, y, width, height)` from its start to its end
+/// (seconds). Widths up to 63.
+pub fn write_pgs(path: &Path, canvas: (u16, u16), events: &[PgsEvent]) {
+    /// A segment: magic, times (90 kHz), type, payload.
+    fn segment(out: &mut Vec<u8>, pts: u32, kind: u8, payload: &[u8]) {
+        out.extend_from_slice(b"PG");
+        out.extend_from_slice(&pts.to_be_bytes());
+        out.extend_from_slice(&0u32.to_be_bytes());
+        out.push(kind);
+        out.extend_from_slice(&(payload.len() as u16).to_be_bytes());
+        out.extend_from_slice(payload);
+    }
+    let mut out = Vec::new();
+    let mut number = 0u16;
+    for &(start, end, block) in events {
+        for (seconds, shown) in [(start, Some(block)), (end, None)] {
+            let pts = (seconds * 90_000.0) as u32;
+            // Presentation: the screen, an epoch start showing the object
+            // (or a normal one clearing it).
+            let mut pcs = Vec::new();
+            pcs.extend_from_slice(&canvas.0.to_be_bytes());
+            pcs.extend_from_slice(&canvas.1.to_be_bytes());
+            pcs.push(0x10);
+            pcs.extend_from_slice(&number.to_be_bytes());
+            number += 1;
+            pcs.push(if shown.is_some() { 0x80 } else { 0x00 });
+            pcs.extend_from_slice(&[0, 0]);
+            let (x, y, w, h) = shown.unwrap_or(block);
+            pcs.push(u8::from(shown.is_some()));
+            if shown.is_some() {
+                pcs.extend_from_slice(&[0, 0, 0, 0]);
+                pcs.extend_from_slice(&x.to_be_bytes());
+                pcs.extend_from_slice(&y.to_be_bytes());
+            }
+            segment(&mut out, pts, 0x16, &pcs);
+            let mut wds = vec![1, 0];
+            for v in [x, y, w, h] {
+                wds.extend_from_slice(&v.to_be_bytes());
+            }
+            segment(&mut out, pts, 0x17, &wds);
+            if shown.is_some() {
+                // Palette: entry 1 white (Y Cr Cb A).
+                segment(&mut out, pts, 0x14, &[0, 0, 1, 235, 128, 128, 255]);
+                // Each line: `w` pixels of color 1, then its end.
+                let mut rle = Vec::new();
+                for _ in 0..h {
+                    rle.extend_from_slice(&[0, 0x80 | w as u8, 1, 0, 0]);
+                }
+                let mut ods = vec![0, 0, 0, 0xc0];
+                ods.extend_from_slice(&(rle.len() as u32 + 4).to_be_bytes()[1..]);
+                ods.extend_from_slice(&w.to_be_bytes());
+                ods.extend_from_slice(&h.to_be_bytes());
+                ods.extend_from_slice(&rle);
+                segment(&mut out, pts, 0x15, &ods);
+            }
+            segment(&mut out, pts, 0x80, &[]);
+        }
+    }
+    std::fs::write(path, out).expect("PGS written");
+}

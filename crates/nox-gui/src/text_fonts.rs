@@ -19,7 +19,7 @@ pub fn with<R>(f: impl FnOnce(&mut nox_text::Fonts) -> R) -> R {
 pub fn placed(document: &nox_text::Document, frame: (u32, u32)) -> Option<[f64; 4]> {
     with(|fonts| {
         let laid = nox_text::layout(fonts, document, frame);
-        let ink = laid.ink()? + laid.centered(frame);
+        let ink = laid.ink()? + laid.placed(frame);
         Some([ink.x0, ink.y0, ink.width(), ink.height()])
     })
 }

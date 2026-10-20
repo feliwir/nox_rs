@@ -22,6 +22,8 @@ mod scopes;
 mod settings_dialog;
 #[cfg(feature = "adw-1-8")]
 mod shortcuts;
+mod subtitle_events;
+mod subtitle_import;
 #[cfg(test)]
 mod template_tests;
 mod text_fonts;

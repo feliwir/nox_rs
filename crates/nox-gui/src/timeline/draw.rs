@@ -189,6 +189,9 @@ impl imp::TimelineView {
                     TrackKind::Video if clip.text_parameters().is_some() => {
                         self.draw_text_preview(snapshot, clip, range, y, alpha);
                     }
+                    TrackKind::Subtitle => {
+                        self.draw_subtitle_events(snapshot, timeline, clip, range, y, alpha);
+                    }
                     TrackKind::Video if preferences.timeline_thumbnails() => {
                         self.draw_thumbnails(snapshot, timeline, clip, range, y, alpha);
                     }
@@ -302,7 +305,7 @@ impl imp::TimelineView {
         if right - left < 2.0 {
             return;
         }
-        let Some(waveform) = waveforms.get(&path) else {
+        let Some(waveform) = waveforms.get(&path, clip.stream()) else {
             return;
         };
         // Seconds into the file at widget x.
@@ -392,6 +395,76 @@ impl imp::TimelineView {
             }
         }
         snapshot.pop();
+        snapshot.pop();
+    }
+
+    /// A subtitle clip's events below its name: a bar for each, with its
+    /// text where it fits.
+    pub(super) fn draw_subtitle_events(
+        &self,
+        snapshot: &gtk::Snapshot,
+        timeline: &Timeline,
+        clip: &nox_project::Clip,
+        range: TimeRange,
+        y: f32,
+        alpha: f32,
+    ) {
+        let rect = self.clip_rect(range, y);
+        let (Some(path), Some(stream), Some(cache)) = (
+            clip.media_reference().and_then(|r| timeline.media_path(r)),
+            clip.stream(),
+            self.subtitle_events.get(),
+        ) else {
+            return;
+        };
+        let Some(events) = cache.get(&path, stream) else {
+            return;
+        };
+        let left = (rect.x() + 2.0).max(HEADER_WIDTH);
+        let right = (rect.x() + rect.width() - 2.0).min(self.obj().width() as f32);
+        let top = rect.y() + 16.0;
+        let height = rect.y() + rect.height() - 2.0 - top;
+        if right - left < 2.0 || height < 6.0 {
+            return;
+        }
+        let area = graphene::Rect::new(left, top, right - left, height);
+        snapshot.push_clip(&area);
+        let fps = timeline.frame_rate().as_f64();
+        let x_of = |seconds: f64| self.frame_to_x(seconds * fps) as f32;
+        let bar = gdk::RGBA::new(1.0, 0.93, 0.75, 0.22 * alpha);
+        let ink = gdk::RGBA::new(1.0, 0.97, 0.9, 0.95 * alpha);
+        for (start, end, text) in &events.events {
+            let Some((start, end)) = clip.place_file_span(range, *start, *end) else {
+                continue;
+            };
+            let (x0, x1) = (x_of(start).max(left), x_of(end).min(right));
+            if x1 <= left || x0 >= right || x1 - x0 < 0.5 {
+                continue;
+            }
+            snapshot.append_color(
+                &bar,
+                &graphene::Rect::new(x0, top, (x1 - x0 - 1.0).max(1.0), height),
+            );
+            if text.is_empty() || x1 - x0 < 24.0 {
+                continue;
+            }
+            let layout = self.obj().create_pango_layout(Some(text));
+            let mut font = gtk::pango::FontDescription::new();
+            font.set_absolute_size(
+                f64::from((height * 0.5).min(13.0)) * f64::from(gtk::pango::SCALE),
+            );
+            layout.set_font_description(Some(&font));
+            layout.set_ellipsize(gtk::pango::EllipsizeMode::End);
+            layout.set_width(((x1 - x0 - 6.0).max(0.0) * gtk::pango::SCALE as f32) as i32);
+            let (_, logical) = layout.pixel_extents();
+            snapshot.save();
+            snapshot.translate(&graphene::Point::new(
+                x0 + 3.0,
+                top + (height - logical.height() as f32) / 2.0,
+            ));
+            snapshot.append_layout(&layout, &ink);
+            snapshot.restore();
+        }
         snapshot.pop();
     }
 
@@ -516,7 +589,7 @@ impl imp::TimelineView {
                     let kind = &timeline.track(track).expect("track").kind;
                     let color = clip_color(child, kind);
                     let moved = TimeRange::new(range.start + *offset, range.duration);
-                    self.draw_clip(snapshot, moved, row_y(row), child.name(), color, true);
+                    self.draw_clip(snapshot, moved, self.row_y(row), child.name(), color, true);
                 }
                 *snapped
             }
@@ -538,7 +611,14 @@ impl imp::TimelineView {
                     };
                     let kind = &timeline.track(item.track).expect("track").kind;
                     let color = clip_color(child, kind);
-                    self.draw_clip(snapshot, trimmed, row_y(row), child.name(), color, true);
+                    self.draw_clip(
+                        snapshot,
+                        trimmed,
+                        self.row_y(row),
+                        child.name(),
+                        color,
+                        true,
+                    );
                 }
                 *snapped
             }
@@ -549,7 +629,7 @@ impl imp::TimelineView {
                     let x = self.frame_to_x(self.time_to_frames(*to)) as f32;
                     snapshot.append_color(
                         &SELECTION,
-                        &graphene::Rect::new(x - 1.5, row_y(row), 3.0, TRACK_HEIGHT - 1.0),
+                        &graphene::Rect::new(x - 1.5, self.row_y(row), 3.0, TRACK_HEIGHT - 1.0),
                     );
                 }
                 *snapped
@@ -584,7 +664,7 @@ impl imp::TimelineView {
                     let kind = &timeline.track(item.track).expect("track").kind;
                     let color = clip_color(child, kind);
                     let text = format!("{} · {label}", child.name()); // no-i18n
-                    self.draw_clip(snapshot, shown, row_y(row), &text, color, true);
+                    self.draw_clip(snapshot, shown, self.row_y(row), &text, color, true);
                 }
                 None
             }

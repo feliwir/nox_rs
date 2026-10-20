@@ -5,2511 +5,2303 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nox\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-20 13:09+0200\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/export_dialog.rs:21
+#: crates/nox-fx/src/registry.rs:47
+msgid "Blur and Sharpen"
+msgstr "Weichzeichnen und Schärfen"
+
+#: crates/nox-fx/src/registry.rs:48
+msgid "Keying"
+msgstr "Keying"
+
+#: crates/nox-fx/src/registry.rs:49 crates/nox-fx/src/transitions.rs:32
+msgid "Stylize"
+msgstr "Stilisieren"
+
+#: crates/nox-fx/src/registry.rs:50
+msgid "AI"
+msgstr "KI"
+
+#: crates/nox-fx/src/registry.rs:51
+msgid "Mattes"
+msgstr "Masken"
+
+#: crates/nox-fx/src/registry.rs:78 crates/nox-fx/src/registry.rs:98
+#: crates/nox-gui/src/node_editor.rs:146 crates/nox-gui/src/node_editor.rs:201
+msgid "Picture"
+msgstr "Bild"
+
+#: crates/nox-fx/src/registry.rs:86
+msgid "Mask"
+msgstr "Maske"
+
+#: crates/nox-fx/src/registry.rs:92 crates/nox-fx/src/registry.rs:104
+msgid "Matte"
+msgstr "Maske"
+
+#: crates/nox-fx/src/registry.rs:286
+msgid "Model"
+msgstr "Modell"
+
+#: crates/nox-fx/src/registry.rs:289 crates/nox-gui/src/export_dialog.rs:535
+#: crates/nox-gui/src/preferences.rs:125
+msgid "Automatic"
+msgstr "Automatisch"
+
+#: crates/nox-fx/src/registry.rs:290
+msgid "Video (fast)"
+msgstr "Video (schnell)"
+
+#: crates/nox-fx/src/registry.rs:291
+msgid "Detailed (slow)"
+msgstr "Detailliert (langsam)"
+
+#: crates/nox-fx/src/registry.rs:326
+msgid "Segment Subject"
+msgstr "Motiv freistellen"
+
+#: crates/nox-fx/src/registry.rs:336
+msgid "Apply Matte"
+msgstr "Maske anwenden"
+
+#: crates/nox-fx/src/registry.rs:341
+msgid "Mode"
+msgstr "Modus"
+
+#: crates/nox-fx/src/registry.rs:344
+msgid "Multiply Alpha"
+msgstr "Alpha multiplizieren"
+
+#: crates/nox-fx/src/registry.rs:345
+msgid "Replace Alpha"
+msgstr "Alpha ersetzen"
+
+#: crates/nox-fx/src/registry.rs:352
+msgid "Invert"
+msgstr "Umkehren"
+
+#: crates/nox-fx/src/registry.rs:363
+msgid "Invert Matte"
+msgstr "Maske umkehren"
+
+#: crates/nox-fx/src/registry.rs:373
+msgid "Feather Matte"
+msgstr "Maske weichzeichnen"
+
+#: crates/nox-fx/src/registry.rs:377
+msgid "Radius"
+msgstr "Radius"
+
+#: crates/nox-fx/src/transitions.rs:29
+msgid "Dissolves"
+msgstr "Überblendungen"
+
+#: crates/nox-fx/src/transitions.rs:30
+msgid "Wipes"
+msgstr "Wischblenden"
+
+#: crates/nox-fx/src/transitions.rs:31
+msgid "Motion"
+msgstr "Bewegung"
+
+#: crates/nox-fx/src/transitions.rs:76
+msgid "Ease"
+msgstr "Verlauf"
+
+#: crates/nox-fx/src/transitions.rs:79
+msgid "Linear"
+msgstr "Linear"
+
+#: crates/nox-fx/src/transitions.rs:80
+msgid "Ease In"
+msgstr "Langsam beginnen"
+
+#: crates/nox-fx/src/transitions.rs:81
+msgid "Ease Out"
+msgstr "Langsam enden"
+
+#: crates/nox-fx/src/transitions.rs:82
+msgid "Ease In and Out"
+msgstr "Sanft ein und aus"
+
+#: crates/nox-gui/src/about.rs:21
+msgid "translator-credits"
+msgstr ""
+
+#: crates/nox-gui/src/about.rs:35
+msgid "SIL Open Font License, version 1.1"
+msgstr "SIL Open Font License, Version 1.1"
+
+#: crates/nox-gui/src/alert.rs:22
+msgid "Close"
+msgstr "Schließen"
+
+#: crates/nox-gui/src/color_wheels.rs:50
+msgid "Lift"
+msgstr "Lift"
+
+#: crates/nox-gui/src/color_wheels.rs:51
+msgid "Gamma"
+msgstr "Gamma"
+
+#: crates/nox-gui/src/color_wheels.rs:52
+msgid "Gain"
+msgstr "Gain"
+
+#: crates/nox-gui/src/color_wheels.rs:53
+msgid "Offset"
+msgstr "Offset"
+
+#: crates/nox-gui/src/color_wheels.rs:516 crates/nox-gui/src/inspector.rs:393
+msgid "Add Keyframe"
+msgstr "Keyframe hinzufügen"
+
+#: crates/nox-gui/src/color_wheels.rs:518 crates/nox-gui/src/inspector.rs:395
+msgid "Remove Keyframe"
+msgstr "Keyframe entfernen"
+
+#: crates/nox-gui/src/color_wheels.rs:558
+msgid "Change {wheel}"
+msgstr "{wheel} ändern"
+
+#: crates/nox-gui/src/color_wheels.rs:610
+msgid "Red {r}, green {g}, blue {b}, master {master}"
+msgstr "Rot {r}, Grün {g}, Blau {b}, Master {master}"
+
+#: crates/nox-gui/src/effect_controls.rs:158
+msgid "Change {effect}"
+msgstr "{effect} ändern"
+
+#: crates/nox-gui/src/effect_controls.rs:179
+msgid "In percent"
+msgstr "In Prozent"
+
+#: crates/nox-gui/src/effect_controls.rs:180
+#: crates/nox-gui/src/inspector/text.rs:35
+#: crates/nox-gui/src/inspector/text.rs:98
+msgid "In percent of the picture’s height"
+msgstr "In Prozent der Bildhöhe"
+
+#: crates/nox-gui/src/effect_controls.rs:190
+msgid "Keyframe at Playhead"
+msgstr "Keyframe am Abspielkopf"
+
+#: crates/nox-gui/src/effect_controls.rs:221
+msgid "Toggle Keyframe"
+msgstr "Keyframe setzen oder entfernen"
+
+#: crates/nox-gui/src/export_dialog.rs:35
 msgid "High"
 msgstr "Hoch"
 
-#: src/export_dialog.rs:22
+#: crates/nox-gui/src/export_dialog.rs:36
 msgid "Medium"
 msgstr "Mittel"
 
-#: src/export_dialog.rs:23
+#: crates/nox-gui/src/export_dialog.rs:37
 msgid "Low (small files)"
 msgstr "Niedrig (kleine Dateien)"
 
-#: src/export_dialog.rs:30
+#: crates/nox-gui/src/export_dialog.rs:42
+msgid "SDR (Rec. 709)"
+msgstr "SDR (Rec. 709)"
+
+#: crates/nox-gui/src/export_dialog.rs:43
+msgid "HDR10 (PQ, Rec. 2020)"
+msgstr "HDR10 (PQ, Rec. 2020)"
+
+#: crates/nox-gui/src/export_dialog.rs:44
+msgid "HLG (Rec. 2020)"
+msgstr "HLG (Rec. 2020)"
+
+#: crates/nox-gui/src/export_dialog.rs:50
+msgid "{codec} (lossless)"
+msgstr "{codec} (verlustfrei)"
+
+#: crates/nox-gui/src/export_dialog.rs:52
+msgid "{codec} (uncompressed)"
+msgstr "{codec} (unkomprimiert)"
+
+#: crates/nox-gui/src/export_dialog.rs:68
 msgid "H.264 Master"
 msgstr "H.264 Master"
 
-#: src/export_dialog.rs:31
+#: crates/nox-gui/src/export_dialog.rs:69
 msgid "YouTube / Web (H.264)"
 msgstr "YouTube / Web (H.264)"
 
-#: src/export_dialog.rs:32
+#: crates/nox-gui/src/export_dialog.rs:70
 msgid "HEVC (smaller files)"
 msgstr "HEVC (kleinere Dateien)"
 
-#: src/export_dialog.rs:33
+#: crates/nox-gui/src/export_dialog.rs:71
+msgid "HDR10 Master (HEVC)"
+msgstr "HDR10-Master (HEVC)"
+
+#: crates/nox-gui/src/export_dialog.rs:73
+msgid "HLG for broadcast and phones (HEVC)"
+msgstr "HLG für Fernsehen und Smartphones (HEVC)"
+
+#: crates/nox-gui/src/export_dialog.rs:76
 msgid "ProRes 422 HQ (for editing)"
 msgstr "ProRes 422 HQ (zum Schneiden)"
 
-#: src/export_dialog.rs:34
+#: crates/nox-gui/src/export_dialog.rs:77
 msgid "Review copy (small)"
 msgstr "Vorschaukopie (klein)"
 
-#: src/export_dialog.rs
+#: crates/nox-gui/src/export_dialog.rs:78
 msgid "Web, smallest files (AV1)"
 msgstr "Web, kleinste Dateien (AV1)"
 
-#: src/export_dialog.rs
-msgid "Encodes AV1 on the processor: much smaller files than H.264 at the same quality, for the web, but slower to encode, and older devices may not play them."
-msgstr "Kodiert AV1 auf dem Prozessor: viel kleinere Dateien als H.264 bei gleicher Qualität, für das Web, aber langsamer, und ältere Geräte spielen sie eventuell nicht ab."
-
-#: src/export_dialog.rs
-msgid "Encodes VP9 on the processor, for WebM files that every browser plays: smaller than H.264, but slow to encode."
-msgstr "Kodiert VP9 auf dem Prozessor, für WebM-Dateien, die jeder Browser abspielt: kleiner als H.264, aber langsam beim Kodieren."
-
-#: src/export_dialog.rs:35 src/settings_dialog.rs:124
+#: crates/nox-gui/src/export_dialog.rs:79
+#: crates/nox-gui/src/settings_dialog.rs:119
 msgid "Custom"
 msgstr "Benutzerdefiniert"
 
-#: src/export_dialog.rs:241
-msgid "Export To"
-msgstr "Exportieren nach"
+#: crates/nox-gui/src/export_dialog.rs:91
+msgid "Encodes on the graphics card's video engine, and the frames never leave the card: the fastest choice, on AMD, Intel and NVIDIA cards. Files are somewhat larger than from a software encoder at the same quality."
+msgstr "Kodiert mit der Video-Einheit der Grafikkarte, und die Bilder verlassen die Karte nie: die schnellste Wahl, auf AMD-, Intel- und NVIDIA-Karten. Die Dateien sind bei gleicher Qualität etwas größer als von einem Software-Encoder."
 
-#: src/export_dialog.rs:299
-msgid "Choose a file to export to."
-msgstr "Wählen Sie eine Zieldatei für den Export."
+#: crates/nox-gui/src/export_dialog.rs:97
+msgid "NVIDIA's video engine: very fast, with better quality for the size than most hardware encoders. NVIDIA cards only."
+msgstr "NVIDIAs Video-Einheit: sehr schnell, mit besserer Qualität für die Dateigröße als die meisten Hardware-Encoder. Nur auf NVIDIA-Karten."
 
-#: src/export_dialog.rs:314
-msgid "Starting…"
-msgstr "Wird gestartet …"
+#: crates/nox-gui/src/export_dialog.rs:103
+msgid "The graphics card's video engine through VAAPI, Linux's video interface for AMD and Intel cards: fast, and the frames never leave the card. Files are somewhat larger than from a software encoder at the same quality."
+msgstr "Die Video-Einheit der Grafikkarte über VAAPI, die Video-Schnittstelle von Linux für AMD- und Intel-Karten: schnell, und die Bilder verlassen die Karte nie. Die Dateien sind bei gleicher Qualität etwas größer als von einem Software-Encoder."
 
-#: src/export_dialog.rs:341
-#, python-brace-format
-msgid "Frame {done} of {total}"
-msgstr "Bild {done} von {total}"
+#: crates/nox-gui/src/export_dialog.rs:109
+msgid "Encodes on the processor: the best quality for the size and the most compatible files, but much slower than hardware, especially at 4K."
+msgstr "Kodiert auf dem Prozessor: die beste Qualität für die Dateigröße und die kompatibelsten Dateien, aber viel langsamer als Hardware, besonders in 4K."
 
-#: src/export_dialog.rs:353
-msgid "Done"
-msgstr "Fertig"
+#: crates/nox-gui/src/export_dialog.rs:115
+msgid "Encodes on the processor: the smallest files at a given quality, but the slowest choice. Good when size matters more than time."
+msgstr "Kodiert auf dem Prozessor: die kleinsten Dateien bei gegebener Qualität, aber die langsamste Wahl. Gut, wenn die Größe wichtiger ist als die Zeit."
 
-#: src/export_dialog.rs:356
-#, python-brace-format
-msgid "{encoder}, zero copy"
-msgstr "{encoder}, ohne Kopien"
+#: crates/nox-gui/src/export_dialog.rs:121
+msgid "Encodes on the processor: large files that decode easily, made for editing and grading in other applications rather than for watching."
+msgstr "Kodiert auf dem Prozessor: große, leicht zu dekodierende Dateien, gemacht für Schnitt und Farbkorrektur in anderen Programmen statt zum Anschauen."
 
-#: src/export_dialog.rs:382
-#, python-brace-format
-msgid "Export failed: {error}"
-msgstr "Export fehlgeschlagen: {error}"
+#: crates/nox-gui/src/export_dialog.rs:127
+msgid "Encodes AV1 on the processor: much smaller files than H.264 at the same quality, for the web, but slower to encode, and older devices may not play them."
+msgstr "Kodiert AV1 auf dem Prozessor: viel kleinere Dateien als H.264 bei gleicher Qualität, für das Web, aber langsamer, und ältere Geräte spielen sie eventuell nicht ab."
 
-#: src/export_dialog.rs:221
-#, python-brace-format
+#: crates/nox-gui/src/export_dialog.rs:133
+msgid "Encodes VP9 on the processor, for WebM files that every browser plays: smaller than H.264, but slow to encode."
+msgstr "Kodiert VP9 auf dem Prozessor, für WebM-Dateien, die jeder Browser abspielt: kleiner als H.264, aber langsam beim Kodieren."
+
+#: crates/nox-gui/src/export_dialog.rs:560
+msgid "Checking which encoders work on this computer…"
+msgstr "Prüfe, welche Encoder auf diesem Computer funktionieren …"
+
+#: crates/nox-gui/src/export_dialog.rs:563
+msgid "Uses the fastest encoder that works, now {encoder}."
+msgstr "Verwendet den schnellsten Encoder, der funktioniert, derzeit {encoder}."
+
+#: crates/nox-gui/src/export_dialog.rs:566
+msgid "No encoder for this codec works on this computer."
+msgstr "Kein Encoder für diesen Codec funktioniert auf diesem Computer."
+
+#: crates/nox-gui/src/export_dialog.rs:579
+msgid "Frames go through system memory on the way, which is slower."
+msgstr "Die Bilder gehen dabei durch den Arbeitsspeicher, was langsamer ist."
+
+#: crates/nox-gui/src/export_dialog.rs:611
+msgid "Entire timeline"
+msgstr "Gesamte Timeline"
+
+#: crates/nox-gui/src/export_dialog.rs:615
+msgid "In to Out ({start} – {end})"
+msgstr "In bis Out ({start} – {end})"
+
+#: crates/nox-gui/src/export_dialog.rs:671
+msgid "The timeline has no audio in this range"
+msgstr "Die Timeline hat in diesem Bereich keinen Ton"
+
+#: crates/nox-gui/src/export_dialog.rs:676
 msgid "{width} × {height}, {fps} fps, {frames} frame ({timecode})"
 msgid_plural "{width} × {height}, {fps} fps, {frames} frames ({timecode})"
 msgstr[0] "{width} × {height}, {fps} fps, {frames} Bild ({timecode})"
 msgstr[1] "{width} × {height}, {fps} fps, {frames} Bilder ({timecode})"
 
-#: src/export_dialog.rs:363
-#, python-brace-format
+#: crates/nox-gui/src/export_dialog.rs:702
+msgid "Export To"
+msgstr "Exportieren nach"
+
+#: crates/nox-gui/src/export_dialog.rs:765
+msgid "Choose a file to export to."
+msgstr "Wählen Sie eine Zieldatei für den Export."
+
+#: crates/nox-gui/src/export_dialog.rs:788
+msgid "Starting…"
+msgstr "Wird gestartet …"
+
+#: crates/nox-gui/src/export_dialog.rs:815
+msgid "Frame {done} of {total}"
+msgstr "Bild {done} von {total}"
+
+#: crates/nox-gui/src/export_dialog.rs:827
+msgid "Done"
+msgstr "Fertig"
+
+#: crates/nox-gui/src/export_dialog.rs:830
+msgid "{encoder}, zero copy"
+msgstr "{encoder}, ohne Kopien"
+
+#: crates/nox-gui/src/export_dialog.rs:838
 msgid "Exported {frames} frame to {path} in {seconds} s ({fps} fps, {encoder})."
 msgid_plural "Exported {frames} frames to {path} in {seconds} s ({fps} fps, {encoder})."
 msgstr[0] "{frames} Bild in {seconds} s nach {path} exportiert ({fps} fps, {encoder})."
 msgstr[1] "{frames} Bilder in {seconds} s nach {path} exportiert ({fps} fps, {encoder})."
 
-#: src/i18n.rs:7 src/window.rs:199
-#, python-brace-format
-msgid "Cannot open {path}"
-msgstr "{path} kann nicht geöffnet werden"
+#: crates/nox-gui/src/export_dialog.rs:855
+msgid "Left out: {streams}"
+msgstr "Weggelassen: {streams}"
 
-#: src/i18n.rs:61
+#: crates/nox-gui/src/export_dialog.rs:860
+msgid "_Close"
+msgstr "Sch_ließen"
+
+#: crates/nox-gui/src/export_dialog.rs:867
+msgid "Export failed: {error}"
+msgstr "Export fehlgeschlagen: {error}"
+
+#: crates/nox-gui/src/framing.rs:77
+msgid "This clip is portrait, the timeline is landscape"
+msgstr "Dieser Clip ist hochkant, die Timeline im Querformat"
+
+#: crates/nox-gui/src/framing.rs:79
+msgid "This clip is landscape, the timeline is portrait"
+msgstr "Dieser Clip ist im Querformat, die Timeline hochkant"
+
+#: crates/nox-gui/src/framing.rs:83
+msgid "Fit shows all of the picture, small between black bars. Fill zooms it to cover the {width}×{height} frame, cropping the rest; its zoom and position can be changed in the inspector. Or the timeline can change to the clip's {clip_width}×{clip_height}, fitting the other clips."
+msgstr "Einpassen zeigt das ganze Bild, klein zwischen schwarzen Balken. Füllen vergrößert es, bis es das {width}×{height}-Bild bedeckt, und schneidet den Rest ab; Zoom und Position lassen sich im Inspektor ändern. Oder die Timeline übernimmt die {clip_width}×{clip_height} des Clips, und die anderen Clips werden eingepasst."
+
+#: crates/nox-gui/src/framing.rs:101 crates/nox-gui/src/framing.rs:239
+#: crates/nox-gui/src/inspector.rs:849
+#: crates/nox-gui/src/timeline/tracks.rs:140 crates/nox-gui/src/window.rs:555
+#: crates/nox-gui/src/window.rs:666 crates/nox-gui/src/window.rs:937
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: crates/nox-gui/src/framing.rs:102
+msgid "Fit"
+msgstr "Einpassen"
+
+#: crates/nox-gui/src/framing.rs:103
+msgid "Fill"
+msgstr "Füllen"
+
+#: crates/nox-gui/src/framing.rs:104
+msgid "Change Timeline"
+msgstr "Timeline ändern"
+
+#: crates/nox-gui/src/framing.rs:156
+msgid "Stream {index}"
+msgstr "Stream {index}"
+
+#: crates/nox-gui/src/framing.rs:161
+msgid "Video"
+msgstr "Video"
+
+#: crates/nox-gui/src/framing.rs:181
+msgid "Audio"
+msgstr "Audio"
+
+#: crates/nox-gui/src/framing.rs:191
+msgid "{stream}, {channels} channels, {rate} Hz"
+msgstr "{stream}, {channels} Kanäle, {rate} Hz"
+
+#: crates/nox-gui/src/framing.rs:204 crates/nox-gui/src/window.rs:716
+msgid "Subtitles"
+msgstr "Untertitel"
+
+#: crates/nox-gui/src/framing.rs:208
+msgid "{stream}, default"
+msgstr "{stream}, Standard"
+
+#: crates/nox-gui/src/framing.rs:211
+msgid "{stream}, forced"
+msgstr "{stream}, erzwungen"
+
+#: crates/nox-gui/src/framing.rs:230
+msgid "Which Streams?"
+msgstr "Welche Streams?"
+
+#: crates/nox-gui/src/framing.rs:233
+msgid "“{file}” has several streams. The checked ones go on the timeline, each on a track of its own."
+msgstr "„{file}“ hat mehrere Streams. Die angehakten kommen auf die Timeline, jeder auf eine eigene Spur."
+
+#: crates/nox-gui/src/framing.rs:240
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: crates/nox-gui/src/i18n.rs:61
 msgid "Scale entire image to fit"
 msgstr "Gesamtes Bild einpassen"
 
-#: src/i18n.rs:62
+#: crates/nox-gui/src/i18n.rs:62
 msgid "Scale full frame with crop"
 msgstr "Bild füllen und beschneiden"
 
-#: src/i18n.rs:63
+#: crates/nox-gui/src/i18n.rs:63
 msgid "Center crop with no resizing"
 msgstr "Mittig beschneiden ohne Skalierung"
 
-#: src/i18n.rs:64
+#: crates/nox-gui/src/i18n.rs:64
 msgid "Stretch frame to all corners"
 msgstr "Bild auf alle Ecken strecken"
 
-#: src/i18n.rs:72 resources/ui/menus.ui:32
+#: crates/nox-gui/src/i18n.rs:72
 msgctxt "blend mode"
 msgid "Normal"
 msgstr "Normal"
 
-#: src/i18n.rs:73 resources/ui/menus.ui:37
+#: crates/nox-gui/src/i18n.rs:73
 msgctxt "blend mode"
 msgid "Add"
-msgstr "Addieren"
+msgstr "Hinzufügen"
 
-#: src/i18n.rs:74 resources/ui/menus.ui:42
+#: crates/nox-gui/src/i18n.rs:74
 msgctxt "blend mode"
 msgid "Multiply"
 msgstr "Multiplizieren"
 
-#: src/i18n.rs:75 resources/ui/menus.ui:47
+#: crates/nox-gui/src/i18n.rs:75
 msgctxt "blend mode"
 msgid "Screen"
 msgstr "Negativ multiplizieren"
 
-#: src/media_object.rs:60
-msgid "Loading…"
-msgstr "Wird geladen …"
-
-#: src/media_object.rs:103
-msgid "probing crashed"
-msgstr "Analyse abgestürzt"
-
-#: src/media_object.rs:145
-#, python-brace-format
-msgid "Cannot import: {error}"
-msgstr "Import nicht möglich: {error}"
-
-#: src/media_object.rs:152
-msgid "Still"
-msgstr "Standbild"
-
-#: src/media_object.rs:163
-msgid "Unknown length"
-msgstr "Unbekannte Länge"
-
-#: src/media_pool.rs:189
-msgid "Media Files"
-msgstr "Mediendateien"
-
-#: src/media_pool.rs:194
-msgid "All Files"
-msgstr "Alle Dateien"
-
-#: src/media_pool.rs:201
-msgid "Import Media"
-msgstr "Medien importieren"
-
-#: src/project.rs:43 src/project.rs:230
-msgid "Untitled"
-msgstr "Unbenannt"
-
-#: src/project.rs:119
-msgid "Add Clip"
-msgstr "Clip hinzufügen"
-
-#: src/project.rs:221
-#, python-brace-format
-msgid "• {name} — Nox"
-msgstr "• {name} — Nox"
-
-#: src/project.rs:223
-#, python-brace-format
-msgid "{name} — Nox"
-msgstr "{name} — Nox"
-
-#: src/settings_dialog.rs:15 src/settings_dialog.rs:16
-msgid "HD"
-msgstr "HD"
-
-#: src/settings_dialog.rs:17
-msgid "QHD"
-msgstr "QHD"
-
-#: src/settings_dialog.rs:18
-msgid "Ultra HD"
-msgstr "Ultra HD"
-
-#: src/settings_dialog.rs:19
-msgid "DCI 4K"
-msgstr "DCI 4K"
-
-#: src/settings_dialog.rs:20
-msgid "Vertical"
-msgstr "Hochformat"
-
-#: src/settings_dialog.rs:21
-msgid "Square"
-msgstr "Quadratisch"
-
-#: src/settings_dialog.rs:115
-#, python-brace-format
-msgid "Project Settings: {name}"
-msgstr "Projekteinstellungen: {name}"
-
-#: src/settings_dialog.rs:213
-msgid "Change Project Settings"
-msgstr "Projekteinstellungen ändern"
-
-#: src/timeline.rs:81
-msgid "muted"
-msgstr "stumm"
-
-#: src/timeline.rs:1013
-msgid "Trim Clip"
-msgstr "Clip trimmen"
-
-#: src/viewer.rs:63
-msgid "Pause"
-msgstr "Pause"
-
-#: src/viewer.rs:65 resources/ui/viewer.ui:45
-msgid "Play"
-msgstr "Wiedergabe"
-
-#: src/window.rs:247
-#, python-brace-format
-msgid "Cannot save {path}"
-msgstr "{path} kann nicht gespeichert werden"
-
-#: src/window.rs:258 resources/ui/window.ui:71
-msgid "Save Project"
-msgstr "Projekt speichern"
-
-#: src/window.rs:281 resources/ui/window.ui:64
-msgid "Open Project"
-msgstr "Projekt öffnen"
-
-#: src/window.rs:300
-msgid "Save changes to the project?"
-msgstr "Änderungen am Projekt speichern?"
-
-#: src/window.rs:301
-msgid "Unsaved changes will be lost otherwise."
-msgstr "Andernfalls gehen ungespeicherte Änderungen verloren."
-
-#: src/window.rs:302 resources/ui/export-dialog.ui:172 resources/ui/project-settings.ui:258
-msgid "Cancel"
-msgstr "Abbrechen"
-
-#: src/window.rs:302
-msgid "Discard"
-msgstr "Verwerfen"
-
-#: src/window.rs:302 resources/ui/project-settings.ui:264 resources/ui/window.ui:15
-msgid "Save"
-msgstr "Speichern"
-
-#: src/window.rs:320
-msgid "Add Track"
-msgstr "Spur hinzufügen"
-
-#: src/window.rs:365 resources/ui/menus.ui:83 resources/ui/window.ui:38
-msgid "Add Dissolve"
-msgstr "Überblendung hinzufügen"
-
-#: src/window.rs:457
-msgid "Split Clips"
-msgstr "Clips teilen"
-
-#: src/window.rs:519
-msgid "Change Resolution"
-msgstr "Auflösung ändern"
-
-#: src/window.rs:543
-msgid "Change Frame Rate"
-msgstr "Bildrate ändern"
-
-#: src/window.rs:568
-msgid "Change Timecode"
-msgstr "Timecode ändern"
-
-#: src/window.rs:638
+#: crates/nox-gui/src/inspector.rs:230 crates/nox-gui/src/window.rs:1501
 msgid "Change Opacity"
 msgstr "Deckkraft ändern"
 
-#: src/window.rs:643
+#: crates/nox-gui/src/inspector.rs:242 crates/nox-gui/src/window.rs:1506
 msgid "Change Blend Mode"
 msgstr "Mischmodus ändern"
 
-#: resources/ui/export-dialog.ui:6 resources/ui/export-dialog.ui:178
-msgid "Export"
-msgstr "Exportieren"
-
-#: resources/ui/export-dialog.ui:22
-msgid "Render Settings"
-msgstr "Render-Einstellungen"
-
-#: resources/ui/export-dialog.ui:121
-msgid "Timeline"
-msgstr "Timeline"
-
-#: resources/ui/media-pool.ui:12
-msgid "Media Pool"
-msgstr "Medienpool"
-
-#: resources/ui/media-pool.ui:21
-msgid "Import Media…"
-msgstr "Medien importieren …"
-
-#: resources/ui/media-pool.ui:36
-msgid "Drop media files here"
-msgstr "Mediendateien hier ablegen"
-
-#: resources/ui/menus.ui:7
-msgid "Opacity"
-msgstr "Deckkraft"
-
-#: resources/ui/menus.ui:30
-msgid "Blend Mode"
-msgstr "Mischmodus"
-
-#: resources/ui/menus.ui:53
-msgid "Gain"
-msgstr "Gain"
-
-#: resources/ui/menus.ui:75
-msgid "Mute"
-msgstr "Stumm"
-
-#: resources/ui/menus.ui:87 resources/ui/window.ui:34
-msgid "Split at Playhead"
-msgstr "Am Abspielkopf teilen"
-
-#: resources/ui/menus.ui:91
-msgid "Delete"
-msgstr "Löschen"
-
-#: resources/ui/project-settings.ui:33 resources/ui/project-settings.ui:43
-msgid "General"
-msgstr "Allgemein"
-
-#: resources/ui/project-settings.ui:83
-msgid "Master Settings"
-msgstr "Haupteinstellungen"
-
-#: resources/ui/project-settings.ui:93
-msgid "Timeline Format"
-msgstr "Timeline-Format"
-
-#: resources/ui/project-settings.ui:128
-msgid "For"
-msgstr "Für"
-
-#: resources/ui/project-settings.ui:162
-msgid "processing"
-msgstr "Verarbeitung"
-
-#: resources/ui/project-settings.ui:198
-msgid "Image Scaling"
-msgstr "Bildskalierung"
-
-#: resources/ui/project-settings.ui:208
-msgid "Input Scaling"
-msgstr "Eingangsskalierung"
-
-#: resources/ui/viewer.ui:27
-msgid "Go to Start"
-msgstr "Zum Anfang"
-
-#: resources/ui/viewer.ui:36
-msgid "Previous Frame"
-msgstr "Vorheriges Bild"
-
-#: resources/ui/viewer.ui:54
-msgid "Next Frame"
-msgstr "Nächstes Bild"
-
-#: resources/ui/viewer.ui:63
-msgid "Go to End"
-msgstr "Zum Ende"
-
-#: resources/ui/window.ui:7
-msgid "New Project"
-msgstr "Neues Projekt"
-
-#: resources/ui/window.ui:42
-msgid "Add Video Track"
-msgstr "Videospur hinzufügen"
-
-#: resources/ui/window.ui:46
-msgid "Add Audio Track"
-msgstr "Tonspur hinzufügen"
-
-#: resources/ui/window.ui:50
-msgid "Snapping"
-msgstr "Einrasten"
-
-#: resources/ui/window.ui:78
-msgid "Undo"
-msgstr "Rückgängig"
-
-#: resources/ui/window.ui:85
-msgid "Redo"
-msgstr "Wiederholen"
-
-#: src/export_dialog.rs:219
-msgid "Entire timeline"
-msgstr "Gesamte Timeline"
-
-#: src/export_dialog.rs:223
-#, python-brace-format
-msgid "In to Out ({start} – {end})"
-msgstr "In bis Out ({start} – {end})"
-
-#: src/timeline.rs:135
-msgid "Unmute Track"
-msgstr "Stummschaltung aufheben"
-
-#: resources/ui/menus.ui:137 src/timeline.rs:136
-msgid "Mute Track"
-msgstr "Spur stummschalten"
-
-#: src/timeline.rs:137
-msgid "Enable Track"
-msgstr "Spur aktivieren"
-
-#: resources/ui/menus.ui:111 src/timeline.rs:138
-msgid "Disable Track"
-msgstr "Spur deaktivieren"
-
-#: resources/ui/menus.ui:115 resources/ui/menus.ui:141 src/timeline.rs:144
-msgid "Lock Track"
-msgstr "Spur sperren"
-
-#: src/timeline.rs:146
-msgid "Unlock Track"
-msgstr "Spur entsperren"
-
-#: src/timeline.rs:1386
-msgid "Ripple Trim"
-msgstr "Ripple-Trimmen"
-
-#: src/timeline.rs:1410
-msgid "Roll Edit"
-msgstr "Roll-Schnitt"
-
-#: resources/ui/menus.ui:95 resources/ui/window.ui:42 src/timeline.rs:1635
-msgid "Ripple Delete"
-msgstr "Ripple-Löschen"
-
-#: resources/ui/rename-track.ui:6 src/timeline.rs:1670
-msgid "Rename Track"
-msgstr "Spur umbenennen"
-
-#: resources/ui/menus.ui:121 resources/ui/menus.ui:147 src/timeline.rs:1681
-msgid "Delete Track"
-msgstr "Spur löschen"
-
-#: resources/ui/window.ui:46 src/window.rs:469
-msgid "Mark In"
-msgstr "In-Punkt setzen"
-
-#: resources/ui/window.ui:50 src/window.rs:475
-msgid "Mark Out"
-msgstr "Out-Punkt setzen"
-
-#: src/window.rs:480
-msgid "Clear In"
-msgstr "In-Punkt löschen"
-
-#: src/window.rs:483
-msgid "Clear Out"
-msgstr "Out-Punkt löschen"
-
-#: resources/ui/window.ui:54 src/window.rs:486
-msgid "Clear In and Out"
-msgstr "In- und Out-Punkt löschen"
-
-#: resources/ui/menus.ui:105 resources/ui/menus.ui:131
-msgid "Rename Track…"
-msgstr "Spur umbenennen…"
-
-#: resources/ui/rename-track.ui:35
-msgid "Rename"
-msgstr "Umbenennen"
-
-#: resources/ui/inspector.ui:27
-msgid "Inspector"
-msgstr "Inspektor"
-
-#: resources/ui/inspector.ui:42
-msgid "Select a clip on the timeline to see its properties."
-msgstr "Wähle einen Clip in der Zeitleiste, um seine Eigenschaften zu sehen."
-
-#: resources/ui/inspector.ui:98
-msgid "Composite"
-msgstr "Komposition"
-
-#: resources/ui/inspector.ui:124
-msgid "Opacity in percent"
-msgstr "Deckkraft in Prozent"
-
-#: resources/ui/inspector.ui:170
-msgid "Audio"
-msgstr "Audio"
-
-#: resources/ui/window.ui:129
-msgid "Edit"
-msgstr "Schnitt"
-
-#: resources/ui/window.ui:184
-#: crates/nox-fx/transitions
-msgid "Color"
-msgstr "Farbe"
-
-#: resources/ui/window.ui:211
-msgid "Scopes"
-msgstr "Messinstrumente"
-
-#: resources/ui/window.ui:246
-msgid "Color Wheels"
-msgstr "Farbräder"
-
-#: src/inspector.rs:161
-msgid "Video clip"
-msgstr "Videoclip"
-
-#: src/inspector.rs:163
-msgid "Audio clip"
-msgstr "Audioclip"
-
-#: src/inspector.rs:166
-msgid "{kind}, {length}"
-msgstr "{kind}, {length}"
-
-#: src/inspector.rs:182
-msgid "Dissolve"
-msgstr "Überblendung"
-
-#: src/inspector.rs:185
-msgid "Transition, {length}"
-msgstr "Übergang, {length}"
-
-#: src/clip_strip.rs:117
-msgid "Clips on video tracks appear here."
-msgstr "Clips auf Videospuren erscheinen hier."
-
-#: resources/ui/clip-strip.ui:37
-msgid "Clips"
-msgstr "Clips"
-
-#: resources/ui/export-dialog.ui:40
-msgid "_Preset"
-msgstr "_Vorgabe"
-
-#: resources/ui/export-dialog.ui:56
-msgid "_File"
-msgstr "_Datei"
-
-#: resources/ui/export-dialog.ui:77
-msgid "_Browse…"
-msgstr "Durch_suchen …"
-
-#: resources/ui/export-dialog.ui:86
-msgid "Con_tainer"
-msgstr "Con_tainer"
-
-#: resources/ui/export-dialog.ui:102
-msgid "_Video codec"
-msgstr "_Videocodec"
-
-#: resources/ui/export-dialog.ui:102
-msgid "_Quality"
-msgstr "_Qualität"
-
-#: resources/ui/export-dialog.ui:118
-msgid "Enco_der"
-msgstr "Enco_der"
-
-#: src/export_dialog.rs
-msgid "Automatic"
-msgstr "Automatisch"
-
-#: src/export_dialog.rs
-msgid "Encodes on the graphics card's video engine, and the frames never leave the card: the fastest choice, on AMD, Intel and NVIDIA cards. Files are somewhat larger than from a software encoder at the same quality."
-msgstr "Kodiert mit der Video-Einheit der Grafikkarte, und die Bilder verlassen die Karte nie: die schnellste Wahl, auf AMD-, Intel- und NVIDIA-Karten. Die Dateien sind bei gleicher Qualität etwas größer als von einem Software-Encoder."
-
-#: src/export_dialog.rs
-msgid "The graphics card's video engine through VAAPI, Linux's video interface for AMD and Intel cards: fast, and the frames never leave the card. Files are somewhat larger than from a software encoder at the same quality."
-msgstr "Die Video-Einheit der Grafikkarte über VAAPI, die Video-Schnittstelle von Linux für AMD- und Intel-Karten: schnell, und die Bilder verlassen die Karte nie. Die Dateien sind bei gleicher Qualität etwas größer als von einem Software-Encoder."
-
-#: src/export_dialog.rs
-msgid "NVIDIA's video engine: very fast, with better quality for the size than most hardware encoders. NVIDIA cards only."
-msgstr "NVIDIAs Video-Einheit: sehr schnell, mit besserer Qualität für die Dateigröße als die meisten Hardware-Encoder. Nur auf NVIDIA-Karten."
-
-#: src/export_dialog.rs
-msgid "Encodes on the processor: the best quality for the size and the most compatible files, but much slower than hardware, especially at 4K."
-msgstr "Kodiert auf dem Prozessor: die beste Qualität für die Dateigröße und die kompatibelsten Dateien, aber viel langsamer als Hardware, besonders in 4K."
-
-#: src/export_dialog.rs
-msgid "Encodes on the processor: the smallest files at a given quality, but the slowest choice. Good when size matters more than time."
-msgstr "Kodiert auf dem Prozessor: die kleinsten Dateien bei gegebener Qualität, aber die langsamste Wahl. Gut, wenn die Größe wichtiger ist als die Zeit."
-
-#: src/export_dialog.rs
-msgid "Encodes on the processor: large files that decode easily, made for editing and grading in other applications rather than for watching."
-msgstr "Kodiert auf dem Prozessor: große, leicht zu dekodierende Dateien, gemacht für Schnitt und Farbkorrektur in anderen Programmen statt zum Anschauen."
-
-#: src/export_dialog.rs
-msgid "Checking which encoders work on this computer…"
-msgstr "Prüfe, welche Encoder auf diesem Computer funktionieren …"
-
-#: src/export_dialog.rs
-msgid "Uses the fastest encoder that works, now {encoder}."
-msgstr "Verwendet den schnellsten Encoder, der funktioniert, derzeit {encoder}."
-
-#: src/export_dialog.rs
-msgid "No encoder for this codec works on this computer."
-msgstr "Kein Encoder für diesen Codec funktioniert auf diesem Computer."
-
-#: resources/ui/export-dialog.ui
-msgid "A_udio codec"
-msgstr "A_udiocodec"
-
-#: src/export_dialog.rs
-msgid "{codec} (lossless)"
-msgstr "{codec} (verlustfrei)"
-
-#: src/export_dialog.rs
-msgid "{codec} (uncompressed)"
-msgstr "{codec} (unkomprimiert)"
-
-#: src/export_dialog.rs
-msgid "Frames go through system memory on the way, which is slower."
-msgstr "Die Bilder gehen dabei durch den Arbeitsspeicher, was langsamer ist."
-
-#: resources/ui/export-dialog.ui:126
-msgid "Include _audio"
-msgstr "_Ton einschließen"
-
-#: resources/ui/export-dialog.ui:134
-msgid "Ra_nge"
-msgstr "_Bereich"
-
-#: resources/ui/export-dialog.ui:197
-msgid "Open F_older"
-msgstr "_Ordner öffnen"
-
-#: resources/ui/export-dialog.ui:205
-msgid "_Cancel"
-msgstr "Abbre_chen"
-
-#: resources/ui/export-dialog.ui:212
-msgid "_Export"
-msgstr "_Exportieren"
-
-#: src/export_dialog.rs:436
-msgid "_Close"
-msgstr "Sch_ließen"
-
-#: resources/ui/project-settings.ui:61
-msgid "Project _name"
-msgstr "Projekt_name"
-
-#: resources/ui/project-settings.ui:114
-msgid "Timeline _resolution"
-msgstr "Timeline-_Auflösung"
-
-#: resources/ui/project-settings.ui:181
-msgid "Timeline _frame rate"
-msgstr "Timeline-_Bildrate"
-
-#: resources/ui/project-settings.ui:197
-msgid "Use _Drop Frame Timecode"
-msgstr "_Drop-Frame-Timecode verwenden"
-
-#: resources/ui/project-settings.ui:240
-msgid "_Mismatched resolution files"
-msgstr "Dateien _mit abweichender Auflösung"
-
-#: resources/ui/project-settings.ui:282
-msgid "_Save"
-msgstr "_Speichern"
-
-#: resources/ui/project-settings.ui:140
-msgid "Width"
-msgstr "Breite"
-
-#: resources/ui/project-settings.ui:160
-msgid "Height"
-msgstr "Höhe"
-
-#: resources/ui/rename-track.ui:22
-msgid "Track name"
-msgstr "Spurname"
-
-#: src/timeline.rs:1608
-msgid "{name}, {start} to {end}"
-msgstr "{name}, {start} bis {end}"
-
-#: src/scopes.rs:25
-msgid "Waveform"
-msgstr "Waveform"
-
-#: src/scopes.rs:26
-msgid "RGB Parade"
-msgstr "RGB-Parade"
-
-#: src/scopes.rs:27
-msgid "Vectorscope"
-msgstr "Vektorskop"
-
-#: src/scopes.rs:28
-msgid "Histogram"
-msgstr "Histogramm"
-
-#: src/color_wheels.rs:50
-msgid "Lift"
-msgstr "Lift"
-
-#: src/color_wheels.rs:51
-msgid "Gamma"
-msgstr "Gamma"
-
-#: src/color_wheels.rs:53
-msgid "Offset"
-msgstr "Offset"
-
-#: src/color_wheels.rs:515
-msgid "Change {wheel}"
-msgstr "{wheel} ändern"
-
-#: src/color_wheels.rs:555
-msgid "Red {r}, green {g}, blue {b}, master {master}"
-msgstr "Rot {r}, Grün {g}, Blau {b}, Master {master}"
-
-#: resources/ui/color-wheels.ui:86
-msgid "Reset Lift"
-msgstr "Lift zurücksetzen"
-
-#: resources/ui/color-wheels.ui:135
-msgid "Reset Gamma"
-msgstr "Gamma zurücksetzen"
-
-#: resources/ui/color-wheels.ui:184
-msgid "Reset Gain"
-msgstr "Gain zurücksetzen"
-
-#: resources/ui/color-wheels.ui:233
-msgid "Reset Offset"
-msgstr "Offset zurücksetzen"
-
-#: resources/ui/color-wheels.ui:99
-msgid "Drag to shift the color balance; double-click to reset"
-msgstr "Ziehen verschiebt die Farbbalance, Doppelklick setzt zurück"
-
-#: resources/ui/color-wheels.ui:106
-msgid "Master"
-msgstr "Master"
-
-#: resources/ui/color-wheels.ui:52
-msgid "Select a video clip to grade it."
-msgstr "Wähle einen Videoclip, um ihn zu graden."
-
-#: resources/ui/menus.ui:53
-msgid "Volume"
-msgstr "Lautstärke"
-
-#: resources/ui/inspector.ui:211
-msgid "Volume in decibels"
-msgstr "Lautstärke in Dezibel"
-
-#: src/inspector.rs:97
+#: crates/nox-gui/src/inspector.rs:259
+msgid "Change Transform"
+msgstr "Transformation ändern"
+
+#: crates/nox-gui/src/inspector.rs:273 crates/nox-gui/src/timeline/drag.rs:12
+msgid "Fade Out"
+msgstr "Ausblenden"
+
+#: crates/nox-gui/src/inspector.rs:275 crates/nox-gui/src/timeline/drag.rs:11
+msgid "Fade In"
+msgstr "Einblenden"
+
+#: crates/nox-gui/src/inspector.rs:295 crates/nox-gui/src/window.rs:1513
 msgid "Change Volume"
 msgstr "Lautstärke ändern"
 
-#: src/timeline.rs:1532
-msgid "Move Clip"
-msgid_plural "Move Clips"
-msgstr[0] "Clip verschieben"
-msgstr[1] "Clips verschieben"
-
-#: src/timeline.rs:2069
-msgid "Delete Clip"
-msgid_plural "Delete Clips"
-msgstr[0] "Clip löschen"
-msgstr[1] "Clips löschen"
-
-#: src/timeline.rs:1716
-msgid "{n} clip selected"
-msgid_plural "{n} clips selected"
-msgstr[0] "{n} Clip ausgewählt"
-msgstr[1] "{n} Clips ausgewählt"
-
-#: src/inspector.rs:156
+#: crates/nox-gui/src/inspector.rs:368
 msgid "Change Marker"
 msgstr "Marker ändern"
 
-#: src/inspector.rs:271
+#: crates/nox-gui/src/inspector.rs:415
+msgid "Change Speed"
+msgstr "Geschwindigkeit ändern"
+
+#: crates/nox-gui/src/inspector.rs:443
+msgid "Freeze Frame"
+msgstr "Standbild"
+
+#: crates/nox-gui/src/inspector.rs:445
+msgid "Remove Freeze Frame"
+msgstr "Standbild entfernen"
+
+#: crates/nox-gui/src/inspector.rs:469 crates/nox-gui/src/timeline/drag.rs:432
+msgid "Change Transition Length"
+msgstr "Übergangslänge ändern"
+
+#: crates/nox-gui/src/inspector.rs:498
+msgid "Change Easing"
+msgstr "Interpolation ändern"
+
+#: crates/nox-gui/src/inspector.rs:518
+msgid "Reset Transform"
+msgstr "Transformation zurücksetzen"
+
+#: crates/nox-gui/src/inspector.rs:585
+msgid "Decoded with {api} ({decoder})"
+msgstr "Dekodiert mit {api} ({decoder})"
+
+#: crates/nox-gui/src/inspector.rs:592
+msgid "Decoded on the processor ({decoder})"
+msgstr "Auf dem Prozessor dekodiert ({decoder})"
+
+#: crates/nox-gui/src/inspector.rs:595
+msgid "Decoder known once a frame of the clip is shown"
+msgstr "Der Decoder steht fest, sobald ein Bild des Clips angezeigt wurde"
+
+#: crates/nox-gui/src/inspector.rs:691
+msgid "Text clip"
+msgstr "Textclip"
+
+#: crates/nox-gui/src/inspector.rs:693
+msgid "Video clip"
+msgstr "Videoclip"
+
+#: crates/nox-gui/src/inspector.rs:695
+msgid "Subtitle clip"
+msgstr "Untertitelclip"
+
+#: crates/nox-gui/src/inspector.rs:697
+msgid "Audio clip"
+msgstr "Audioclip"
+
+#: crates/nox-gui/src/inspector.rs:704
+msgid "{kind}, {length}"
+msgstr "{kind}, {length}"
+
+#: crates/nox-gui/src/inspector.rs:792
+msgid "Transition, {length}"
+msgstr "Übergang, {length}"
+
+#: crates/nox-gui/src/inspector.rs:837
+msgid "Download the background removal model?"
+msgstr "Das Modell zum Entfernen des Hintergrunds herunterladen?"
+
+#: crates/nox-gui/src/inspector.rs:840
+msgid "Removing backgrounds uses {models}, {size} MB downloaded once into {folder}."
+msgstr "Zum Entfernen des Hintergrunds dienen {models}, einmalig {size} MB nach {folder} heruntergeladen."
+
+#: crates/nox-gui/src/inspector.rs:852
+msgid "Download"
+msgstr "Herunterladen"
+
+#: crates/nox-gui/src/inspector.rs:870
+msgid "Downloading…"
+msgstr "Wird heruntergeladen …"
+
+#: crates/nox-gui/src/inspector.rs:900
+msgid "Downloading… {percent} %"
+msgstr "Wird heruntergeladen … {percent} %"
+
+#: crates/nox-gui/src/inspector.rs:921
+msgid "The download failed: {error}"
+msgstr "Das Herunterladen ist fehlgeschlagen: {error}"
+
+#: crates/nox-gui/src/inspector.rs:940
 msgid "Marker at {timecode}"
 msgstr "Marker bei {timecode}"
 
-#: src/timeline.rs:568
-msgid "Marker"
-msgstr "Marker"
-
-#: src/timeline.rs:1651
-msgid "Move Marker"
-msgstr "Marker verschieben"
-
-#: src/timeline.rs:2211
-msgid "Add Marker"
-msgstr "Marker hinzufügen"
-
-#: src/timeline.rs:2246
-msgid "Delete Marker"
-msgstr "Marker löschen"
-
-#: resources/ui/inspector.ui:78
-msgid "Name"
-msgstr "Name"
-
-#: resources/ui/inspector.ui:123
-msgid "Note"
-msgstr "Notiz"
-
-#: src/inspector.rs:298
+#: crates/nox-gui/src/inspector.rs:967
 msgctxt "marker color"
 msgid "Red"
 msgstr "Rot"
 
-#: src/inspector.rs:299
+#: crates/nox-gui/src/inspector.rs:968
 msgctxt "marker color"
 msgid "Pink"
 msgstr "Rosa"
 
-#: src/inspector.rs:300
+#: crates/nox-gui/src/inspector.rs:969
 msgctxt "marker color"
 msgid "Orange"
 msgstr "Orange"
 
-#: src/inspector.rs:301
+#: crates/nox-gui/src/inspector.rs:970
 msgctxt "marker color"
 msgid "Yellow"
 msgstr "Gelb"
 
-#: src/inspector.rs:302
+#: crates/nox-gui/src/inspector.rs:971
 msgctxt "marker color"
 msgid "Green"
 msgstr "Grün"
 
-#: src/inspector.rs:303
+#: crates/nox-gui/src/inspector.rs:972
 msgctxt "marker color"
 msgid "Cyan"
 msgstr "Cyan"
 
-#: src/inspector.rs:304
+#: crates/nox-gui/src/inspector.rs:973
 msgctxt "marker color"
 msgid "Purple"
 msgstr "Lila"
 
-#: src/inspector.rs:305
+#: crates/nox-gui/src/inspector.rs:974
 msgctxt "marker color"
 msgid "Magenta"
 msgstr "Magenta"
 
-#: src/inspector.rs:306
+#: crates/nox-gui/src/inspector.rs:975
 msgctxt "marker color"
 msgid "White"
 msgstr "Weiß"
 
-#: src/inspector.rs:307
+#: crates/nox-gui/src/inspector.rs:976
 msgctxt "marker color"
 msgid "Black"
 msgstr "Schwarz"
 
-#: src/inspector.rs:308
+#: crates/nox-gui/src/inspector.rs:977
 msgctxt "marker color"
 msgid "Blue"
 msgstr "Blau"
 
-#: src/timeline.rs:1140
-msgid "Slide {frames}"
-msgstr "Slide {frames}"
-
-#: src/timeline.rs:1148
-msgid "Slip {frames}"
-msgstr "Slip {frames}"
-
-#: src/timeline.rs:1754
-msgid "Slide Clip"
-msgstr "Clip schieben (Slide)"
-
-#: src/timeline.rs:1759
-msgid "Slip Clip"
-msgstr "Inhalt verschieben (Slip)"
-
-#: src/project.rs
-msgid "Insert Clip"
-msgstr "Clip einfügen"
-
-#: src/timeline.rs
-msgid "Sync Lock Track"
-msgstr "Spur synchron sperren"
-
-#: src/timeline.rs
-msgid "Remove Sync Lock"
-msgstr "Synchronsperre aufheben"
-
-#: resources/ui/menus.ui
-msgid "Sync Lock"
-msgstr "Synchronsperre"
-
-#: src/timeline.rs
-msgid "Offline"
-msgstr "Offline"
-
-#: src/window.rs
-msgid "Not Now"
-msgstr "Nicht jetzt"
-
-#: src/window.rs
-msgid "Relink…"
-msgstr "Neu verknüpfen …"
-
-#: src/window.rs
-msgid "Relink Offline Media"
-msgstr "Offline-Medien neu verknüpfen"
-
-#: src/window.rs
-msgid "No media is offline"
-msgstr "Keine Medien sind offline"
-
-#: src/window.rs
-#, python-brace-format
-msgid "No files of the same name are in {folder}."
-msgstr "In {folder} sind keine Dateien gleichen Namens."
-
-#: src/window.rs
-msgid "The others are still offline."
-msgstr "Die übrigen sind weiterhin offline."
-
-#: src/window.rs
-#, python-brace-format
-msgid "Relink {name}"
-msgstr "{name} neu verknüpfen"
-
-#: src/window.rs
-msgid "Relink Media"
-msgstr "Medien neu verknüpfen"
-
-#: src/window.rs
-msgid "Their clips show black. Choose a folder to look for the files in."
-msgstr "Ihre Clips bleiben schwarz. Wählen Sie einen Ordner, in dem nach den Dateien gesucht wird."
-
-#: resources/ui/menus.ui
-msgid "Relink Media…"
-msgstr "Medien neu verknüpfen …"
-
-#: resources/ui/window.ui
-msgid "Relink Offline Media…"
-msgstr "Offline-Medien neu verknüpfen …"
-
-#: src/window.rs
-#, python-brace-format
-msgid "{n} media file is offline"
-msgid_plural "{n} media files are offline"
-msgstr[0] "{n} Mediendatei ist offline"
-msgstr[1] "{n} Mediendateien sind offline"
-
-#: src/window.rs
-#, python-brace-format
-msgid "Found {found} of {n} offline file"
-msgid_plural "Found {found} of {n} offline files"
-msgstr[0] "{found} von {n} Offline-Datei gefunden"
-msgstr[1] "{found} von {n} Offline-Dateien gefunden"
-
-#: src/timeline.rs
-msgid "Solo Track"
-msgstr "Spur solo schalten"
-
-#: src/timeline.rs
-msgid "Unsolo Track"
-msgstr "Solo der Spur aufheben"
-
-#: src/track_header.rs
-#, python-brace-format
-msgid "Mute {track}"
-msgstr "{track} stummschalten"
-
-#: src/track_header.rs
-#, python-brace-format
-msgid "Hide {track}"
-msgstr "{track} ausblenden"
-
-#: src/track_header.rs
-msgid "Hide"
-msgstr "Ausblenden"
-
-#: src/track_header.rs
-#, python-brace-format
-msgid "Solo {track}"
-msgstr "{track} solo"
-
-#: src/track_header.rs
-msgid "Solo"
-msgstr "Solo"
-
-#: src/track_header.rs
-#, python-brace-format
-msgid "Lock {track}"
-msgstr "{track} sperren"
-
-#: src/track_header.rs
-msgid "Lock"
-msgstr "Sperren"
-
-#: src/track_header.rs
-#, python-brace-format
-msgid "Sync lock {track}"
-msgstr "{track} synchron sperren"
-
-#: src/track_header.rs
-msgid "Sync Lock: follow ripple edits on other tracks"
-msgstr "Synchronsperre: Ripple-Bearbeitungen anderer Spuren folgen"
-
-#: resources/ui/viewer.ui
-msgid "Mark In (I)"
-msgstr "In-Punkt setzen (I)"
-
-#: resources/ui/viewer.ui
-msgid "Mark Out (O)"
-msgstr "Out-Punkt setzen (O)"
-
-#: resources/ui/viewer.ui
-msgid "Add Marker (M)"
-msgstr "Marker hinzufügen (M)"
-
-#: resources/ui/window.ui
-msgid "New Project (Ctrl+N)"
-msgstr "Neues Projekt (Strg+N)"
-
-#: resources/ui/window.ui
-msgid "Open Project (Ctrl+O)"
-msgstr "Projekt öffnen (Strg+O)"
-
-#: resources/ui/window.ui
-msgid "Save Project (Ctrl+S)"
-msgstr "Projekt speichern (Strg+S)"
-
-#: resources/ui/window.ui
-msgid "Save Project As (Ctrl+Shift+S)"
-msgstr "Projekt speichern unter (Strg+Umschalt+S)"
-
-#: resources/ui/window.ui
-msgid "Save Project As"
-msgstr "Projekt speichern unter"
-
-#: resources/ui/window.ui
-msgid "Undo (Ctrl+Z)"
-msgstr "Rückgängig (Strg+Z)"
-
-#: resources/ui/window.ui
-msgid "Redo (Ctrl+Shift+Z)"
-msgstr "Wiederholen (Strg+Umschalt+Z)"
-
-#: resources/ui/window.ui
-msgid "Export the timeline (Ctrl+E)"
-msgstr "Die Timeline exportieren (Strg+E)"
-
-
-
-#: resources/ui/window.ui
-msgid "Timeline Tools"
-msgstr "Timeline-Werkzeuge"
-
-#: resources/ui/window.ui
-msgid "Insert Selected Media at Playhead (F9)"
-msgstr "Ausgewählte Medien am Abspielkopf einfügen (F9)"
-
-#: resources/ui/window.ui
-msgid "Insert"
-msgstr "Einfügen"
-
-#: resources/ui/window.ui
-msgid "Overwrite at Playhead with Selected Media (F10)"
-msgstr "Am Abspielkopf mit den ausgewählten Medien überschreiben (F10)"
-
-#: resources/ui/window.ui
-msgid "Overwrite"
-msgstr "Überschreiben"
-
-#: resources/ui/window.ui
-msgid "Split at Playhead (Ctrl+B)"
-msgstr "Am Abspielkopf teilen (Strg+B)"
-
-#: resources/ui/window.ui
-msgid "Ripple Delete Selected Clips (Shift+Delete)"
-msgstr "Ausgewählte Clips mit Lückenschluss löschen (Umschalt+Entf)"
-
-#: resources/ui/window.ui
-msgid "Add Dissolve to Selected Clip (Ctrl+T)"
-msgstr "Dem ausgewählten Clip eine Überblendung hinzufügen (Strg+T)"
-
-#: resources/ui/window.ui
-msgid "Snapping (N)"
-msgstr "Einrasten (N)"
-
-#: src/timeline.rs
-msgid "Left and Right step one frame, Up and Down jump to edit points, Shift+V selects the clip at the playhead, Ctrl+A all clips and Escape none, Shift+F10 opens the clip menu (in a track header, the track menu), Delete removes the selected clips."
-msgstr "Links und Rechts gehen ein Bild weiter, Hoch und Runter springen zu Schnittpunkten, Umschalt+V wählt den Clip am Abspielkopf, Strg+A alle Clips und Esc keinen, Umschalt+F10 öffnet das Clip-Menü (in einem Spurkopf das Spurmenü), Entf entfernt die ausgewählten Clips."
-
-#: src/inspector.rs
-msgid "Fade In"
-msgstr "Einblenden"
-
-#: src/inspector.rs
-msgid "Fade Out"
-msgstr "Ausblenden"
-
-#: resources/ui/inspector.ui
-msgid "Fades"
-msgstr "Blenden"
-
-#: resources/ui/inspector.ui
-msgid "Seconds; also set by dragging the handles at the clip’s top corners"
-msgstr "Sekunden; auch durch Ziehen der Griffe an den oberen Ecken des Clips"
-
-#: src/inspector.rs
-msgid "Change Transform"
-msgstr "Transformation ändern"
-
-#: src/inspector.rs
-msgid "Reset Transform"
-msgstr "Transformation zurücksetzen"
-
-#: resources/ui/inspector.ui
-msgid "Transform"
-msgstr "Transformation"
-
-#: resources/ui/inspector.ui
-msgid "Position X"
-msgstr "Position X"
-
-#: resources/ui/inspector.ui
-msgid "Position Y"
-msgstr "Position Y"
-
-#: resources/ui/inspector.ui
-#: crates/nox-fx/transitions
-msgid "Zoom"
-msgstr "Zoom"
-
-#: resources/ui/inspector.ui
-msgid "Rotation"
-msgstr "Drehung"
-
-#: resources/ui/inspector.ui
-msgid "Crop Left"
-msgstr "Links beschneiden"
-
-#: resources/ui/inspector.ui
-msgid "Crop Right"
-msgstr "Rechts beschneiden"
-
-#: resources/ui/inspector.ui
-msgid "Crop Top"
-msgstr "Oben beschneiden"
-
-#: resources/ui/inspector.ui
-msgid "Crop Bottom"
-msgstr "Unten beschneiden"
-
-#: resources/ui/inspector.ui
-msgid "Pixels right of center, in the timeline’s resolution"
-msgstr "Pixel rechts der Mitte, in der Auflösung der Timeline"
-
-#: resources/ui/inspector.ui
-msgid "Pixels below center, in the timeline’s resolution"
-msgstr "Pixel unter der Mitte, in der Auflösung der Timeline"
-
-#: resources/ui/inspector.ui
-msgid "Percent of the fitted size"
-msgstr "Prozent der eingepassten Größe"
-
-#: resources/ui/inspector.ui
-msgid "Degrees, clockwise"
-msgstr "Grad, im Uhrzeigersinn"
-
-#: resources/ui/inspector.ui
-msgid "Percent of the picture"
-msgstr "Prozent des Bildes"
-
-#: src/inspector.rs
-msgid "Add Keyframe"
-msgstr "Keyframe hinzufügen"
-
-#: src/inspector.rs
-msgid "Remove Keyframe"
-msgstr "Keyframe entfernen"
-
-#: src/inspector.rs
-msgid "Change Easing"
-msgstr "Interpolation ändern"
-
-#: resources/ui/inspector.ui
-msgid "Keyframe at Playhead"
-msgstr "Keyframe am Abspielkopf"
-
-#: resources/ui/inspector.ui
-msgid "Adds or removes a keyframe at the playhead"
-msgstr "Fügt am Abspielkopf einen Keyframe hinzu oder entfernt ihn"
-
-#: resources/ui/inspector.ui
-msgid "Keyframes"
-msgstr "Keyframes"
-
-#: resources/ui/inspector.ui
-msgid "Previous Keyframe"
-msgstr "Vorheriger Keyframe"
-
-#: resources/ui/inspector.ui
-msgid "Next Keyframe"
-msgstr "Nächster Keyframe"
-
-#: resources/ui/inspector.ui
-msgid "How the values move from the keyframes at the playhead to the next ones"
-msgstr "Wie sich die Werte von den Keyframes am Abspielkopf zu den nächsten bewegen"
-
-#: resources/ui/inspector.ui
-msgid "Easing"
-msgstr "Interpolation"
-
-#: resources/ui/inspector.ui
-#: crates/nox-fx/src/transitions.rs
-msgid "Linear"
-msgstr "Linear"
-
-#: resources/ui/inspector.ui
-#: crates/nox-fx/src/transitions.rs
-msgid "Ease In and Out"
-msgstr "Sanft ein und aus"
-
-#: src/i18n.rs
-#: crates/nox-fx/src/transitions.rs
-msgid "Cross Dissolve"
-msgstr "Überblendung"
-
-#: src/inspector.rs
-msgid "Change Transition Length"
-msgstr "Übergangslänge ändern"
-
-#: resources/ui/inspector.ui
-msgid "Type"
-msgstr "Art"
-
-#: resources/ui/inspector.ui
-msgid "Length"
-msgstr "Länge"
-
-#: resources/ui/inspector.ui
-msgid "Seconds, limited by the media the clips have beyond the cut"
-msgstr "Sekunden, begrenzt durch das Material der Clips jenseits des Schnitts"
-
-#: src/inspector.rs
-msgid "Change Speed"
-msgstr "Geschwindigkeit ändern"
-
-#: src/inspector.rs
-msgid "Freeze Frame"
-msgstr "Standbild"
-
-#: src/inspector.rs
-msgid "Remove Freeze Frame"
-msgstr "Standbild entfernen"
-
-#: src/timeline.rs
-msgid "Freeze"
-msgstr "Standbild"
-
-#: resources/ui/inspector.ui
-msgid "Speed"
-msgstr "Geschwindigkeit"
-
-#: resources/ui/inspector.ui
-msgid "Percent of normal speed; the clip gets shorter or longer and shows the same media"
-msgstr "Prozent der normalen Geschwindigkeit; der Clip wird kürzer oder länger und zeigt dasselbe Material"
-
-#: resources/ui/inspector.ui
-msgid "Move what follows"
-msgstr "Nachfolgendes verschieben"
-
-#: resources/ui/inspector.ui
-msgid "When the speed changes the clip’s length, move the clips after it (as Resolve’s Ripple Sequence); otherwise leave a gap or cover them"
-msgstr "Wenn die Geschwindigkeit die Länge des Clips ändert, die folgenden Clips verschieben (wie Resolves „Ripple Sequence“); sonst eine Lücke lassen oder sie überdecken"
-
-#: resources/ui/inspector.ui
-msgid "Hold the frame under the playhead for the whole clip"
-msgstr "Das Bild unter dem Abspielkopf für den ganzen Clip halten"
-
-#: src/framing.rs
-msgid "This clip is portrait, the timeline is landscape"
-msgstr "Dieser Clip ist hochkant, die Timeline im Querformat"
-
-#: src/framing.rs
-msgid "This clip is landscape, the timeline is portrait"
-msgstr "Dieser Clip ist im Querformat, die Timeline hochkant"
-
-#: src/framing.rs
-#, python-brace-format
-msgid "Fit shows all of the picture, small between black bars. Fill zooms it to cover the {width}×{height} frame, cropping the rest; its zoom and position can be changed in the inspector. Or the timeline can change to the clip's {clip_width}×{clip_height}, fitting the other clips."
-msgstr "Einpassen zeigt das ganze Bild, klein zwischen schwarzen Balken. Füllen vergrößert es, bis es das {width}×{height}-Bild bedeckt, und schneidet den Rest ab; Zoom und Position lassen sich im Inspektor ändern. Oder die Timeline übernimmt die {clip_width}×{clip_height} des Clips, und die anderen Clips werden eingepasst."
-
-#: src/framing.rs
-msgid "Fit"
-msgstr "Einpassen"
-
-#: src/framing.rs
-msgid "Fill"
-msgstr "Füllen"
-
-#: src/framing.rs
-msgid "Change Timeline"
-msgstr "Timeline ändern"
-
-#: resources/ui/window.ui
-msgid "Show Inspector"
-msgstr "Inspektor anzeigen"
-
-#: src/transform_overlay.rs
-msgid "Move Picture"
-msgstr "Bild verschieben"
-
-#: src/transform_overlay.rs
-msgid "Zoom Picture"
-msgstr "Bild zoomen"
-
-#: src/transform_overlay.rs
-msgid "Rotate Picture"
-msgstr "Bild drehen"
-
-#: src/timeline.rs
-msgid "Move Keyframe"
-msgstr "Keyframe verschieben"
-
-#: resources/ui/color-wheels.ui
-msgid "Grade Keyframe at Playhead"
-msgstr "Grading-Keyframe am Abspielkopf"
-
-#: src/export_dialog.rs
-msgid "SDR (Rec. 709)"
-msgstr "SDR (Rec. 709)"
-
-#: src/export_dialog.rs
-msgid "HDR10 (PQ, Rec. 2020)"
-msgstr "HDR10 (PQ, Rec. 2020)"
-
-#: src/export_dialog.rs
-msgid "HLG (Rec. 2020)"
-msgstr "HLG (Rec. 2020)"
-
-#: src/export_dialog.rs
-msgid "HDR10 Master (HEVC)"
-msgstr "HDR10-Master (HEVC)"
-
-#: src/export_dialog.rs
-msgid "HLG for broadcast and phones (HEVC)"
-msgstr "HLG für Fernsehen und Smartphones (HEVC)"
-
-#: resources/ui/export-dialog.ui
-msgid "D_ynamic range"
-msgstr "D_ynamikumfang"
-
-#: resources/ui/export-dialog.ui
-msgid "HDR exports are 10-bit Rec. 2020 (HEVC or ProRes); SDR material sits at 203 nits, as BT.2408 recommends"
-msgstr "HDR-Exporte sind 10 Bit Rec. 2020 (HEVC oder ProRes); SDR-Material liegt bei 203 Nits, wie BT.2408 empfiehlt"
-
-#: resources/ui/export-dialog.ui
-msgid "Mastering _peak"
-msgstr "Mastering-_Spitze"
-
-#: resources/ui/export-dialog.ui
-msgid "Brightest the HDR10 master is meant for; written into the file for players and TVs"
-msgstr "Die Helligkeit, für die der HDR10-Master gedacht ist; wird für Player und Fernseher in die Datei geschrieben"
-
-#: resources/ui/export-dialog.ui
-msgid "nits"
-msgstr "Nits"
-
-#: src/export_dialog.rs
-msgid "The timeline has no audio in this range"
-msgstr "Die Timeline hat in diesem Bereich keinen Ton"
-
-#: resources/ui/window.ui
-msgid "Main Menu"
-msgstr "Hauptmenü"
-
-#: resources/ui/window.ui
-msgid "_Preferences"
-msgstr "_Einstellungen"
-
-#: resources/ui/window.ui
-msgid "Project _Settings"
-msgstr "_Projekteinstellungen"
-
-#: resources/ui/preferences.ui
-msgid "Preferences"
-msgstr "Einstellungen"
-
-#: resources/ui/preferences.ui
-msgid "_Thumbnails on video clips"
-msgstr "_Vorschaubilder auf Videoclips"
-
-#: resources/ui/preferences.ui
-msgid "_Waveforms on audio clips"
-msgstr "_Wellenformen auf Audioclips"
-
-#: resources/ui/preferences.ui
-msgid "Playback"
-msgstr "Wiedergabe"
-
-#: resources/ui/preferences.ui
-msgid "Video _decoding"
-msgstr "Video-_Dekodierung"
-
-#: src/inspector.rs
-msgid "Decoded with {api} ({decoder})"
-msgstr "Dekodiert mit {api} ({decoder})"
-
-#: src/inspector.rs
-msgid "Decoded on the processor ({decoder})"
-msgstr "Auf dem Prozessor dekodiert ({decoder})"
-
-#: src/inspector.rs
-msgid "Decoder known once a frame of the clip is shown"
-msgstr "Der Decoder steht fest, sobald ein Bild des Clips angezeigt wurde"
-
-#: src/preferences.rs
-msgid "Processor only"
-msgstr "Nur Prozessor"
-
-#: src/preferences.rs
-msgid "Decodes on the graphics card where it can (Vulkan Video, then NVDEC, then VAAPI), else on the processor."
-msgstr "Dekodiert auf der Grafikkarte, wo es geht (Vulkan Video, dann NVDEC, dann VAAPI), sonst auf dem Prozessor."
-
-#: src/preferences.rs
-msgid "Decodes on the processor: works with every file, but is much slower, especially at 4K. Try it if hardware decoding shows wrong frames."
-msgstr "Dekodiert auf dem Prozessor: funktioniert mit jeder Datei, ist aber viel langsamer, besonders bei 4K. Einen Versuch wert, wenn die Hardware-Dekodierung falsche Bilder zeigt."
-
-#: src/preferences.rs
-msgid "The graphics card's video engine through Vulkan, for the codecs it handles; others are decoded on the processor."
-msgstr "Die Video-Einheit der Grafikkarte über Vulkan, für die Codecs, die sie beherrscht; andere werden auf dem Prozessor dekodiert."
-
-#: src/preferences.rs
-msgid "NVIDIA's video engine, for the codecs it handles; others are decoded on the processor. NVIDIA cards only."
-msgstr "Die Video-Einheit von NVIDIA, für die Codecs, die sie beherrscht; andere werden auf dem Prozessor dekodiert. Nur NVIDIA-Karten."
-
-#: src/preferences.rs
-msgid "The graphics card's video engine through VAAPI (AMD and Intel cards), for the codecs it handles; others are decoded on the processor."
-msgstr "Die Video-Einheit der Grafikkarte über VAAPI (AMD- und Intel-Karten), für die Codecs, die sie beherrscht; andere werden auf dem Prozessor dekodiert."
-
-#: src/preferences.rs
-msgid "Set by the NOX_DECODE environment variable ({value}) for this session."
-msgstr "Für diese Sitzung durch die Umgebungsvariable NOX_DECODE ({value}) festgelegt."
-
-#: resources/ui/inspector.ui
-msgid "Effects"
-msgstr "Effekte"
-
-#: src/inspector.rs
-msgid "Download the background removal model?"
-msgstr "Das Modell zum Entfernen des Hintergrunds herunterladen?"
-
-#: src/inspector.rs
-msgid "Removing backgrounds uses {models}, {size} MB downloaded once into {folder}."
-msgstr "Zum Entfernen des Hintergrunds dienen {models}, einmalig {size} MB nach {folder} heruntergeladen."
-
-#: src/inspector.rs
-msgid "Download"
-msgstr "Herunterladen"
-
-#: src/inspector.rs
-msgid "Downloading…"
-msgstr "Wird heruntergeladen …"
-
-#: src/inspector.rs
-msgid "Downloading… {percent} %"
-msgstr "Wird heruntergeladen … {percent} %"
-
-#: src/inspector.rs
-msgid "The download failed: {error}"
-msgstr "Das Herunterladen ist fehlgeschlagen: {error}"
-
-#: resources/ui/preferences.ui
-msgid "AI Models"
-msgstr "KI-Modelle"
-
-#: resources/ui/preferences.ui
-msgid "_Delete"
-msgstr "_Löschen"
-
-#: resources/ui/preferences.ui
-msgid "Delete the downloaded models; effects that need one ask to download it again"
-msgstr "Die heruntergeladenen Modelle löschen; Effekte, die eines brauchen, fragen erneut nach dem Herunterladen"
-
-#: src/preferences.rs
-msgid "No models downloaded. Effects that need one offer to download it."
-msgstr "Keine Modelle heruntergeladen. Effekte, die eines brauchen, bieten an, es herunterzuladen."
-
-#: src/preferences.rs
-msgid "{models} ({size} MB) in {folder}"
-msgstr "{models} ({size} MB) in {folder}"
-
-#: crates/nox-gui/resources/ui/inspector.ui
-msgid "Add Effect…"
-msgstr "Effekt hinzufügen …"
-
-#: crates/nox-gui/resources/ui/inspector.ui
-msgid "Add Effect"
-msgstr "Fügt dem Clip einen Effekt nach seinen anderen Effekten hinzu"
-
-#: crates/nox-gui/src/inspector/effects.rs
-#, python-brace-format
+#: crates/nox-gui/src/inspector/effects.rs:115
+#: crates/nox-gui/src/node_editor.rs:893
 msgid "Add {effect}"
 msgstr "{effect} hinzufügen"
 
-#: crates/nox-gui/src/inspector/effects.rs
-#, python-brace-format
+#: crates/nox-gui/src/inspector/effects.rs:206
+#: crates/nox-gui/src/node_editor.rs:170 crates/nox-gui/src/node_panel.rs:223
 msgid "{name} (not supported)"
 msgstr "{name} (nicht unterstützt)"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:211
+#: crates/nox-gui/src/node_panel.rs:55
 msgid "Turn Effect On or Off"
 msgstr "Schaltet den Effekt ein oder aus"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:219
 msgid "Move Up"
 msgstr "Nach oben"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:222
 msgid "Move Down"
 msgstr "Nach unten"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:224
 msgid "Duplicate"
 msgstr "Duplizieren"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:226
 msgid "Reset"
 msgstr "Zurücksetzen"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:228
 msgid "Remove"
 msgstr "Entfernen"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:233
 msgid "Effect Actions"
 msgstr "Effektaktionen"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:265
+#: crates/nox-gui/src/node_panel.rs:62
 msgid "Turn Effect On"
 msgstr "Effekt einschalten"
 
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:267
+#: crates/nox-gui/src/node_panel.rs:64
 msgid "Turn Effect Off"
 msgstr "Effekt ausschalten"
 
-#: crates/nox-gui/src/inspector/effects.rs
-msgid "Move Effect"
-msgstr "Effekt verschieben"
-
-#: crates/nox-gui/src/inspector/effects.rs
-#, python-brace-format
-msgid "Duplicate {effect}"
-msgstr "{effect} duplizieren"
-
-#: crates/nox-gui/src/inspector/effects.rs
-#, python-brace-format
-msgid "Reset {effect}"
-msgstr "{effect} zurücksetzen"
-
-#: crates/nox-gui/src/inspector/effects.rs
-#, python-brace-format
-msgid "Remove {effect}"
-msgstr "{effect} entfernen"
-
-#: crates/nox-gui/src/inspector/effects.rs
-#, python-brace-format
-msgid "Change {effect}"
-msgstr "{effect} ändern"
-
-#: crates/nox-gui/src/inspector/effects.rs
-msgid "In percent"
-msgstr "In Prozent"
-
-#: crates/nox-gui/src/inspector/effects.rs
-msgid "In percent of the picture’s height"
-msgstr "In Prozent der Bildhöhe"
-
-#: crates/nox-gui/src/inspector/effects.rs
-msgid "Toggle Keyframe"
-msgstr "Keyframe setzen oder entfernen"
-
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:282
 msgid "Nox can't render this effect; it stays in the project."
 msgstr "Nox kann diesen Effekt nicht berechnen; er bleibt im Projekt."
 
-#: crates/nox-fx/src/registry.rs
-msgid "Blur and Sharpen"
-msgstr "Weichzeichnen und Schärfen"
+#: crates/nox-gui/src/inspector/effects.rs:308
+#: crates/nox-gui/src/inspector/effects.rs:311
+msgid "Move Effect"
+msgstr "Effekt verschieben"
 
-#: crates/nox-fx/src/registry.rs
-msgid "Keying"
-msgstr "Keying"
+#: crates/nox-gui/src/inspector/effects.rs:316
+msgid "Duplicate {effect}"
+msgstr "{effect} duplizieren"
 
-#: crates/nox-fx/src/registry.rs
-msgid "Stylize"
-msgstr "Stilisieren"
+#: crates/nox-gui/src/inspector/effects.rs:323
+msgid "Reset {effect}"
+msgstr "{effect} zurücksetzen"
 
-#: crates/nox-fx/src/registry.rs
-msgid "AI"
-msgstr "KI"
+#: crates/nox-gui/src/inspector/effects.rs:333
+msgid "Remove {effect}"
+msgstr "{effect} entfernen"
 
-#: crates/nox-fx/effects
-msgid "Gaussian Blur"
-msgstr "Gaußscher Weichzeichner"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Radius"
-msgstr "Radius"
-
-#: crates/nox-fx/effects
-msgid "Sharpen"
-msgstr "Schärfen"
-
-#: crates/nox-fx/effects
-msgid "Amount"
-msgstr "Stärke"
-
-#: crates/nox-fx/effects
-msgid "Threshold"
-msgstr "Schwellenwert"
-
-#: crates/nox-fx/effects
-msgid "Painterly"
-msgstr "Gemalt"
-
-#: crates/nox-fx/effects
-msgid "Sharpness"
-msgstr "Schärfe"
-
-#: crates/nox-fx/effects
-msgid "Chroma Key"
-msgstr "Chroma-Key"
-
-#: crates/nox-fx/effects
-msgid "Key Color"
-msgstr "Key-Farbe"
-
-#: crates/nox-fx/effects
-msgid "Tolerance"
-msgstr "Toleranz"
-
-#: crates/nox-fx/effects
-#: crates/nox-fx/transitions
-msgid "Softness"
-msgstr "Weichheit"
-
-#: crates/nox-fx/effects
-msgid "Spill Suppression"
-msgstr "Farbsaumunterdrückung"
-
-#: crates/nox-fx/effects
-msgid "Show Matte"
-msgstr "Maske zeigen"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Model"
-msgstr "Modell"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Video (fast)"
-msgstr "Video (schnell)"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Detailed (slow)"
-msgstr "Detailliert (langsam)"
-
-#: crates/nox-gui/src/inspector/effects.rs
-msgid "Open Effects Page"
-msgstr "Effekte-Seite öffnen"
-
-#: crates/nox-gui/src/inspector/effects.rs
+#: crates/nox-gui/src/inspector/effects.rs:363
 msgid "These effects are wired as a graph and edited on the Effects page."
 msgstr "Diese Effekte sind als Graph verbunden und werden auf der Effekte-Seite bearbeitet."
 
-#: crates/nox-gui/src/node_editor.rs
-msgid "Source"
-msgstr "Quelle"
+#: crates/nox-gui/src/inspector/effects.rs:368
+msgid "Open Effects Page"
+msgstr "Effekte-Seite öffnen"
 
-#: crates/nox-gui/src/node_editor.rs
-msgid "Picture"
-msgstr "Bild"
+#: crates/nox-gui/src/inspector/text.rs:69
+msgid "Text"
+msgstr "Text"
 
-#: crates/nox-gui/src/node_editor.rs
-msgid "Output"
-msgstr "Ausgabe"
+#: crates/nox-gui/src/inspector/text.rs:100
+msgid "400 is regular, 700 bold"
+msgstr "400 ist normal, 700 fett"
 
-#: crates/nox-gui/src/node_editor.rs
-msgid "Effect graph"
-msgstr "Effektgraph"
+#: crates/nox-gui/src/inspector/text.rs:101
+msgid "Italic"
+msgstr "Kursiv"
 
-#: crates/nox-gui/src/node_editor.rs
-msgid "Move Node"
-msgstr "Knoten verschieben"
+#: crates/nox-gui/src/inspector/text.rs:102
+msgid "Text Color"
+msgstr "Textfarbe"
 
-#: crates/nox-gui/src/node_editor.rs
-msgid "Connect"
-msgstr "Verbinden"
-
-#: crates/nox-gui/src/node_editor.rs
-msgid "Disconnect"
-msgstr "Trennen"
-
-#: crates/nox-gui/src/node_editor.rs
-msgid "Remove Node"
-msgstr "Knoten entfernen"
-
-#: crates/nox-gui/src/node_editor.rs
-msgid "Select a video clip to see its effects."
-msgstr "Wählen Sie einen Videoclip aus, um seine Effekte zu sehen."
-
-#: crates/nox-gui/src/node_panel.rs
-msgid "On"
-msgstr "Ein"
-
-#: crates/nox-gui/src/node_panel.rs
-msgid "Source: the clip’s picture"
-msgstr "Quelle: das Bild des Clips"
-
-#: crates/nox-gui/src/node_panel.rs
-msgid "Output: what’s composited"
-msgstr "Ausgabe: was zusammengesetzt wird"
-
-#: crates/nox-gui/src/node_panel.rs
-msgid "Select a node to change it."
-msgstr "Wählen Sie einen Knoten aus, um ihn zu ändern."
-
-#: crates/nox-fx/src/registry.rs
-msgid "Mattes"
-msgstr "Masken"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Mask"
-msgstr "Maske"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Matte"
-msgstr "Maske"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Segment Subject"
-msgstr "Motiv freistellen"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Apply Matte"
-msgstr "Maske anwenden"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Mode"
-msgstr "Modus"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Multiply Alpha"
-msgstr "Alpha multiplizieren"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Replace Alpha"
-msgstr "Alpha ersetzen"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Invert"
-msgstr "Umkehren"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Invert Matte"
-msgstr "Maske umkehren"
-
-#: crates/nox-fx/src/registry.rs
-msgid "Feather Matte"
-msgstr "Maske weichzeichnen"
-
-#: crates/nox-fx/src/transitions.rs
-msgid "Dissolves"
-msgstr "Überblendungen"
-
-#: crates/nox-fx/src/transitions.rs
-msgid "Wipes"
-msgstr "Wischblenden"
-
-#: crates/nox-fx/src/transitions.rs
-msgid "Motion"
-msgstr "Bewegung"
-
-#: crates/nox-fx/src/transitions.rs
-msgid "Ease"
-msgstr "Verlauf"
-
-#: crates/nox-fx/src/transitions.rs
-msgid "Ease In"
-msgstr "Langsam beginnen"
-
-#: crates/nox-fx/src/transitions.rs
-msgid "Ease Out"
-msgstr "Langsam enden"
-
-#: crates/nox-fx/transitions
-msgid "Angle"
-msgstr "Winkel"
-
-#: crates/nox-fx/transitions
-msgid "Border"
-msgstr "Rand"
-
-#: crates/nox-fx/transitions
+#: crates/nox-gui/src/inspector/text.rs:104
 msgid "Border Color"
 msgstr "Randfarbe"
 
-#: crates/nox-fx/transitions
-msgid "Reverse"
-msgstr "Umkehren"
+#: crates/nox-gui/src/inspector/text.rs:106
+msgid "Shadow Color"
+msgstr "Schattenfarbe"
 
-#: crates/nox-fx/transitions
-msgid "Clockwise"
-msgstr "Im Uhrzeigersinn"
+#: crates/nox-gui/src/inspector/text.rs:117
+msgid "Start"
+msgstr "Anfang"
 
-#: crates/nox-fx/transitions
-msgid "Center X"
-msgstr "Mitte X"
+#: crates/nox-gui/src/inspector/text.rs:118
+msgid "Center"
+msgstr "Mitte"
 
-#: crates/nox-fx/transitions
-msgid "Center Y"
-msgstr "Mitte Y"
+#: crates/nox-gui/src/inspector/text.rs:119
+msgid "End"
+msgstr "Ende"
 
-#: crates/nox-fx/transitions
-msgid "Blend"
-msgstr "Mischung"
+#: crates/nox-gui/src/inspector/text.rs:120
+msgid "Justify"
+msgstr "Blocksatz"
 
-#: crates/nox-fx/transitions
-msgid "Perceptual"
-msgstr "Wahrnehmungsgleich"
+#: crates/nox-gui/src/inspector/text.rs:129
+msgid "Font"
+msgstr "Schrift"
 
-#: crates/nox-fx/transitions
-msgid "Linear Light"
-msgstr "Lineares Licht"
+#: crates/nox-gui/src/inspector/text.rs:130
+msgid "Size"
+msgstr "Größe"
 
-#: crates/nox-fx/transitions
-msgid "Dip to Color"
-msgstr "Blende über Farbe"
+#: crates/nox-gui/src/inspector/text.rs:131
+msgid "Weight"
+msgstr "Stärke"
 
-#: crates/nox-fx/transitions
-msgid "Edge Wipe"
-msgstr "Kantenblende"
+#: crates/nox-gui/src/inspector/text.rs:132 crates/nox-gui/src/shortcuts.rs:33
+msgid "Color"
+msgstr "Farbe"
 
-#: crates/nox-fx/transitions
-msgid "Center Split"
-msgstr "Teilung aus der Mitte"
+#: crates/nox-gui/src/inspector/text.rs:133
+msgid "Border"
+msgstr "Rand"
 
-#: crates/nox-fx/transitions
-msgid "Clock Wipe"
-msgstr "Uhrzeigerblende"
+#: crates/nox-gui/src/inspector/text.rs:134
+msgid "Shadow"
+msgstr "Schatten"
 
-#: crates/nox-fx/transitions
-msgid "Start Angle"
-msgstr "Startwinkel"
+#: crates/nox-gui/src/inspector/text.rs:135
+msgid "Alignment"
+msgstr "Ausrichtung"
 
-#: crates/nox-fx/transitions
-msgid "Iris"
-msgstr "Iris"
+#: crates/nox-gui/src/inspector/text.rs:155
+msgid "Edit Text"
+msgstr "Text bearbeiten"
 
-#: crates/nox-fx/transitions
-msgid "Shape"
-msgstr "Form"
+#: crates/nox-gui/src/inspector/text.rs:171
+msgid "Change Font"
+msgstr "Schrift ändern"
 
-#: crates/nox-fx/transitions
-msgid "Circle"
-msgstr "Kreis"
+#: crates/nox-gui/src/inspector/text.rs:181
+msgid "Change Text Size"
+msgstr "Textgröße ändern"
 
-#: crates/nox-fx/transitions
-msgid "Ellipse"
-msgstr "Ellipse"
+#: crates/nox-gui/src/inspector/text.rs:191
+msgid "Change Font Weight"
+msgstr "Schriftstärke ändern"
 
-#: crates/nox-fx/transitions
-msgid "Diamond"
-msgstr "Raute"
+#: crates/nox-gui/src/inspector/text.rs:201
+msgid "Change Italic"
+msgstr "Kursiv ändern"
 
-#: crates/nox-fx/transitions
-msgid "Rectangle"
-msgstr "Rechteck"
+#: crates/nox-gui/src/inspector/text.rs:212
+msgid "Change Text Color"
+msgstr "Textfarbe ändern"
 
-#: crates/nox-fx/transitions
-msgid "Star"
-msgstr "Stern"
+#: crates/nox-gui/src/inspector/text.rs:222
+msgid "Change Text Border"
+msgstr "Textrand ändern"
 
-#: crates/nox-fx/transitions
-msgid "Blinds"
-msgstr "Jalousie"
+#: crates/nox-gui/src/inspector/text.rs:233
+msgid "Change Border Color"
+msgstr "Randfarbe ändern"
 
-#: crates/nox-fx/transitions
-msgid "Count"
-msgstr "Anzahl"
+#: crates/nox-gui/src/inspector/text.rs:243
+msgid "Change Text Shadow"
+msgstr "Textschatten ändern"
 
-#: crates/nox-fx/transitions
-msgid "Checkerboard"
-msgstr "Schachbrett"
+#: crates/nox-gui/src/inspector/text.rs:254
+msgid "Change Shadow Color"
+msgstr "Schattenfarbe ändern"
 
-#: crates/nox-fx/transitions
-msgid "Columns"
-msgstr "Spalten"
+#: crates/nox-gui/src/inspector/text.rs:266
+msgid "Change Alignment"
+msgstr "Ausrichtung ändern"
 
-#: crates/nox-fx/transitions
-msgid "Random Blocks"
-msgstr "Zufällige Blöcke"
-
-#: crates/nox-fx/transitions
-msgid "Blocks Across"
-msgstr "Blöcke pro Zeile"
-
-#: crates/nox-fx/transitions
-msgid "Push"
-msgstr "Schieben"
-
-#: crates/nox-fx/transitions
-msgid "Slide"
-msgstr "Gleiten"
-
-#: crates/nox-fx/transitions
-msgid "Reveal"
-msgstr "Aufdecken"
-
-#: crates/nox-fx/transitions
-msgid "Direction"
-msgstr "Richtung"
-
-#: crates/nox-fx/transitions
-msgid "In"
-msgstr "Hinein"
-
-#: crates/nox-fx/transitions
-msgid "Out"
-msgstr "Heraus"
-
-#: crates/nox-fx/transitions
-msgid "Spin"
-msgstr "Drehen"
-
-#: crates/nox-fx/transitions
-msgid "Turns"
-msgstr "Umdrehungen"
-
-#: crates/nox-gui/src/inspector/transition.rs
+#: crates/nox-gui/src/inspector/transition.rs:56
 msgid "Change Transition to {transition}"
 msgstr "Übergang in {transition} ändern"
 
-#: crates/nox-gui/src/timeline/selection.rs
-msgid "{transition}, {length}"
-msgstr "{transition}, {length}"
+#: crates/nox-gui/src/media_object.rs:72
+msgid "Loading…"
+msgstr "Wird geladen …"
 
-#: crates/nox-gui/resources/ui/inspector.ui
-msgid "Choose Transition"
-msgstr "Übergang wählen"
+#: crates/nox-gui/src/media_object.rs:108
+msgid "probing crashed"
+msgstr "Analyse abgestürzt"
 
-#: crates/nox-gui/src/window.rs
-msgid "Cannot add a dissolve"
-msgstr "Überblendung nicht möglich"
+#: crates/nox-gui/src/media_object.rs:141
+msgid "Cannot import: {error}"
+msgstr "Import nicht möglich: {error}"
 
-#: crates/nox-gui/src/window.rs
-msgid "Not enough media for the dissolve"
-msgstr "Nicht genug Material für die Überblendung"
+#: crates/nox-gui/src/media_object.rs:148
+msgid "Still"
+msgstr "Standbild"
 
-#: crates/nox-gui/src/window.rs
-msgid "Trim Clips"
-msgstr "Clips kürzen"
+#: crates/nox-gui/src/media_object.rs:159
+msgid "Unknown length"
+msgstr "Unbekannte Länge"
 
-#: crates/nox-gui/src/window.rs
-msgid "The clips have too little media beyond the cut for a dissolve of {length}. Trim {trim} off the clips at the cut to make room? What follows moves up."
-msgstr "Die Clips haben über den Schnitt hinaus zu wenig Material für eine Überblendung von {length}. {trim} an den Clips am Schnitt kürzen, um Platz zu schaffen? Was folgt, rückt nach."
+#: crates/nox-gui/src/media_pool.rs:188
+msgid "Media Files"
+msgstr "Mediendateien"
 
-#: crates/nox-fx/transitions
-msgid "Amount of blur"
-msgstr "Stärke der Unschärfe"
+#: crates/nox-gui/src/media_pool.rs:193 crates/nox-gui/src/window.rs:724
+msgid "All Files"
+msgstr "Alle Dateien"
 
-#: crates/nox-fx/transitions
-msgid "Amount of perspective"
-msgstr "Stärke der Perspektive"
+#: crates/nox-gui/src/media_pool.rs:200
+msgid "Import Media"
+msgstr "Medien importieren"
 
-#: crates/nox-fx/transitions
-msgid "Blur strength"
-msgstr "Unschärfe"
+#: crates/nox-gui/src/node_editor.rs:142
+msgid "Source"
+msgstr "Quelle"
 
-#: crates/nox-fx/transitions
-msgid "Burn"
-msgstr "Aufglühen"
+#: crates/nox-gui/src/node_editor.rs:198
+msgid "Output"
+msgstr "Ausgabe"
 
-#: crates/nox-fx/transitions
-msgid "Color the images brighten toward"
-msgstr "Farbe, zu der die Bilder aufhellen"
+#: crates/nox-gui/src/node_editor.rs:348
+msgid "Effect graph"
+msgstr "Effektgraph"
 
-#: crates/nox-fx/transitions
-msgid "Column the view ends on"
-msgstr "Spalte, auf der die Ansicht endet"
+#: crates/nox-gui/src/node_editor.rs:352
+msgid "No Clip Selected"
+msgstr "Kein Clip ausgewählt"
 
-#: crates/nox-fx/transitions
-msgid "Cross Warp"
-msgstr "Kreuzverzerrung"
+#: crates/nox-gui/src/node_editor.rs:353
+msgid "Select a video clip to see its effects"
+msgstr "Wählen Sie einen Videoclip, um seine Effekte zu sehen"
 
-#: crates/nox-fx/transitions
-msgid "Cross Zoom"
-msgstr "Kreuzzoom"
+#: crates/nox-gui/src/node_editor.rs:791
+msgid "Move Node"
+msgstr "Knoten verschieben"
 
-#: crates/nox-fx/transitions
-msgid "Cube"
-msgstr "Würfel"
+#: crates/nox-gui/src/node_editor.rs:825
+msgid "Connect"
+msgstr "Verbinden"
 
-#: crates/nox-fx/transitions
-msgid "Depth"
-msgstr "Tiefe"
+#: crates/nox-gui/src/node_editor.rs:845
+msgid "Disconnect"
+msgstr "Trennen"
 
-#: crates/nox-fx/transitions
-msgid "Directional Warp"
-msgstr "Gerichtete Verzerrung"
+#: crates/nox-gui/src/node_editor.rs:917
+msgid "Remove Node"
+msgstr "Knoten entfernen"
 
-#: crates/nox-fx/transitions
-msgid "Direction of the wipe"
-msgstr "Richtung der Blende"
+#: crates/nox-gui/src/node_panel.rs:54
+msgid "On"
+msgstr "Ein"
 
-#: crates/nox-fx/transitions
-msgid "Doorway"
-msgstr "Tür"
+#: crates/nox-gui/src/node_panel.rs:200
+msgid "Source: the clip’s picture"
+msgstr "Quelle: das Bild des Clips"
 
-#: crates/nox-fx/transitions
-msgid "Dreamy"
-msgstr "Verträumt"
+#: crates/nox-gui/src/node_panel.rs:201
+msgid "Output: what’s composited"
+msgstr "Ausgabe: was zusammengesetzt wird"
 
-#: crates/nox-fx/transitions
-msgid "Film Burn"
-msgstr "Filmbrand"
+#: crates/nox-gui/src/node_panel.rs:202
+msgid "No Node Selected"
+msgstr "Kein Knoten ausgewählt"
 
-#: crates/nox-fx/transitions
-msgid "Floating"
-msgstr "Schweben"
+#: crates/nox-gui/src/preferences.rs:127
+msgid "Decodes on the graphics card where it can (Vulkan Video, then NVDEC, then VAAPI), else on the processor."
+msgstr "Dekodiert auf der Grafikkarte, wo es geht (Vulkan Video, dann NVDEC, dann VAAPI), sonst auf dem Prozessor."
 
-#: crates/nox-fx/transitions
-msgid "Frequency of the ripples"
-msgstr "Frequenz der Wellen"
+#: crates/nox-gui/src/preferences.rs:132
+msgid "Processor only"
+msgstr "Nur Prozessor"
 
-#: crates/nox-fx/transitions
-msgid "Glitch Memories"
-msgstr "Glitch"
+#: crates/nox-gui/src/preferences.rs:134
+msgid "Decodes on the processor: works with every file, but is much slower, especially at 4K. Try it if hardware decoding shows wrong frames."
+msgstr "Dekodiert auf dem Prozessor: funktioniert mit jeder Datei, ist aber viel langsamer, besonders bei 4K. Einen Versuch wert, wenn die Hardware-Dekodierung falsche Bilder zeigt."
 
-#: crates/nox-fx/transitions
-msgid "Kaleidoscope"
-msgstr "Kaleidoskop"
+#: crates/nox-gui/src/preferences.rs:141
+msgid "The graphics card's video engine through Vulkan, for the codecs it handles; others are decoded on the processor."
+msgstr "Die Video-Einheit der Grafikkarte über Vulkan, für die Codecs, die sie beherrscht; andere werden auf dem Prozessor dekodiert."
 
-#: crates/nox-fx/transitions
-msgid "Linear Blur"
-msgstr "Unschärfeblende"
+#: crates/nox-gui/src/preferences.rs:150
+msgid "NVIDIA's video engine, for the codecs it handles; others are decoded on the processor. NVIDIA cards only."
+msgstr "Die Video-Einheit von NVIDIA, für die Codecs, die sie beherrscht; andere werden auf dem Prozessor dekodiert. Nur NVIDIA-Karten."
 
-#: crates/nox-fx/transitions
-msgid "Morph"
-msgstr "Morphen"
+#: crates/nox-gui/src/preferences.rs:159
+msgid "The graphics card's video engine through VAAPI (AMD and Intel cards), for the codecs it handles; others are decoded on the processor."
+msgstr "Die Video-Einheit der Grafikkarte über VAAPI (AMD- und Intel-Karten), für die Codecs, die sie beherrscht; andere werden auf dem Prozessor dekodiert."
 
-#: crates/nox-fx/transitions
-msgid "Mosaic"
-msgstr "Mosaik"
-
-#: crates/nox-fx/transitions
-msgid "Number of pixelation steps; 0 for a continuous effect"
-msgstr "Anzahl der Pixelstufen; 0 für einen stufenlosen Effekt"
-
-#: crates/nox-fx/transitions
-msgid "Number of slices"
-msgstr "Anzahl der Streifen"
-
-#: crates/nox-fx/transitions
-msgid "Number of squares at the strongest pixelation"
-msgstr "Anzahl der Quadrate bei der stärksten Verpixelung"
-
-#: crates/nox-fx/transitions
-msgid "Page Curl"
-msgstr "Seite umblättern"
-
-#: crates/nox-fx/transitions
-msgid "Pixelize"
-msgstr "Verpixeln"
-
-#: crates/nox-fx/transitions
-msgid "Power"
-msgstr "Stärke"
-
-#: crates/nox-fx/transitions
-msgid "Random seed"
-msgstr "Zufallswert"
-
-#: crates/nox-fx/transitions
-msgid "Ripple"
-msgstr "Wellen"
-
-#: crates/nox-fx/transitions
-msgid "Row the view ends on"
-msgstr "Zeile, auf der die Ansicht endet"
-
-#: crates/nox-fx/transitions
-msgid "Softness of the edge"
-msgstr "Weichheit der Kante"
-
-#: crates/nox-fx/transitions
-msgid "Softness of the slices' edges"
-msgstr "Weichheit der Streifenkanten"
-
-#: crates/nox-fx/transitions
-msgid "Speed of the ripples"
-msgstr "Geschwindigkeit der Wellen"
-
-#: crates/nox-fx/transitions
-msgid "Strength of the displacement"
-msgstr "Stärke der Verschiebung"
-
-#: crates/nox-fx/transitions
-msgid "Strength of the reflection"
-msgstr "Stärke der Spiegelung"
-
-#: crates/nox-fx/transitions
-msgid "Swirl"
-msgstr "Strudel"
-
-#: crates/nox-fx/transitions
-msgid "Unzoom"
-msgstr "Herauszoomen"
-
-#: crates/nox-fx/transitions
-msgid "Width of the ragged edge"
-msgstr "Breite der ausgefransten Kante"
-
-#: crates/nox-fx/transitions
-msgid "Wind"
-msgstr "Wind"
-
-#: crates/nox-fx/transitions
-msgid "Window Slice"
-msgstr "Fensterstreifen"
-
-#: crates/nox-fx/transitions
-msgid "Wipe from right to left instead"
-msgstr "Stattdessen von rechts nach links wischen"
-
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "_Open Folder"
-msgstr "Ordner _öffnen"
-
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Open the folder transition packages go in"
-msgstr "Den Ordner für Übergangspakete öffnen"
-
-#: crates/nox-gui/src/preferences.rs
-msgid "No transition packages. Put .glsl transitions (as gl-transitions writes them) in {folder}; Nox loads them when it starts."
-msgstr "Keine Übergangspakete. Legen Sie .glsl-Übergänge (wie gl-transitions sie schreibt) in {folder}; Nox lädt sie beim Start."
-
-#: crates/nox-gui/src/preferences.rs
-#, python-brace-format
-msgid "{count} transition package from {folder}; Nox loads them when it starts."
-msgid_plural "{count} transition packages from {folder}; Nox loads them when it starts."
-msgstr[0] "{count} Übergangspaket aus {folder}; Nox lädt sie beim Start."
-msgstr[1] "{count} Übergangspakete aus {folder}; Nox lädt sie beim Start."
-
-#: crates/nox-gui/src/preferences.rs
-msgid "{file} couldn’t be loaded: {problem}"
-msgstr "{file} konnte nicht geladen werden: {problem}"
-
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Packages"
-msgstr "Pakete"
-
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Open the folder effect packages go in"
-msgstr "Den Ordner für Effektpakete öffnen"
-
-#: crates/nox-gui/src/preferences.rs
-msgid "No effect packages. Put .glsl effects in {folder}; Nox loads them when it starts."
-msgstr "Keine Effektpakete. Legen Sie .glsl-Effekte in {folder}; Nox lädt sie beim Start."
-
-#: crates/nox-gui/src/preferences.rs
-#, python-brace-format
+#: crates/nox-gui/src/preferences.rs:332
 msgid "{count} effect package from {folder}; Nox loads them when it starts."
 msgid_plural "{count} effect packages from {folder}; Nox loads them when it starts."
 msgstr[0] "{count} Effektpaket aus {folder}; Nox lädt sie beim Start."
 msgstr[1] "{count} Effektpakete aus {folder}; Nox lädt sie beim Start."
 
-#: crates/nox-gui/src/inspector/text.rs crates/nox-gui/resources/ui/inspector.ui
-msgid "Text"
-msgstr "Text"
+#: crates/nox-gui/src/preferences.rs:337
+msgid "No effect packages. Put .glsl effects in {folder}; Nox loads them when it starts."
+msgstr "Keine Effektpakete. Legen Sie .glsl-Effekte in {folder}; Nox lädt sie beim Start."
 
-#: crates/nox-gui/src/inspector.rs
-msgid "Text clip"
-msgstr "Textclip"
+#: crates/nox-gui/src/preferences.rs:345
+msgid "{count} transition package from {folder}; Nox loads them when it starts."
+msgid_plural "{count} transition packages from {folder}; Nox loads them when it starts."
+msgstr[0] "{count} Übergangspaket aus {folder}; Nox lädt sie beim Start."
+msgstr[1] "{count} Übergangspakete aus {folder}; Nox lädt sie beim Start."
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "400 is regular, 700 bold"
-msgstr "400 ist normal, 700 fett"
+#: crates/nox-gui/src/preferences.rs:350
+msgid "No transition packages. Put .glsl transitions (as gl-transitions writes them) in {folder}; Nox loads them when it starts."
+msgstr "Keine Übergangspakete. Legen Sie .glsl-Übergänge (wie gl-transitions sie schreibt) in {folder}; Nox lädt sie beim Start."
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Italic"
-msgstr "Kursiv"
+#: crates/nox-gui/src/preferences.rs:370
+msgid "No models downloaded. Effects that need one offer to download it."
+msgstr "Keine Modelle heruntergeladen. Effekte, die eines brauchen, bieten an, es herunterzuladen."
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Text Color"
-msgstr "Textfarbe"
+#: crates/nox-gui/src/preferences.rs:375
+msgid "{models} ({size} MB) in {folder}"
+msgstr "{models} ({size} MB) in {folder}"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Start"
-msgstr "Anfang"
+#: crates/nox-gui/src/preferences.rs:394
+msgid "Set by the NOX_DECODE environment variable ({value}) for this session."
+msgstr "Für diese Sitzung durch die Umgebungsvariable NOX_DECODE ({value}) festgelegt."
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Center"
-msgstr "Mitte"
+#: crates/nox-gui/src/preferences.rs:430
+msgid "{file} couldn’t be loaded: {problem}"
+msgstr "{file} konnte nicht geladen werden: {problem}"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "End"
-msgstr "Ende"
+#: crates/nox-gui/src/project.rs:99 crates/nox-gui/src/project.rs:436
+msgid "Untitled"
+msgstr "Unbenannt"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Justify"
-msgstr "Blocksatz"
+#: crates/nox-gui/src/project.rs:223
+msgid "Insert Clip"
+msgstr "Clip einfügen"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Font"
-msgstr "Schrift"
+#: crates/nox-gui/src/project.rs:225
+msgid "Add Clip"
+msgstr "Clip hinzufügen"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Size"
-msgstr "Größe"
+#: crates/nox-gui/src/project.rs:420
+msgid "• {name} — Nox"
+msgstr "• {name} — Nox"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Weight"
-msgstr "Stärke"
+#: crates/nox-gui/src/project.rs:422
+msgid "{name} — Nox"
+msgstr "{name} — Nox"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Alignment"
-msgstr "Ausrichtung"
+#: crates/nox-gui/src/scopes.rs:25
+msgid "Waveform"
+msgstr "Waveform"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Edit Text"
-msgstr "Text bearbeiten"
+#: crates/nox-gui/src/scopes.rs:26
+msgid "RGB Parade"
+msgstr "RGB-Parade"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Change Font"
-msgstr "Schrift ändern"
+#: crates/nox-gui/src/scopes.rs:27
+msgid "Vectorscope"
+msgstr "Vektorskop"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Change Text Size"
-msgstr "Textgröße ändern"
+#: crates/nox-gui/src/scopes.rs:28
+msgid "Histogram"
+msgstr "Histogramm"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Change Font Weight"
-msgstr "Schriftstärke ändern"
+#: crates/nox-gui/src/settings_dialog.rs:18
+#: crates/nox-gui/src/settings_dialog.rs:19
+msgid "HD"
+msgstr "HD"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Change Italic"
-msgstr "Kursiv ändern"
+#: crates/nox-gui/src/settings_dialog.rs:20
+msgid "QHD"
+msgstr "QHD"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Change Text Color"
-msgstr "Textfarbe ändern"
+#: crates/nox-gui/src/settings_dialog.rs:21
+msgid "Ultra HD"
+msgstr "Ultra HD"
 
-#: crates/nox-gui/src/inspector/text.rs
-msgid "Change Alignment"
-msgstr "Ausrichtung ändern"
+#: crates/nox-gui/src/settings_dialog.rs:22
+msgid "DCI 4K"
+msgstr "DCI 4K"
 
-#: crates/nox-gui/src/window.rs
-msgid "Title"
-msgstr "Titel"
+#: crates/nox-gui/src/settings_dialog.rs:23
+msgid "Vertical"
+msgstr "Hochformat"
 
-#: crates/nox-gui/src/window.rs crates/nox-gui/resources/ui/menus.ui crates/nox-gui/resources/ui/window.ui
+#: crates/nox-gui/src/settings_dialog.rs:24
+msgid "Square"
+msgstr "Quadratisch"
+
+#: crates/nox-gui/src/settings_dialog.rs:110
+msgid "Project Settings: {name}"
+msgstr "Projekteinstellungen: {name}"
+
+#: crates/nox-gui/src/settings_dialog.rs:209
+msgid "Change Project Settings"
+msgstr "Projekteinstellungen ändern"
+
+#: crates/nox-gui/src/shortcuts.rs:14
+msgid "Project"
+msgstr "Projekt"
+
+#: crates/nox-gui/src/shortcuts.rs:16
+msgid "New Project"
+msgstr "Neues Projekt"
+
+#: crates/nox-gui/src/shortcuts.rs:17 crates/nox-gui/src/window.rs:531
+msgid "Open Project"
+msgstr "Projekt öffnen"
+
+#: crates/nox-gui/src/shortcuts.rs:18 crates/nox-gui/src/window.rs:508
+msgid "Save Project"
+msgstr "Projekt speichern"
+
+#: crates/nox-gui/src/shortcuts.rs:19
+msgid "Save Project As"
+msgstr "Projekt speichern unter"
+
+#: crates/nox-gui/src/shortcuts.rs:20
+msgid "Export"
+msgstr "Exportieren"
+
+#: crates/nox-gui/src/shortcuts.rs:21
+msgid "Project Settings"
+msgstr "Projekteinstellungen"
+
+#: crates/nox-gui/src/shortcuts.rs:22
+msgid "Preferences"
+msgstr "Einstellungen"
+
+#: crates/nox-gui/src/shortcuts.rs:23
+msgid "Keyboard Shortcuts"
+msgstr "Tastenkürzel"
+
+#: crates/nox-gui/src/shortcuts.rs:24
+msgid "Close Window"
+msgstr "Fenster schließen"
+
+#: crates/nox-gui/src/shortcuts.rs:25
+msgid "Quit"
+msgstr "Beenden"
+
+#: crates/nox-gui/src/shortcuts.rs:29
+msgid "Pages"
+msgstr "Seiten"
+
+#: crates/nox-gui/src/shortcuts.rs:31
+msgid "Edit"
+msgstr "Schnitt"
+
+#: crates/nox-gui/src/shortcuts.rs:32
+msgid "Effects"
+msgstr "Effekte"
+
+#: crates/nox-gui/src/shortcuts.rs:37
+msgid "Playback"
+msgstr "Wiedergabe"
+
+#: crates/nox-gui/src/shortcuts.rs:39
+msgid "Play or Pause"
+msgstr "Wiedergabe oder Pause"
+
+#: crates/nox-gui/src/shortcuts.rs:40 crates/nox-gui/src/viewer.rs:72
+msgid "Play"
+msgstr "Wiedergabe"
+
+#: crates/nox-gui/src/shortcuts.rs:41 crates/nox-gui/src/viewer.rs:70
+msgid "Pause"
+msgstr "Pause"
+
+#: crates/nox-gui/src/shortcuts.rs:42
+msgid "Previous or Next Frame"
+msgstr "Vorheriges oder nächstes Bild"
+
+#: crates/nox-gui/src/shortcuts.rs:43
+msgid "Go to Start or End"
+msgstr "Zum Anfang oder Ende"
+
+#: crates/nox-gui/src/shortcuts.rs:44
+msgid "Previous or Next Edit"
+msgstr "Vorheriger oder nächster Schnitt"
+
+#: crates/nox-gui/src/shortcuts.rs:48
+msgid "Marks and Markers"
+msgstr "Marken und Marker"
+
+#: crates/nox-gui/src/shortcuts.rs:50 crates/nox-gui/src/window.rs:1228
+msgid "Mark In"
+msgstr "In-Punkt setzen"
+
+#: crates/nox-gui/src/shortcuts.rs:51 crates/nox-gui/src/window.rs:1234
+msgid "Mark Out"
+msgstr "Out-Punkt setzen"
+
+#: crates/nox-gui/src/shortcuts.rs:52 crates/nox-gui/src/window.rs:1239
+msgid "Clear In"
+msgstr "In-Punkt löschen"
+
+#: crates/nox-gui/src/shortcuts.rs:53 crates/nox-gui/src/window.rs:1242
+msgid "Clear Out"
+msgstr "Out-Punkt löschen"
+
+#: crates/nox-gui/src/shortcuts.rs:54 crates/nox-gui/src/window.rs:1245
+msgid "Clear In and Out"
+msgstr "In- und Out-Punkt löschen"
+
+#: crates/nox-gui/src/shortcuts.rs:55 crates/nox-gui/src/timeline/mod.rs:964
+msgid "Add Marker"
+msgstr "Marker hinzufügen"
+
+#: crates/nox-gui/src/shortcuts.rs:56
+msgid "Previous or Next Marker"
+msgstr "Vorheriger oder nächster Marker"
+
+#: crates/nox-gui/src/shortcuts.rs:60
+msgid "Editing"
+msgstr "Bearbeiten"
+
+#: crates/nox-gui/src/shortcuts.rs:62
+msgid "Undo"
+msgstr "Rückgängig"
+
+#: crates/nox-gui/src/shortcuts.rs:63
+msgid "Redo"
+msgstr "Wiederholen"
+
+#: crates/nox-gui/src/shortcuts.rs:64
+msgid "Insert Media at Playhead"
+msgstr "Medien am Abspielkopf einfügen"
+
+#: crates/nox-gui/src/shortcuts.rs:65
+msgid "Overwrite at Playhead"
+msgstr "Am Abspielkopf überschreiben"
+
+#: crates/nox-gui/src/shortcuts.rs:66
+msgid "Split at Playhead"
+msgstr "Am Abspielkopf teilen"
+
+#: crates/nox-gui/src/shortcuts.rs:67 crates/nox-gui/src/window.rs:897
+msgid "Add Dissolve"
+msgstr "Überblendung hinzufügen"
+
+#: crates/nox-gui/src/shortcuts.rs:68 crates/nox-gui/src/window.rs:587
 msgid "Add Text"
 msgstr "Text hinzufügen"
 
-#: crates/nox-gui/src/window.rs
-msgid "Cannot add text"
-msgstr "Text kann nicht hinzugefügt werden"
+#: crates/nox-gui/src/shortcuts.rs:69
+msgid "Delete"
+msgstr "Löschen"
 
-#: crates/nox-gui/resources/ui/window.ui
-msgid "Add Text at Playhead (Ctrl+Shift+T)"
-msgstr "Text am Abspielkopf hinzufügen (Strg+Umschalt+T)"
+#: crates/nox-gui/src/shortcuts.rs:70 crates/nox-gui/src/timeline/mod.rs:1052
+msgid "Ripple Delete"
+msgstr "Ripple-Löschen"
 
-#: crates/nox-gui/src/alert.rs
-msgid "Close"
-msgstr "Schließen"
+#: crates/nox-gui/src/shortcuts.rs:71
+msgid "Snapping"
+msgstr "Einrasten"
 
-#: crates/nox-gui/resources/ui/window.ui
-msgid "_About Nox"
-msgstr "_Info zu Nox"
+#: crates/nox-gui/src/shortcuts.rs:75
+msgid "Clips"
+msgstr "Clips"
 
-#: crates/nox-gui/src/about.rs
-msgid "SIL Open Font License, version 1.1"
-msgstr "SIL Open Font License, Version 1.1"
+#: crates/nox-gui/src/shortcuts.rs:77
+msgid "Select Clip at Playhead"
+msgstr "Clip am Abspielkopf auswählen"
 
-#. Translators: your names, one per line, as "Name <email>".
-#: crates/nox-gui/src/about.rs
-msgid "translator-credits"
-msgstr ""
+#: crates/nox-gui/src/shortcuts.rs:78
+msgid "Select All Clips"
+msgstr "Alle Clips auswählen"
 
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "_Thumbnails on Video Clips"
-msgstr "_Vorschaubilder auf Videoclips"
+#: crates/nox-gui/src/shortcuts.rs:80
+msgid "Move a Frame Earlier or Later"
+msgstr "Ein Bild früher oder später"
 
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "_Waveforms on Audio Clips"
-msgstr "_Wellenformen auf Audioclips"
+#: crates/nox-gui/src/shortcuts.rs:84
+msgid "Move a Second Earlier or Later"
+msgstr "Eine Sekunde früher oder später"
 
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Downloaded Models"
-msgstr "Heruntergeladene Modelle"
+#: crates/nox-gui/src/shortcuts.rs:88
+msgid "Move to the Track Above or Below"
+msgstr "Auf die Spur darüber oder darunter"
 
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Delete Downloaded Models"
-msgstr "Heruntergeladene Modelle löschen"
-
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Transitions"
-msgstr "Übergänge"
-
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Open the Effects Folder"
-msgstr "Effektordner öffnen"
-
-#: crates/nox-gui/resources/ui/preferences.ui
-msgid "Open the Transitions Folder"
-msgstr "Übergangsordner öffnen"
-
-#: crates/nox-gui/src/window.rs
-msgid "{message}: {reason}"
-msgstr "{message}: {reason}"
-
-#: crates/nox-gui/src/node_editor.rs
-msgid "No Clip Selected"
-msgstr "Kein Clip ausgewählt"
-
-#: crates/nox-gui/src/node_editor.rs
-msgid "Select a video clip to see its effects"
-msgstr "Wählen Sie einen Videoclip, um seine Effekte zu sehen"
-
-#: crates/nox-gui/src/node_panel.rs
-msgid "No Node Selected"
-msgstr "Kein Knoten ausgewählt"
-
-#: crates/nox-gui/resources/ui/media-pool.ui
-msgid "No Media"
-msgstr "Keine Medien"
-
-#: crates/nox-gui/resources/ui/media-pool.ui
-msgid "Drop video, audio or image files here"
-msgstr "Video-, Audio- oder Bilddateien hier ablegen"
-
-#: crates/nox-gui/resources/ui/media-pool.ui
-msgid "_Import Media…"
-msgstr "Medien _importieren…"
-
-#: crates/nox-gui/resources/ui/inspector.ui
-msgid "Select a clip on the timeline to see its properties"
-msgstr "Wählen Sie einen Clip in der Timeline, um seine Eigenschaften zu sehen"
-
-#: crates/nox-gui/resources/ui/color-wheels.ui
-msgid "Select a video clip to grade it"
-msgstr "Wählen Sie einen Videoclip, um ihn zu graden"
-
-#: crates/nox-gui/resources/ui/window.ui
-msgid "_New Project"
-msgstr "_Neues Projekt"
-
-#: crates/nox-gui/resources/ui/window.ui
-msgid "Save Project _As…"
-msgstr "Projekt speichern _unter…"
-
-#: crates/nox-gui/resources/ui/window.ui
-msgid "Export Timeline (Ctrl+E)"
-msgstr "Timeline exportieren (Strg+E)"
-
-#: crates/nox-gui/resources/ui/window.ui
-msgid "_Relink…"
-msgstr "_Neu verknüpfen…"
-
-#: crates/nox-gui/resources/ui/menus.ui
+#: crates/nox-gui/src/shortcuts.rs:91
 msgid "Trim Start to Playhead"
 msgstr "Anfang bis zum Abspielkopf kürzen"
 
-#: crates/nox-gui/resources/ui/menus.ui
+#: crates/nox-gui/src/shortcuts.rs:92
 msgid "Trim End to Playhead"
 msgstr "Ende bis zum Abspielkopf kürzen"
 
-#: crates/nox-gui/src/timeline/input.rs
+#: crates/nox-gui/src/timeline/drag.rs:390
+msgid "Move Keyframe"
+msgstr "Keyframe verschieben"
+
+#: crates/nox-gui/src/timeline/drag.rs:602 crates/nox-gui/src/window.rs:1574
+msgid "Slide Clip"
+msgstr "Clip schieben (Slide)"
+
+#: crates/nox-gui/src/timeline/drag.rs:607 crates/nox-gui/src/window.rs:1577
+msgid "Slip Clip"
+msgstr "Inhalt verschieben (Slip)"
+
+#: crates/nox-gui/src/timeline/drag.rs:619
+msgid "Move Marker"
+msgstr "Marker verschieben"
+
+#: crates/nox-gui/src/timeline/drag.rs:637
+#: crates/nox-gui/src/timeline/mod.rs:839
+#: crates/nox-gui/src/timeline/mod.rs:872
+msgid "Move Clip"
+msgid_plural "Move Clips"
+msgstr[0] "Clip verschieben"
+msgstr[1] "Clips verschieben"
+
+#: crates/nox-gui/src/timeline/drag.rs:659
+msgid "Ripple Trim"
+msgstr "Ripple-Trimmen"
+
+#: crates/nox-gui/src/timeline/drag.rs:664
+#: crates/nox-gui/src/timeline/mod.rs:888
+msgid "Trim Clip"
+msgstr "Clip trimmen"
+
+#: crates/nox-gui/src/timeline/drag.rs:683
+msgid "Roll Edit"
+msgstr "Roll-Schnitt"
+
+#: crates/nox-gui/src/timeline/draw.rs:171
+msgid "Offline"
+msgstr "Offline"
+
+#: crates/nox-gui/src/timeline/draw.rs:644
+msgid "Slide {frames}"
+msgstr "Slide {frames}"
+
+#: crates/nox-gui/src/timeline/draw.rs:652
+msgid "Slip {frames}"
+msgstr "Slip {frames}"
+
+#: crates/nox-gui/src/timeline/input.rs:13
+msgid "Timeline"
+msgstr "Timeline"
+
+#: crates/nox-gui/src/timeline/input.rs:15
 msgid "Left and Right step one frame, Up and Down jump to edit points, Shift+V selects the clip at the playhead, Ctrl+A all clips and Escape none. Ctrl+Left and Ctrl+Right move the selected clips a frame (with Shift a second), Ctrl+Up and Ctrl+Down to the track above or below; braces trim the clip's start or end to the playhead. Shift+F10 opens the clip menu (in a track header, the track menu), Delete removes the selected clips."
 msgstr "Links und Rechts gehen ein Bild weiter, Hoch und Runter springen zu Schnittpunkten, Umschalt+V wählt den Clip am Abspielkopf, Strg+A alle Clips und Escape keinen. Strg+Links und Strg+Rechts verschieben die gewählten Clips um ein Bild (mit Umschalt um eine Sekunde), Strg+Hoch und Strg+Runter auf die Spur darüber oder darunter; geschweifte Klammern kürzen Anfang oder Ende des Clips bis zum Abspielkopf. Umschalt+F10 öffnet das Clipmenü (in einem Spurkopf das Spurmenü), Entfernen löscht die gewählten Clips."
 
-#: crates/nox-gui/src/window.rs
-#, python-brace-format
+#: crates/nox-gui/src/timeline/input.rs:234
+msgid "Marker"
+msgstr "Marker"
+
+#: crates/nox-gui/src/timeline/mod.rs:154
+msgid "Freeze"
+msgstr "Standbild"
+
+#: crates/nox-gui/src/timeline/mod.rs:169
+msgid "muted"
+msgstr "stumm"
+
+#: crates/nox-gui/src/timeline/mod.rs:215
+msgid "Unmute Track"
+msgstr "Stummschaltung aufheben"
+
+#: crates/nox-gui/src/timeline/mod.rs:216
+msgid "Mute Track"
+msgstr "Spur stummschalten"
+
+#: crates/nox-gui/src/timeline/mod.rs:217
+msgid "Enable Track"
+msgstr "Spur aktivieren"
+
+#: crates/nox-gui/src/timeline/mod.rs:218
+msgid "Disable Track"
+msgstr "Spur deaktivieren"
+
+#: crates/nox-gui/src/timeline/mod.rs:224
+msgid "Lock Track"
+msgstr "Spur sperren"
+
+#: crates/nox-gui/src/timeline/mod.rs:226
+msgid "Unlock Track"
+msgstr "Spur entsperren"
+
+#: crates/nox-gui/src/timeline/mod.rs:999
+msgid "Delete Marker"
+msgstr "Marker löschen"
+
+#: crates/nox-gui/src/timeline/mod.rs:1037
+msgid "Delete Clip"
+msgid_plural "Delete Clips"
+msgstr[0] "Clip löschen"
+msgstr[1] "Clips löschen"
+
+#: crates/nox-gui/src/timeline/selection.rs:167
+msgid "{n} clip selected"
+msgid_plural "{n} clips selected"
+msgstr[0] "{n} Clip ausgewählt"
+msgstr[1] "{n} Clips ausgewählt"
+
+#: crates/nox-gui/src/timeline/selection.rs:245
+msgid "{transition}, {length}"
+msgstr "{transition}, {length}"
+
+#: crates/nox-gui/src/timeline/selection.rs:258
+msgid "{name}, {start} to {end}"
+msgstr "{name}, {start} bis {end}"
+
+#: crates/nox-gui/src/timeline/tracks.rs:41
+msgid "Solo Track"
+msgstr "Spur solo schalten"
+
+#: crates/nox-gui/src/timeline/tracks.rs:43
+msgid "Unsolo Track"
+msgstr "Solo der Spur aufheben"
+
+#: crates/nox-gui/src/timeline/tracks.rs:54
+msgid "Sync Lock Track"
+msgstr "Spur synchron sperren"
+
+#: crates/nox-gui/src/timeline/tracks.rs:56
+msgid "Remove Sync Lock"
+msgstr "Synchronsperre aufheben"
+
+#: crates/nox-gui/src/timeline/tracks.rs:68
+msgid "Show Subtitles in Viewer"
+msgstr "Untertitel im Viewer zeigen"
+
+#: crates/nox-gui/src/timeline/tracks.rs:70
+msgid "Hide Subtitles in Viewer"
+msgstr "Untertitel im Viewer ausblenden"
+
+#: crates/nox-gui/src/timeline/tracks.rs:92
+msgid "Burn In Subtitles"
+msgstr "Untertitel einbrennen"
+
+#: crates/nox-gui/src/timeline/tracks.rs:94
+msgid "Don't Burn In Subtitles"
+msgstr "Untertitel nicht einbrennen"
+
+#: crates/nox-gui/src/timeline/tracks.rs:114
+msgid "Language"
+msgstr "Sprache"
+
+#: crates/nox-gui/src/timeline/tracks.rs:117
+msgid "An ISO 639-2 code, such as eng or ger"
+msgstr "Ein ISO-639-2-Code, etwa eng oder ger"
+
+#: crates/nox-gui/src/timeline/tracks.rs:119 crates/nox-gui/src/window.rs:586
+msgid "Title"
+msgstr "Titel"
+
+#: crates/nox-gui/src/timeline/tracks.rs:124
+msgid "Default"
+msgstr "Standard"
+
+#: crates/nox-gui/src/timeline/tracks.rs:125
+msgid "Forced"
+msgstr "Erzwungen"
+
+#: crates/nox-gui/src/timeline/tracks.rs:126
+msgid "For the Hearing Impaired"
+msgstr "Für Hörgeschädigte"
+
+#: crates/nox-gui/src/timeline/tracks.rs:133
+msgid "Stream Settings"
+msgstr "Streameinstellungen"
+
+#: crates/nox-gui/src/timeline/tracks.rs:135
+msgid "How the stream of “{track}” is tagged when exported."
+msgstr "Wie der Stream von „{track}“ beim Export gekennzeichnet wird."
+
+#: crates/nox-gui/src/timeline/tracks.rs:141
+msgid "Apply"
+msgstr "Übernehmen"
+
+#: crates/nox-gui/src/timeline/tracks.rs:158
+msgid "Change Stream Settings"
+msgstr "Streameinstellungen ändern"
+
+#: crates/nox-gui/src/timeline/tracks.rs:167
+msgid "Rename Track"
+msgstr "Spur umbenennen"
+
+#: crates/nox-gui/src/timeline/tracks.rs:176
+msgid "Delete Track"
+msgstr "Spur löschen"
+
+#: crates/nox-gui/src/track_header.rs:111
+msgid "Mute {track}"
+msgstr "{track} stummschalten"
+
+#: crates/nox-gui/src/track_header.rs:113
+msgid "Hide {track}"
+msgstr "{track} ausblenden"
+
+#: crates/nox-gui/src/track_header.rs:120
+msgid "Mute"
+msgstr "Stumm"
+
+#: crates/nox-gui/src/track_header.rs:122
+msgid "Hide"
+msgstr "Ausblenden"
+
+#: crates/nox-gui/src/track_header.rs:125
+msgid "Solo"
+msgstr "Solo"
+
+#: crates/nox-gui/src/track_header.rs:125
+msgid "Solo {track}"
+msgstr "{track} solo"
+
+#: crates/nox-gui/src/track_header.rs:126
+msgid "Lock"
+msgstr "Sperren"
+
+#: crates/nox-gui/src/track_header.rs:126
+msgid "Lock {track}"
+msgstr "{track} sperren"
+
+#: crates/nox-gui/src/track_header.rs:129
+msgid "Sync lock {track}"
+msgstr "{track} synchron sperren"
+
+#: crates/nox-gui/src/track_header.rs:130
+msgid "Sync Lock: follow ripple edits on other tracks"
+msgstr "Synchronsperre: Ripple-Bearbeitungen anderer Spuren folgen"
+
+#: crates/nox-gui/src/transform_overlay.rs:311
+msgid "Move Picture"
+msgstr "Bild verschieben"
+
+#: crates/nox-gui/src/transform_overlay.rs:312
+msgid "Zoom Picture"
+msgstr "Bild zoomen"
+
+#: crates/nox-gui/src/transform_overlay.rs:313
+msgid "Rotate Picture"
+msgstr "Bild drehen"
+
+#: crates/nox-gui/src/window.rs:167
+msgid "_Keyboard Shortcuts"
+msgstr "_Tastenkürzel"
+
+#: crates/nox-gui/src/window.rs:288
 msgid "{n} media file is offline; its clips show black"
 msgid_plural "{n} media files are offline; their clips show black"
 msgstr[0] "{n} Mediendatei ist offline; ihre Clips sind schwarz"
 msgstr[1] "{n} Mediendateien sind offline; ihre Clips sind schwarz"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Close Window"
-msgstr "Fenster schließen"
+#: crates/nox-gui/src/window.rs:334
+msgid "{message}: {reason}"
+msgstr "{message}: {reason}"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Editing"
-msgstr "Bearbeiten"
+#: crates/nox-gui/src/window.rs:342
+msgid "Cannot open {path}"
+msgstr "{path} kann nicht geöffnet werden"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Go to Start or End"
-msgstr "Zum Anfang oder Ende"
+#: crates/nox-gui/src/window.rs:374
+msgid "Relink Offline Media"
+msgstr "Offline-Medien neu verknüpfen"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Insert Media at Playhead"
-msgstr "Medien am Abspielkopf einfügen"
+#: crates/nox-gui/src/window.rs:390
+msgid "No media is offline"
+msgstr "Keine Medien sind offline"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Keyboard Shortcuts"
-msgstr "Tastenkürzel"
+#: crates/nox-gui/src/window.rs:401
+msgid "Found {found} of {n} offline file"
+msgid_plural "Found {found} of {n} offline files"
+msgstr[0] "{found} von {n} Offline-Datei gefunden"
+msgstr[1] "{found} von {n} Offline-Dateien gefunden"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Marks and Markers"
-msgstr "Marken und Marker"
+#: crates/nox-gui/src/window.rs:428
+msgid "Relink {name}"
+msgstr "{name} neu verknüpfen"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Move a Frame Earlier or Later"
-msgstr "Ein Bild früher oder später"
+#: crates/nox-gui/src/window.rs:458
+msgid "Relink Media"
+msgstr "Medien neu verknüpfen"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Move a Second Earlier or Later"
-msgstr "Eine Sekunde früher oder später"
+#: crates/nox-gui/src/window.rs:497
+msgid "Cannot save {path}"
+msgstr "{path} kann nicht gespeichert werden"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Move to the Track Above or Below"
-msgstr "Auf die Spur darüber oder darunter"
+#: crates/nox-gui/src/window.rs:552
+msgid "Save changes to the project?"
+msgstr "Änderungen am Projekt speichern?"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Overwrite at Playhead"
-msgstr "Am Abspielkopf überschreiben"
+#: crates/nox-gui/src/window.rs:553
+msgid "Unsaved changes will be lost otherwise."
+msgstr "Andernfalls gehen ungespeicherte Änderungen verloren."
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Pages"
-msgstr "Seiten"
+#: crates/nox-gui/src/window.rs:556
+msgid "Discard"
+msgstr "Verwerfen"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Play or Pause"
-msgstr "Wiedergabe oder Pause"
+#: crates/nox-gui/src/window.rs:557
+msgid "Save"
+msgstr "Speichern"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Previous or Next Edit"
-msgstr "Vorheriger oder nächster Schnitt"
+#: crates/nox-gui/src/window.rs:567
+msgid "Add Track"
+msgstr "Spur hinzufügen"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Previous or Next Frame"
-msgstr "Vorheriges oder nächstes Bild"
+#: crates/nox-gui/src/window.rs:591
+msgid "Cannot add text"
+msgstr "Text kann nicht hinzugefügt werden"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Previous or Next Marker"
-msgstr "Vorheriger oder nächster Marker"
+#: crates/nox-gui/src/window.rs:668
+msgid "From File…"
+msgstr "Aus Datei …"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Project"
-msgstr "Projekt"
+#: crates/nox-gui/src/window.rs:682
+msgid "{subtitles}, forced"
+msgstr "{subtitles}, erzwungen"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Project Settings"
-msgstr "Projekteinstellungen"
+#: crates/nox-gui/src/window.rs:693 crates/nox-gui/src/window.rs:730
+#: crates/nox-gui/src/window.rs:797
+msgid "Import Subtitles"
+msgstr "Untertitel importieren"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Quit"
-msgstr "Beenden"
+#: crates/nox-gui/src/window.rs:695
+msgid "Which subtitles of “{file}” go on a new subtitle track?"
+msgstr "Welche Untertitel aus „{file}“ sollen auf eine neue Untertitelspur?"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Select All Clips"
-msgstr "Alle Clips auswählen"
+#: crates/nox-gui/src/window.rs:763 crates/nox-gui/src/window.rs:790
+msgid "Cannot import subtitles"
+msgstr "Untertitel können nicht importiert werden"
 
-#: crates/nox-gui/src/shortcuts.rs
-msgid "Select Clip at Playhead"
-msgstr "Clip am Abspielkopf auswählen"
+#: crates/nox-gui/src/window.rs:766
+msgid "No subtitles in “{file}”"
+msgstr "Keine Untertitel in „{file}“"
 
-#: crates/nox-gui/src/window.rs
-msgid "_Keyboard Shortcuts"
-msgstr "_Tastenkürzel"
+#: crates/nox-gui/src/window.rs:793
+msgid "No subtitles to import there"
+msgstr "Dort gibt es keine Untertitel zum Importieren"
+
+#: crates/nox-gui/src/window.rs:828
+msgid "Added the subtitle track “{name}”"
+msgstr "Untertitelspur „{name}“ hinzugefügt"
+
+#: crates/nox-gui/src/window.rs:856
+msgid "Cannot convert to text clips"
+msgstr "Umwandeln in Textclips nicht möglich"
+
+#: crates/nox-gui/src/window.rs:859
+msgid "No subtitles to convert"
+msgstr "Keine Untertitel zum Umwandeln"
+
+#: crates/nox-gui/src/window.rs:861
+msgid "Bitmap subtitles have no text to convert"
+msgstr "Bild-Untertitel haben keinen Text zum Umwandeln"
+
+#: crates/nox-gui/src/window.rs:866
+msgid "Convert to Text Clips"
+msgstr "In Textclips umwandeln"
+
+#: crates/nox-gui/src/window.rs:898
+msgid "Cannot add a dissolve"
+msgstr "Überblendung nicht möglich"
+
+#: crates/nox-gui/src/window.rs:920
+msgid "The clips have too little media beyond the cut for a dissolve of {length}. Trim {trim} off the clips at the cut to make room? What follows moves up."
+msgstr "Die Clips haben über den Schnitt hinaus zu wenig Material für eine Überblendung von {length}. {trim} an den Clips am Schnitt kürzen, um Platz zu schaffen? Was folgt, rückt nach."
+
+#: crates/nox-gui/src/window.rs:934
+msgid "Not enough media for the dissolve"
+msgstr "Nicht genug Material für die Überblendung"
+
+#: crates/nox-gui/src/window.rs:938
+msgid "Trim Clips"
+msgstr "Clips kürzen"
+
+#: crates/nox-gui/src/window.rs:1254
+msgid "Split Clips"
+msgstr "Clips teilen"
+
+#: crates/nox-gui/src/window.rs:1346
+msgid "Change Resolution"
+msgstr "Auflösung ändern"
+
+#: crates/nox-gui/src/window.rs:1369
+msgid "Change Frame Rate"
+msgstr "Bildrate ändern"
+
+#: crates/nox-gui/src/window.rs:1393
+msgid "Change Timecode"
+msgstr "Timecode ändern"
+
+#: crates/nox-gui/resources/ui/clip-strip.ui:19
+msgid "Clips on video tracks appear here."
+msgstr "Clips auf Videospuren erscheinen hier."
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:43
+msgid "Color Wheels"
+msgstr "Farbräder"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:52
+#: crates/nox-gui/resources/ui/color-wheels.ui:54
+#: crates/nox-gui/resources/ui/inspector.ui:1138
+#: crates/nox-gui/resources/ui/inspector.ui:1140
+msgid "Previous Keyframe"
+msgstr "Vorheriger Keyframe"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:63
+#: crates/nox-gui/resources/ui/color-wheels.ui:65
+msgid "Grade Keyframe at Playhead"
+msgstr "Grading-Keyframe am Abspielkopf"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:77
+#: crates/nox-gui/resources/ui/color-wheels.ui:79
+#: crates/nox-gui/resources/ui/inspector.ui:1151
+#: crates/nox-gui/resources/ui/inspector.ui:1153
+msgid "Next Keyframe"
+msgstr "Nächster Keyframe"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:98
+msgid "Select a video clip to grade it"
+msgstr "Wählen Sie einen Videoclip, um ihn zu graden"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:130
+#: crates/nox-gui/resources/ui/color-wheels.ui:134
+msgid "Reset Lift"
+msgstr "Lift zurücksetzen"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:143
+#: crates/nox-gui/resources/ui/color-wheels.ui:192
+#: crates/nox-gui/resources/ui/color-wheels.ui:241
+#: crates/nox-gui/resources/ui/color-wheels.ui:290
+msgid "Drag to shift the color balance; double-click to reset"
+msgstr "Ziehen verschiebt die Farbbalance, Doppelklick setzt zurück"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:150
+#: crates/nox-gui/resources/ui/color-wheels.ui:199
+#: crates/nox-gui/resources/ui/color-wheels.ui:248
+#: crates/nox-gui/resources/ui/color-wheels.ui:297
+msgid "Master"
+msgstr "Master"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:179
+#: crates/nox-gui/resources/ui/color-wheels.ui:183
+msgid "Reset Gamma"
+msgstr "Gamma zurücksetzen"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:228
+#: crates/nox-gui/resources/ui/color-wheels.ui:232
+msgid "Reset Gain"
+msgstr "Gain zurücksetzen"
+
+#: crates/nox-gui/resources/ui/color-wheels.ui:277
+#: crates/nox-gui/resources/ui/color-wheels.ui:281
+msgid "Reset Offset"
+msgstr "Offset zurücksetzen"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:21
+msgid "Render Settings"
+msgstr "Render-Einstellungen"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:24
+msgid "_Preset"
+msgstr "_Vorgabe"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:30
+msgid "_File"
+msgstr "_Datei"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:35
+msgid "_Browse…"
+msgstr "Durch_suchen …"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:45
+msgid "Con_tainer"
+msgstr "Con_tainer"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:51
+msgid "_Video codec"
+msgstr "_Videocodec"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:57
+msgid "_Quality"
+msgstr "_Qualität"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:63
+msgid "D_ynamic range"
+msgstr "D_ynamikumfang"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:65
+msgid "HDR exports are 10-bit Rec. 2020 (HEVC or ProRes); SDR material sits at 203 nits, as BT.2408 recommends"
+msgstr "HDR-Exporte sind 10 Bit Rec. 2020 (HEVC oder ProRes); SDR-Material liegt bei 203 Nits, wie BT.2408 empfiehlt"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:71
+msgid "Mastering _peak"
+msgstr "Mastering-_Spitze"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:72
+msgid "nits"
+msgstr "Nits"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:74
+msgid "Brightest the HDR10 master is meant for; written into the file for players and TVs"
+msgstr "Die Helligkeit, für die der HDR10-Master gedacht ist; wird für Player und Fernseher in die Datei geschrieben"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:89
+msgid "Enco_der"
+msgstr "Enco_der"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:96
+msgid "A_udio codec"
+msgstr "A_udiocodec"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:102
+msgid "Include _audio"
+msgstr "_Ton einschließen"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:109
+msgid "One audio stream per _track"
+msgstr "Ein Audiostream pro _Spur"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:110
+msgid "Instead of one stream with all audio tracks mixed"
+msgstr "Statt eines Streams mit allen Audiospuren gemischt"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:116
+msgid "Include _subtitles"
+msgstr "_Untertitel einschließen"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:117
+msgid "Subtitle tracks as streams; burned-in ones show in the picture"
+msgstr "Untertitelspuren als Streams; eingebrannte erscheinen im Bild"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:124
+msgid "Ra_nge"
+msgstr "_Bereich"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:166
+msgid "Open F_older"
+msgstr "_Ordner öffnen"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:174
+#: crates/nox-gui/resources/ui/project-settings.ui:148
+msgid "_Cancel"
+msgstr "Abbre_chen"
+
+#: crates/nox-gui/resources/ui/export-dialog.ui:181
+#: crates/nox-gui/resources/ui/window.ui:292
+msgid "_Export"
+msgstr "_Exportieren"
+
+#: crates/nox-gui/resources/ui/inspector.ui:106
+msgid "Inspector"
+msgstr "Inspektor"
+
+#: crates/nox-gui/resources/ui/inspector.ui:123
+msgid "Select a clip on the timeline to see its properties"
+msgstr "Wählen Sie einen Clip in der Timeline, um seine Eigenschaften zu sehen"
+
+#: crates/nox-gui/resources/ui/inspector.ui:153
+msgid "Name"
+msgstr "Name"
+
+#: crates/nox-gui/resources/ui/inspector.ui:198
+msgid "Note"
+msgstr "Notiz"
+
+#: crates/nox-gui/resources/ui/inspector.ui:304
+msgid "Composite"
+msgstr "Komposition"
+
+#: crates/nox-gui/resources/ui/inspector.ui:317
+#: crates/nox-gui/resources/ui/menus.ui:7
+msgid "Opacity"
+msgstr "Deckkraft"
+
+#: crates/nox-gui/resources/ui/inspector.ui:334
+msgid "Opacity in percent"
+msgstr "Deckkraft in Prozent"
+
+#: crates/nox-gui/resources/ui/inspector.ui:361
+#: crates/nox-gui/resources/ui/inspector.ui:576
+#: crates/nox-gui/resources/ui/inspector.ui:621
+#: crates/nox-gui/resources/ui/inspector.ui:666
+#: crates/nox-gui/resources/ui/inspector.ui:711
+#: crates/nox-gui/resources/ui/inspector.ui:756
+#: crates/nox-gui/resources/ui/inspector.ui:801
+#: crates/nox-gui/resources/ui/inspector.ui:846
+#: crates/nox-gui/resources/ui/inspector.ui:891
+#: crates/nox-gui/resources/ui/inspector.ui:1105
+msgid "Adds or removes a keyframe at the playhead"
+msgstr "Fügt am Abspielkopf einen Keyframe hinzu oder entfernt ihn"
+
+#: crates/nox-gui/resources/ui/inspector.ui:376
+#: crates/nox-gui/resources/ui/menus.ui:30
+msgid "Blend Mode"
+msgstr "Mischmodus"
+
+#: crates/nox-gui/resources/ui/inspector.ui:406
+msgid "Type"
+msgstr "Art"
+
+#: crates/nox-gui/resources/ui/inspector.ui:417
+msgid "Choose Transition"
+msgstr "Übergang wählen"
+
+#: crates/nox-gui/resources/ui/inspector.ui:429
+msgid "Length"
+msgstr "Länge"
+
+#: crates/nox-gui/resources/ui/inspector.ui:442
+msgid "Seconds, limited by the media the clips have beyond the cut"
+msgstr "Sekunden, begrenzt durch das Material der Clips jenseits des Schnitts"
+
+#: crates/nox-gui/resources/ui/inspector.ui:491
+msgid "Add Effect…"
+msgstr "Effekt hinzufügen …"
+
+#: crates/nox-gui/resources/ui/inspector.ui:493
+msgid "Add Effect"
+msgstr "Fügt dem Clip einen Effekt nach seinen anderen Effekten hinzu"
+
+#: crates/nox-gui/resources/ui/inspector.ui:517
+msgid "Transform"
+msgstr "Transformation"
+
+#: crates/nox-gui/resources/ui/inspector.ui:546
+msgid "Position X"
+msgstr "Position X"
+
+#: crates/nox-gui/resources/ui/inspector.ui:563
+msgid "Pixels right of center, in the timeline’s resolution"
+msgstr "Pixel rechts der Mitte, in der Auflösung der Timeline"
+
+#: crates/nox-gui/resources/ui/inspector.ui:591
+msgid "Position Y"
+msgstr "Position Y"
+
+#: crates/nox-gui/resources/ui/inspector.ui:608
+msgid "Pixels below center, in the timeline’s resolution"
+msgstr "Pixel unter der Mitte, in der Auflösung der Timeline"
+
+#: crates/nox-gui/resources/ui/inspector.ui:636
+msgid "Zoom"
+msgstr "Zoom"
+
+#: crates/nox-gui/resources/ui/inspector.ui:653
+msgid "Percent of the fitted size"
+msgstr "Prozent der eingepassten Größe"
+
+#: crates/nox-gui/resources/ui/inspector.ui:681
+msgid "Rotation"
+msgstr "Drehung"
+
+#: crates/nox-gui/resources/ui/inspector.ui:698
+msgid "Degrees, clockwise"
+msgstr "Grad, im Uhrzeigersinn"
+
+#: crates/nox-gui/resources/ui/inspector.ui:726
+msgid "Crop Left"
+msgstr "Links beschneiden"
+
+#: crates/nox-gui/resources/ui/inspector.ui:743
+#: crates/nox-gui/resources/ui/inspector.ui:788
+#: crates/nox-gui/resources/ui/inspector.ui:833
+#: crates/nox-gui/resources/ui/inspector.ui:878
+msgid "Percent of the picture"
+msgstr "Prozent des Bildes"
+
+#: crates/nox-gui/resources/ui/inspector.ui:771
+msgid "Crop Right"
+msgstr "Rechts beschneiden"
+
+#: crates/nox-gui/resources/ui/inspector.ui:816
+msgid "Crop Top"
+msgstr "Oben beschneiden"
+
+#: crates/nox-gui/resources/ui/inspector.ui:861
+msgid "Crop Bottom"
+msgstr "Unten beschneiden"
+
+#: crates/nox-gui/resources/ui/inspector.ui:914
+#: crates/nox-gui/resources/ui/inspector.ui:927
+msgid "Speed"
+msgstr "Geschwindigkeit"
+
+#: crates/nox-gui/resources/ui/inspector.ui:940
+msgid "Percent of normal speed; the clip gets shorter or longer and shows the same media"
+msgstr "Prozent der normalen Geschwindigkeit; der Clip wird kürzer oder länger und zeigt dasselbe Material"
+
+#: crates/nox-gui/resources/ui/inspector.ui:954
+msgid "Move what follows"
+msgstr "Nachfolgendes verschieben"
+
+#: crates/nox-gui/resources/ui/inspector.ui:956
+msgid "When the speed changes the clip’s length, move the clips after it (as Resolve’s Ripple Sequence); otherwise leave a gap or cover them"
+msgstr "Wenn die Geschwindigkeit die Länge des Clips ändert, die folgenden Clips verschieben (wie Resolves „Ripple Sequence“); sonst eine Lücke lassen oder sie überdecken"
+
+#: crates/nox-gui/resources/ui/inspector.ui:962
+msgid "Hold the frame under the playhead for the whole clip"
+msgstr "Das Bild unter dem Abspielkopf für den ganzen Clip halten"
+
+#: crates/nox-gui/resources/ui/inspector.ui:974
+msgid "Fades"
+msgstr "Blenden"
+
+#: crates/nox-gui/resources/ui/inspector.ui:1004
+#: crates/nox-gui/resources/ui/inspector.ui:1030
+msgid "Seconds; also set by dragging the handles at the clip’s top corners"
+msgstr "Sekunden; auch durch Ziehen der Griffe an den oberen Ecken des Clips"
+
+#: crates/nox-gui/resources/ui/inspector.ui:1060
+#: crates/nox-gui/resources/ui/menus.ui:53
+msgid "Volume"
+msgstr "Lautstärke"
+
+#: crates/nox-gui/resources/ui/inspector.ui:1077
+msgid "Volume in decibels"
+msgstr "Lautstärke in Dezibel"
+
+#: crates/nox-gui/resources/ui/inspector.ui:1127
+msgid "Keyframes"
+msgstr "Keyframes"
+
+#: crates/nox-gui/resources/ui/inspector.ui:1163
+msgid "How the values move from the keyframes at the playhead to the next ones"
+msgstr "Wie sich die Werte von den Keyframes am Abspielkopf zu den nächsten bewegen"
+
+#: crates/nox-gui/resources/ui/inspector.ui:1165
+msgid "Easing"
+msgstr "Interpolation"
+
+#: crates/nox-gui/resources/ui/media-pool.ui:12
+msgid "Media Pool"
+msgstr "Medienpool"
+
+#: crates/nox-gui/resources/ui/media-pool.ui:25
+#: crates/nox-gui/resources/ui/media-pool.ui:27
+msgid "Relink Offline Media…"
+msgstr "Offline-Medien neu verknüpfen …"
+
+#: crates/nox-gui/resources/ui/media-pool.ui:35
+#: crates/nox-gui/resources/ui/media-pool.ui:37
+msgid "Import Media…"
+msgstr "Medien importieren …"
+
+#: crates/nox-gui/resources/ui/media-pool.ui:54
+msgid "No Media"
+msgstr "Keine Medien"
+
+#: crates/nox-gui/resources/ui/media-pool.ui:55
+msgid "Drop video, audio or image files here"
+msgstr "Video-, Audio- oder Bilddateien hier ablegen"
+
+#: crates/nox-gui/resources/ui/media-pool.ui:59
+msgid "_Import Media…"
+msgstr "Medien _importieren…"
+
+#: crates/nox-gui/resources/ui/menus.ui:111
+msgid "Relink Media…"
+msgstr "Medien neu verknüpfen …"
+
+#: crates/nox-gui/resources/ui/menus.ui:115
+msgid "Import Subtitles…"
+msgstr "Untertitel importieren …"
+
+#: crates/nox-gui/resources/ui/menus.ui:164
+#: crates/nox-gui/resources/ui/menus.ui:194
+#: crates/nox-gui/resources/ui/menus.ui:232
+msgid "Rename Track…"
+msgstr "Spur umbenennen…"
+
+#: crates/nox-gui/resources/ui/menus.ui:178
+#: crates/nox-gui/resources/ui/menus.ui:216
+#: crates/nox-gui/resources/ui/menus.ui:264
+msgid "Sync Lock"
+msgstr "Synchronsperre"
+
+#: crates/nox-gui/resources/ui/menus.ui:198
+#: crates/nox-gui/resources/ui/menus.ui:236
+msgid "Stream Settings…"
+msgstr "Streameinstellungen …"
+
+#: crates/nox-gui/resources/ui/menus.ui:242
+msgid "Show in Viewer"
+msgstr "Im Viewer zeigen"
+
+#: crates/nox-gui/resources/ui/menus.ui:246
+msgid "Burn In"
+msgstr "Einbrennen"
+
+#: crates/nox-gui/resources/ui/preferences.ui:16
+msgid "_Thumbnails on Video Clips"
+msgstr "_Vorschaubilder auf Videoclips"
+
+#: crates/nox-gui/resources/ui/preferences.ui:22
+msgid "_Waveforms on Audio Clips"
+msgstr "_Wellenformen auf Audioclips"
+
+#: crates/nox-gui/resources/ui/preferences.ui:33
+msgid "Video _decoding"
+msgstr "Video-_Dekodierung"
+
+#: crates/nox-gui/resources/ui/preferences.ui:42
+msgid "AI Models"
+msgstr "KI-Modelle"
+
+#: crates/nox-gui/resources/ui/preferences.ui:45
+msgid "Downloaded Models"
+msgstr "Heruntergeladene Modelle"
+
+#: crates/nox-gui/resources/ui/preferences.ui:49
+msgid "_Delete"
+msgstr "_Löschen"
+
+#: crates/nox-gui/resources/ui/preferences.ui:52
+msgid "Delete Downloaded Models"
+msgstr "Heruntergeladene Modelle löschen"
+
+#: crates/nox-gui/resources/ui/preferences.ui:62
+msgid "Packages"
+msgstr "Pakete"
+
+#: crates/nox-gui/resources/ui/preferences.ui:70
+#: crates/nox-gui/resources/ui/preferences.ui:86
+msgid "_Open Folder"
+msgstr "Ordner _öffnen"
+
+#: crates/nox-gui/resources/ui/preferences.ui:73
+msgid "Open the Effects Folder"
+msgstr "Effektordner öffnen"
+
+#: crates/nox-gui/resources/ui/preferences.ui:81
+msgid "Transitions"
+msgstr "Übergänge"
+
+#: crates/nox-gui/resources/ui/preferences.ui:89
+msgid "Open the Transitions Folder"
+msgstr "Übergangsordner öffnen"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:39
+#: crates/nox-gui/resources/ui/project-settings.ui:44
+msgid "General"
+msgstr "Allgemein"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:47
+msgid "Project _name"
+msgstr "Projekt_name"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:60
+msgid "Master Settings"
+msgstr "Haupteinstellungen"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:65
+msgid "Timeline Format"
+msgstr "Timeline-Format"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:68
+msgid "Timeline _resolution"
+msgstr "Timeline-_Auflösung"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:74
+msgid "Width"
+msgstr "Breite"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:86
+msgid "Height"
+msgstr "Höhe"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:98
+msgid "Timeline _frame rate"
+msgstr "Timeline-_Bildrate"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:104
+msgid "Use _Drop Frame Timecode"
+msgstr "_Drop-Frame-Timecode verwenden"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:117
+msgid "Image Scaling"
+msgstr "Bildskalierung"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:122
+msgid "Input Scaling"
+msgstr "Eingangsskalierung"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:125
+msgid "_Mismatched resolution files"
+msgstr "Dateien _mit abweichender Auflösung"
+
+#: crates/nox-gui/resources/ui/project-settings.ui:155
+msgid "_Save"
+msgstr "_Speichern"
+
+#: crates/nox-gui/resources/ui/rename-track.ui:22
+msgid "Track name"
+msgstr "Spurname"
+
+#: crates/nox-gui/resources/ui/rename-track.ui:38
+msgid "Rename"
+msgstr "Umbenennen"
+
+#: crates/nox-gui/resources/ui/scopes-panel.ui:9
+msgid "Scopes"
+msgstr "Messinstrumente"
+
+#: crates/nox-gui/resources/ui/viewer.ui:39
+msgid "Mark In (I)"
+msgstr "In-Punkt setzen (I)"
+
+#: crates/nox-gui/resources/ui/viewer.ui:52
+msgid "Mark Out (O)"
+msgstr "Out-Punkt setzen (O)"
+
+#: crates/nox-gui/resources/ui/viewer.ui:65
+msgid "Add Marker (M)"
+msgstr "Marker hinzufügen (M)"
+
+#: crates/nox-gui/resources/ui/viewer.ui:84
+#: crates/nox-gui/resources/ui/viewer.ui:86
+msgid "Go to Start"
+msgstr "Zum Anfang"
+
+#: crates/nox-gui/resources/ui/viewer.ui:96
+#: crates/nox-gui/resources/ui/viewer.ui:98
+msgid "Previous Frame"
+msgstr "Vorheriges Bild"
+
+#: crates/nox-gui/resources/ui/viewer.ui:120
+#: crates/nox-gui/resources/ui/viewer.ui:122
+msgid "Next Frame"
+msgstr "Nächstes Bild"
+
+#: crates/nox-gui/resources/ui/viewer.ui:132
+#: crates/nox-gui/resources/ui/viewer.ui:134
+msgid "Go to End"
+msgstr "Zum Ende"
+
+#: crates/nox-gui/resources/ui/window.ui:215
+msgid "Open Project (Ctrl+O)"
+msgstr "Projekt öffnen (Strg+O)"
+
+#: crates/nox-gui/resources/ui/window.ui:226
+msgid "Save Project (Ctrl+S)"
+msgstr "Projekt speichern (Strg+S)"
+
+#: crates/nox-gui/resources/ui/window.ui:242
+msgid "Undo (Ctrl+Z)"
+msgstr "Rückgängig (Strg+Z)"
+
+#: crates/nox-gui/resources/ui/window.ui:253
+msgid "Redo (Ctrl+Shift+Z)"
+msgstr "Wiederholen (Strg+Umschalt+Z)"
+
+#: crates/nox-gui/resources/ui/window.ui:279
+#: crates/nox-gui/resources/ui/window.ui:281
+msgid "Main Menu"
+msgstr "Hauptmenü"
+
+#: crates/nox-gui/resources/ui/window.ui:288
+msgid "Export Timeline (Ctrl+E)"
+msgstr "Timeline exportieren (Strg+E)"
+
+#: crates/nox-gui/resources/ui/window.ui:307
+#: crates/nox-gui/resources/ui/window.ui:309
+msgid "Show Inspector"
+msgstr "Inspektor anzeigen"
+
+#: crates/nox-gui/resources/ui/window.ui:318
+msgid "_Relink…"
+msgstr "_Neu verknüpfen…"
+
+#: crates/nox-gui/resources/ui/window.ui:395
+msgid "Timeline Tools"
+msgstr "Timeline-Werkzeuge"
+
+#: crates/nox-gui/resources/ui/window.ui:406
+msgid "Insert Selected Media at Playhead (F9)"
+msgstr "Ausgewählte Medien am Abspielkopf einfügen (F9)"
+
+#: crates/nox-gui/resources/ui/window.ui:408
+msgid "Insert"
+msgstr "Einfügen"
+
+#: crates/nox-gui/resources/ui/window.ui:417
+msgid "Overwrite at Playhead with Selected Media (F10)"
+msgstr "Am Abspielkopf mit den ausgewählten Medien überschreiben (F10)"
+
+#: crates/nox-gui/resources/ui/window.ui:419
+msgid "Overwrite"
+msgstr "Überschreiben"
+
+#: crates/nox-gui/resources/ui/window.ui:434
+msgid "Split at Playhead (Ctrl+B)"
+msgstr "Am Abspielkopf teilen (Strg+B)"
+
+#: crates/nox-gui/resources/ui/window.ui:445
+msgid "Ripple Delete Selected Clips (Shift+Delete)"
+msgstr "Ausgewählte Clips mit Lückenschluss löschen (Umschalt+Entf)"
+
+#: crates/nox-gui/resources/ui/window.ui:456
+msgid "Add Dissolve to Selected Clip (Ctrl+T)"
+msgstr "Dem ausgewählten Clip eine Überblendung hinzufügen (Strg+T)"
+
+#: crates/nox-gui/resources/ui/window.ui:467
+msgid "Add Text at Playhead (Ctrl+Shift+T)"
+msgstr "Text am Abspielkopf hinzufügen (Strg+Umschalt+T)"
+
+#: crates/nox-gui/resources/ui/window.ui:484
+msgid "Snapping (N)"
+msgstr "Einrasten (N)"
+
+#: crates/nox-gui/resources/ui/window.ui:503
+#: crates/nox-gui/resources/ui/window.ui:505
+msgid "Add Video Track"
+msgstr "Videospur hinzufügen"
+
+#: crates/nox-gui/resources/ui/window.ui:513
+#: crates/nox-gui/resources/ui/window.ui:515
+msgid "Add Audio Track"
+msgstr "Tonspur hinzufügen"
+
+#: crates/nox-gui/resources/ui/window.ui:660
+msgid "_New Project"
+msgstr "_Neues Projekt"
+
+#: crates/nox-gui/resources/ui/window.ui:664
+msgid "Save Project _As…"
+msgstr "Projekt speichern _unter…"
+
+#: crates/nox-gui/resources/ui/window.ui:670
+msgid "Import _Subtitles…"
+msgstr "_Untertitel importieren …"
+
+#: crates/nox-gui/resources/ui/window.ui:676
+msgid "Project _Settings"
+msgstr "_Projekteinstellungen"
+
+#: crates/nox-gui/resources/ui/window.ui:687
+msgid "_Preferences"
+msgstr "_Einstellungen"
+
+#: crates/nox-gui/resources/ui/window.ui:691
+msgid "_About Nox"
+msgstr "_Info zu Nox"
+
+#: crates/nox-gui/src/track_header.rs
+#, python-brace-format
+msgid "Show {track} in the viewer"
+msgstr "{track} im Viewer zeigen"

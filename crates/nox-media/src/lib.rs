@@ -10,6 +10,8 @@ mod hw;
 mod hwaccel;
 mod probe;
 mod stream;
+mod subtitle;
+mod subtitle_out;
 mod thumbnail;
 mod tiles;
 pub mod waveform;
@@ -30,6 +32,11 @@ pub use hwaccel::{Accel, with_gpu_input};
 pub use nox_color::OutputEncoding;
 pub use nox_gpu::{Image, Orientation};
 pub use probe::{AudioInfo, MediaInfo, VideoInfo, probe};
+pub use subtitle::{
+    BitmapReader, SubtitleInfo, SubtitlePicture, Subtitles, TextEvent, format_name, read_subtitles,
+    subtitles,
+};
+pub use subtitle_out::{BitmapCue, SubtitleContent, SubtitleOutput, TextCue};
 pub use thumbnail::{ThumbnailReader, thumbnail};
 
 use std::sync::Once;
@@ -42,6 +49,8 @@ pub enum Error {
     NoVideoStream,
     #[error("no audio stream")]
     NoAudioStream,
+    #[error("no subtitle stream")]
+    NoSubtitleStream,
     /// Decoding was stopped by the caller (e.g. a newer request).
     #[error("interrupted")]
     Interrupted,

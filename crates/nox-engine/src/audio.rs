@@ -22,8 +22,9 @@ const IDLE_BLOCKS: u64 = 200;
 /// Mixes the audio tracks of a timeline to stereo.
 pub struct Mixer {
     rate: u32,
-    decoders: HashMap<(PathBuf, usize), (AudioDecoder, u64)>,
-    failed: HashSet<PathBuf>,
+    /// By file, stream and slot (several for one file in a crossfade).
+    decoders: HashMap<(PathBuf, Option<usize>, usize), (AudioDecoder, u64)>,
+    failed: HashSet<(PathBuf, Option<usize>)>,
     scratch: Vec<f32>,
     /// Source samples for clips at another speed.
     varispeed: Vec<f32>,
@@ -45,33 +46,49 @@ impl Mixer {
     /// Mixes the samples from timeline sample `start` on into `out`
     /// (interleaved stereo).
     pub fn mix(&mut self, timeline: &Timeline, start: i64, out: &mut [f32]) {
+        self.mix_tracks(timeline, start, out, None);
+    }
+
+    /// Mixes as `mix` does, only the audio tracks at stack indices
+    /// `tracks` if given (one exported stream per track).
+    pub fn mix_tracks(
+        &mut self,
+        timeline: &Timeline,
+        start: i64,
+        out: &mut [f32],
+        tracks: Option<&[usize]>,
+    ) {
         out.fill(0.0);
         self.blocks += 1;
         let frames = (out.len() / CHANNELS) as i64;
         let timebase = Rational::new(1, i64::from(self.rate));
         let range = TimeRange::new(Time::new(start, timebase), Time::new(frames, timebase));
-        let mut slots: HashMap<PathBuf, usize> = HashMap::new();
+        let mut slots: HashMap<(PathBuf, Option<usize>), usize> = HashMap::new();
         for segment in timeline.audio_segments(range) {
+            if tracks.is_some_and(|tracks| !tracks.contains(&segment.track)) {
+                continue;
+            }
+            let stream = (segment.path.clone(), segment.stream);
             // Freeze frames are silent.
-            if self.failed.contains(&segment.path) || segment.speed == 0.0 {
+            if self.failed.contains(&stream) || segment.speed == 0.0 {
                 continue;
             }
             // Two segments of one file (e.g. in a crossfade) need two decoders.
-            let slot = slots.entry(segment.path.clone()).or_default();
-            let key = (segment.path.clone(), *slot);
+            let slot = slots.entry(stream.clone()).or_default();
+            let key = (segment.path.clone(), segment.stream, *slot);
             *slot += 1;
             if !self.decoders.contains_key(&key) {
-                match AudioDecoder::open(&segment.path, self.rate) {
+                match AudioDecoder::open_stream(&segment.path, segment.stream, self.rate) {
                     Ok(decoder) => {
                         self.decoders.insert(key.clone(), (decoder, 0));
                     }
                     Err(nox_media::Error::NoAudioStream) => {
-                        self.failed.insert(segment.path.clone());
+                        self.failed.insert(stream);
                         continue;
                     }
                     Err(err) => {
                         tracing::warn!("{}: no audio: {err}", segment.path.display());
-                        self.failed.insert(segment.path.clone());
+                        self.failed.insert(stream);
                         continue;
                     }
                 }

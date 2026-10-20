@@ -680,9 +680,9 @@ impl Inspector {
         imp.updating.set(true);
         match composable {
             Composable::Clip(clip) => {
-                let video = model
-                    .track(item.track)
-                    .is_some_and(|t| t.kind == TrackKind::Video);
+                let track_kind = model.track(item.track).map(|t| t.kind.clone());
+                let video = track_kind == Some(TrackKind::Video);
+                let subtitle = track_kind == Some(TrackKind::Subtitle);
                 imp.name_label.set_text(&clip.item.name);
                 let text = clip
                     .text_parameters()
@@ -691,6 +691,8 @@ impl Inspector {
                     gettext("Text clip")
                 } else if video {
                     gettext("Video clip")
+                } else if subtitle {
+                    gettext("Subtitle clip")
                 } else {
                     gettext("Audio clip")
                 };
@@ -707,7 +709,7 @@ impl Inspector {
                 ));
                 imp.composite_section.set_visible(video);
                 imp.effects_section.set_visible(video);
-                imp.audio_section.set_visible(!video);
+                imp.audio_section.set_visible(!video && !subtitle);
                 let time = self.media_time().unwrap_or_default();
                 if video {
                     self.show_effects(&clip.item, time);
@@ -766,7 +768,7 @@ impl Inspector {
                         button.remove_css_class("animated");
                     }
                 }
-                imp.keyframe_section.set_visible(true);
+                imp.keyframe_section.set_visible(!subtitle);
                 let ease = Param::ALL.into_iter().find_map(|param| {
                     clip.item
                         .keyframes(param)

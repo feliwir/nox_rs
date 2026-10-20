@@ -10,6 +10,7 @@ authors.workspace = true
 cpal.workspace = true
 nox-fx.workspace = true
 nox-text.workspace = true
+nox-ass.workspace = true
 nox-gpu.workspace = true
 nox-media.workspace = true
 nox-project.workspace = true

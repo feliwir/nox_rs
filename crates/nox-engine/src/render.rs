@@ -22,6 +22,8 @@ const MAX_PER_FILE: usize = 2;
 
 struct PooledDecoder {
     path: PathBuf,
+    /// The video stream (the best one if `None`).
+    stream: Option<usize>,
     decoder: VideoDecoder,
     used: u64,
 }
@@ -38,6 +40,70 @@ pub(crate) enum Quality {
 
 /// Rasterized texts kept (each at most an output picture).
 const MAX_TEXTS: usize = 32;
+
+/// Bitmap subtitle streams kept open, and pictures kept.
+const MAX_SUBTITLE_READERS: usize = 4;
+const MAX_SUBTITLE_PICTURES: usize = 64;
+
+/// Bitmap subtitles (`Clip::subtitle_stream`): readers of their streams
+/// and the pictures drawn, by file, stream and event start.
+#[derive(Default)]
+struct BitmapSubtitles {
+    readers: Vec<nox_media::BitmapReader>,
+    pictures:
+        std::collections::HashMap<(PathBuf, usize, u64), Option<Arc<nox_media::SubtitlePicture>>>,
+}
+
+impl BitmapSubtitles {
+    /// The picture of the event of stream `stream` of `path` starting at
+    /// `start` (file time, seconds); `None` if it can't be drawn.
+    fn picture(
+        &mut self,
+        path: &Path,
+        stream: usize,
+        start: f64,
+    ) -> Option<Arc<nox_media::SubtitlePicture>> {
+        let key = (path.to_owned(), stream, start.to_bits());
+        if let Some(picture) = self.pictures.get(&key) {
+            return picture.clone();
+        }
+        let found = self
+            .readers
+            .iter()
+            .position(|r| r.path() == path && r.stream_index() == stream);
+        let index = match found {
+            Some(index) => Some(index),
+            None => match nox_media::BitmapReader::open(path, stream) {
+                Ok(reader) => {
+                    if self.readers.len() >= MAX_SUBTITLE_READERS {
+                        self.readers.remove(0);
+                    }
+                    self.readers.push(reader);
+                    Some(self.readers.len() - 1)
+                }
+                Err(err) => {
+                    tracing::warn!("{} subtitles #{stream}: {err}", path.display());
+                    None
+                }
+            },
+        };
+        let picture = index.and_then(|i| match self.readers[i].picture(start) {
+            Ok(picture) => picture.map(Arc::new),
+            Err(err) => {
+                tracing::warn!(
+                    "{} subtitles #{stream} at {start:.3} s: {err}",
+                    path.display()
+                );
+                None
+            }
+        });
+        if self.pictures.len() >= MAX_SUBTITLE_PICTURES {
+            self.pictures.clear();
+        }
+        self.pictures.insert(key, picture.clone());
+        picture
+    }
+}
 
 /// Decoding more frames than this for one layer is worth a preview first.
 pub(crate) const PREVIEW_COST: i64 = 8;
@@ -66,6 +132,7 @@ impl DecoderPool {
     fn get(
         &mut self,
         path: &Path,
+        stream: Option<usize>,
         time: Time,
         accel: Option<&Accel>,
         hw: HwDecode,
@@ -73,12 +140,15 @@ impl DecoderPool {
         self.clock += 1;
         let frame_start = self.frame_start;
         let same_file: Vec<usize> = (0..self.decoders.len())
-            .filter(|&i| self.decoders[i].path == path && self.decoders[i].used < frame_start)
+            .filter(|&i| {
+                let d = &self.decoders[i];
+                d.path == path && d.stream == stream && d.used < frame_start
+            })
             .collect();
         let in_use = self
             .decoders
             .iter()
-            .filter(|d| d.path == path && d.used >= frame_start)
+            .filter(|d| d.path == path && d.stream == stream && d.used >= frame_start)
             .count();
         let index_of = |d: &PooledDecoder| time.frame(d.decoder.frame_rate());
         // The free decoder of this file that gets there with the least
@@ -91,7 +161,7 @@ impl DecoderPool {
             Some(i) => i,
             // More layers of one file than decoders: share a busy one.
             None if in_use >= MAX_PER_FILE => (0..self.decoders.len())
-                .filter(|&i| self.decoders[i].path == path)
+                .filter(|&i| self.decoders[i].path == path && self.decoders[i].stream == stream)
                 .min_by_key(|&i| self.decoders[i].used)
                 .expect("busy decoder"),
             None => {
@@ -104,7 +174,8 @@ impl DecoderPool {
                 tracing::debug!("opening decoder for {}", path.display());
                 self.decoders.push(PooledDecoder {
                     path: path.to_owned(),
-                    decoder: VideoDecoder::open_with(path, accel, hw)?,
+                    stream,
+                    decoder: VideoDecoder::open_stream(path, stream, accel, hw)?,
                     used: 0,
                 });
                 self.decoders.len() - 1
@@ -151,6 +222,11 @@ pub(crate) struct Renderer {
     fonts: Option<nox_text::Fonts>,
     /// Rasterized texts by their still key (`None`: nothing shows).
     texts: std::collections::HashMap<u64, Option<Arc<nox_text::Picture>>>,
+    /// Bitmap subtitles drawn.
+    subtitles: BitmapSubtitles,
+    /// Whether the subtitle tracks shown in the viewer are drawn (not for
+    /// export, where they are streams); burned-in ones always are.
+    pub(crate) preview_subtitles: bool,
     /// The clip (`Timeline::clip_key`) whose effects' thumbnails are made.
     thumbnail_clip: Option<u64>,
     /// The still (cache key) whose thumbnails were made last: cached, it
@@ -197,6 +273,8 @@ impl Renderer {
             shader_kernels: None,
             fonts: None,
             texts: Default::default(),
+            subtitles: BitmapSubtitles::default(),
+            preview_subtitles: true,
             thumbnail_clip: None,
             thumbnailed_still: None,
             thumbnails: None,
@@ -273,11 +351,12 @@ impl Renderer {
         }
     }
 
-    /// The video layers of `frame`: file, time in it, opacity, blend mode,
-    /// grade.
-    fn layers(timeline: &Timeline, frame: i64) -> Vec<Layer> {
+    /// The layers of `frame`: its video layers (file, time in it,
+    /// opacity, blend mode, grade), then the subtitles over them: of the
+    /// tracks burned in, and with `preview` of those shown in the viewer.
+    fn layers(timeline: &Timeline, frame: i64, preview: bool) -> Vec<Layer> {
         let time = Time::from_frames(frame, timeline.frame_rate());
-        timeline
+        let mut layers: Vec<Layer> = timeline
             .video_layers(time)
             .into_iter()
             .filter_map(|layer| {
@@ -293,6 +372,7 @@ impl Renderer {
                 let source = layer.source_time.as_seconds();
                 Some(Layer {
                     time: layer.file_time(),
+                    stream: layer.clip.stream(),
                     opacity: layer.opacity,
                     mode: layer.blend_mode(),
                     grade: layer.clip.item.grade_at(layer.source_time.as_seconds()),
@@ -308,9 +388,12 @@ impl Renderer {
                     clip,
                     path,
                     text,
+                    subtitle: None,
                 })
             })
-            .collect()
+            .collect();
+        layers.extend(subtitle_layers(timeline, time, preview));
+        layers
     }
 
     /// The most frames any layer of `frame` needs decoded to show it
@@ -319,14 +402,17 @@ impl Renderer {
         self.decoders.begin_frame();
         let accel = self.gpu.as_ref().map(|(accel, _)| accel.clone());
         let mut cost = 0;
-        for Layer {
-            path, time, text, ..
-        } in Self::layers(timeline, frame)
-        {
-            if text.is_some() || self.failed.contains(&path) {
+        for layer in Self::layers(timeline, frame, self.preview_subtitles) {
+            let Layer {
+                path, stream, time, ..
+            } = &layer;
+            if !layer.is_video() || self.failed.contains(path) {
                 continue;
             }
-            if let Ok((decoder, index)) = self.decoders.get(&path, time, accel.as_ref(), self.hw) {
+            if let Ok((decoder, index)) =
+                self.decoders
+                    .get(path, *stream, *time, accel.as_ref(), self.hw)
+            {
                 cost = cost.max(decoder.decode_cost(index));
             }
         }
@@ -344,7 +430,7 @@ impl Renderer {
         quality: Quality,
         stop: &dyn Fn() -> bool,
     ) -> nox_media::Result<RenderedFrame> {
-        let layers = Self::layers(timeline, frame);
+        let layers = Self::layers(timeline, frame, self.preview_subtitles);
         let framing = Framing::of(timeline);
         self.decoders.begin_frame();
         let (image, scopes) = if self.gpu.is_some() {
@@ -417,7 +503,7 @@ impl Renderer {
             GpuTarget::Images(target) => (target.width, target.height),
             GpuTarget::Buffer(target) => (target.layout.width, target.layout.height),
         };
-        let layers = Self::layers(timeline, frame);
+        let layers = Self::layers(timeline, frame, self.preview_subtitles);
         let framing = Framing::of(timeline);
         self.decoders.begin_frame();
         self.compose(&layers, &framing, width, height, Quality::Exact, &|| false)?;
@@ -508,7 +594,7 @@ impl Renderer {
                     if !self.texts.contains_key(&key) {
                         let fonts = self.fonts.get_or_insert_with(nox_text::Fonts::new);
                         let laid = nox_text::layout(fonts, document, (width, height));
-                        let offset = laid.centered((width, height));
+                        let offset = laid.placed((width, height));
                         let look = nox_text::Look {
                             transform: if baked {
                                 text_transform(&laid, offset, transform, (width, height))
@@ -541,13 +627,40 @@ impl Renderer {
                         rect,
                         PathBuf::from(format!("nox:text:{key}")),
                     )
+                } else if let Some((stream, start)) = layer.subtitle {
+                    let Some(picture) = self.subtitles.picture(path, stream, start) else {
+                        break 'picture;
+                    };
+                    // Its canvas goes where a picture of that size would,
+                    // the subtitle at its place on it.
+                    let canvas = framing.place(picture.canvas, (width, height));
+                    let sx = f64::from(canvas.width) / f64::from(picture.canvas.0.max(1));
+                    let sy = f64::from(canvas.height) / f64::from(picture.canvas.1.max(1));
+                    let rect = Rect {
+                        x: canvas.x + (f64::from(picture.x) * sx).round() as i32,
+                        y: canvas.y + (f64::from(picture.y) * sy).round() as i32,
+                        width: ((f64::from(picture.width) * sx).round() as u32).max(1),
+                        height: ((f64::from(picture.height) * sy).round() as u32).max(1),
+                    };
+                    let frame = nox_media::rgba_frame(picture.width, picture.height, &picture.rgba);
+                    let key = still_key(
+                        Path::new(&format!("nox:subtitle:{}:{stream}:{start}", path.display())),
+                        None,
+                    );
+                    (
+                        frame,
+                        true,
+                        0,
+                        rect,
+                        PathBuf::from(format!("nox:subtitle:{key}")),
+                    )
                 } else {
                     if self.failed.contains(path) {
                         break 'picture;
                     }
                     let decoded = self
                         .decoders
-                        .get(path, *time, Some(accel), self.hw)
+                        .get(path, layer.stream, *time, Some(accel), self.hw)
                         .and_then(|(decoder, index)| {
                             let still = decoder.is_still();
                             decode(decoder, index, quality, stop).map(|frame| (frame, still, index))
@@ -684,8 +797,11 @@ impl Renderer {
             stride: width as usize * 4,
             data: [0, 0, 0, 255].repeat(width as usize * height as usize),
         };
-        if let Some(Layer { path, time, .. }) = layers.iter().rev().find(|l| l.text.is_none()) {
-            let (decoder, index) = self.decoders.get(path, *time, None, self.hw)?;
+        if let Some(Layer {
+            path, stream, time, ..
+        }) = layers.iter().rev().find(|l| l.is_video())
+        {
+            let (decoder, index) = self.decoders.get(path, *stream, *time, None, self.hw)?;
             let decoded = decode(decoder, index, quality, stop)?;
             let rect = framing.place(nox_media::display_size(&decoded), (width, height));
             let picture = nox_media::rgba_cpu(&decoded, rect.width, rect.height)?;
@@ -776,6 +892,8 @@ struct InTransition {
 /// A video layer.
 struct Layer {
     path: PathBuf,
+    /// Its video stream (the best one if `None`).
+    stream: Option<usize>,
     /// Time in the file.
     time: Time,
     opacity: f64,
@@ -790,6 +908,89 @@ struct Layer {
     clip: u64,
     /// What a text clip shows (else `path` is its file).
     text: Option<nox_text::Document>,
+    /// For bitmap subtitles: the stream of `path` and the start of the
+    /// event shown (file time, seconds).
+    subtitle: Option<(usize, f64)>,
+}
+
+impl Layer {
+    /// Whether it shows its file's video (not text or subtitles).
+    fn is_video(&self) -> bool {
+        self.text.is_none() && self.subtitle.is_none()
+    }
+}
+
+/// The subtitles showing at `time` as layers over the video: of each
+/// enabled subtitle track that is burned in, or (with `preview`) shown
+/// in the viewer, lower tracks first. Text events become text layers
+/// (their script's look and place), bitmap ones the event's picture.
+fn subtitle_layers(timeline: &Timeline, time: Time, preview: bool) -> Vec<Layer> {
+    let mut layers = Vec::new();
+    for (index, resolved) in timeline.subtitle_clips(time) {
+        let Some(track) = timeline.track(index) else {
+            continue;
+        };
+        if !(track.burned_in() || preview && track.shown()) {
+            continue;
+        }
+        let clip = resolved.clip;
+        let (Some(path), Some(stream)) = (
+            clip.media_reference().and_then(|r| timeline.media_path(r)),
+            clip.stream(),
+        ) else {
+            continue;
+        };
+        let at = resolved.file_time().as_seconds();
+        let subtitles = match nox_media::subtitles(&path, stream) {
+            Ok(subtitles) => subtitles,
+            Err(err) => {
+                tracing::warn!("{} subtitles #{stream}: {err}", path.display());
+                continue;
+            }
+        };
+        let key = timeline.clip_key(clip).unwrap_or_default();
+        let layer = |text, subtitle, opacity: f64| Layer {
+            path: path.clone(),
+            stream: None,
+            time: resolved.file_time(),
+            opacity: resolved.opacity * opacity,
+            mode: nox_project::BlendMode::Normal,
+            grade: nox_project::Grade::default(),
+            transform: nox_project::Transform::IDENTITY,
+            transition: None,
+            effects: nox_fx::Graph::default(),
+            clip: key,
+            text,
+            subtitle,
+        };
+        match &*subtitles {
+            nox_media::Subtitles::Text { header, events } => {
+                let script = nox_ass::Script::parse(header);
+                for event in events.iter().filter(|e| e.start <= at && at < e.end) {
+                    let caption = nox_ass::Event::from_ffmpeg(&event.ass, event.start, event.end)
+                        .and_then(|e| script.caption(&e));
+                    if let Some(caption) = caption {
+                        let fade = |length: f64, from: f64| {
+                            if length > 0.0 {
+                                (from / length).clamp(0.0, 1.0)
+                            } else {
+                                1.0
+                            }
+                        };
+                        let opacity = fade(caption.fade_in, at - event.start)
+                            .min(fade(caption.fade_out, event.end - at));
+                        layers.push(layer(Some(caption.document), None, opacity));
+                    }
+                }
+            }
+            nox_media::Subtitles::Bitmap { events } => {
+                for &(start, _) in events.iter().filter(|e| e.0 <= at && at < e.1) {
+                    layers.push(layer(None, Some((stream, start)), 1.0));
+                }
+            }
+        }
+    }
+    layers
 }
 
 /// `t` (no crop) as an affine of `laid`'s layout box, which `offset` puts

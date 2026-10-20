@@ -53,6 +53,12 @@ struct RenderArgs {
     /// Leave out the audio track
     #[arg(long)]
     no_audio: bool,
+    /// One audio stream per audio track instead of their mix
+    #[arg(long, conflicts_with = "no_audio")]
+    audio_per_track: bool,
+    /// Leave out the subtitle tracks (burned-in ones still show)
+    #[arg(long)]
+    no_subtitles: bool,
     /// Sequence frames START..END (END exclusive)
     #[arg(long, value_name = "START-END", value_parser = parse_frames, conflicts_with = "in_out")]
     frames: Option<Range<i64>>,
@@ -227,6 +233,8 @@ fn render(args: RenderArgs) -> Result<(), String> {
         encoder: args.encoder,
         range: args.frames,
         audio: !args.no_audio,
+        audio_per_track: args.audio_per_track,
+        subtitles: !args.no_subtitles,
         audio_codec: args.audio.map(|audio| match audio {
             AudioArg::Aac => AudioCodec::Aac,
             AudioArg::Opus => AudioCodec::Opus,
@@ -273,5 +281,8 @@ fn render(args: RenderArgs) -> Result<(), String> {
         summary.encoder,
         if summary.zero_copy { ", zero copy" } else { "" }
     );
+    for skipped in &summary.skipped {
+        eprintln!("left out: {skipped}");
+    }
     Ok(())
 }

@@ -15,8 +15,12 @@ pub struct MediaInfo {
     pub container: String,
     /// `None` for still images and streams of unknown length.
     pub duration: Option<Time>,
+    /// The main video stream (FFmpeg's best one).
     pub video: Option<VideoInfo>,
+    /// The other video streams (not cover art), as they are stored.
+    pub other_video: Vec<VideoInfo>,
     pub audio: Vec<AudioInfo>,
+    pub subtitles: Vec<crate::SubtitleInfo>,
 }
 
 impl MediaInfo {
@@ -48,6 +52,8 @@ pub struct AudioInfo {
     pub codec: String,
     pub sample_rate: u32,
     pub channels: u32,
+    /// Its language, title and flags.
+    pub tags: nox_project::StreamTags,
 }
 
 /// Opens `path` and describes its main video stream and all audio streams.
@@ -59,6 +65,17 @@ pub fn probe(path: &Path) -> Result<MediaInfo> {
         Some(stream) if !is_cover_art(&stream) => Some(video_info(&stream)?),
         _ => None,
     };
+    let main = video.as_ref().map(|v| v.stream_index);
+    let other_video = input
+        .streams()
+        .filter(|s| s.parameters().medium() == media::Type::Video)
+        .filter(|s| Some(s.index()) != main && !is_cover_art(s))
+        .filter_map(|s| video_info(&s).ok())
+        .map(|mut v| {
+            (v.width, v.height) = v.orientation.display_size(v.width, v.height);
+            v
+        })
+        .collect();
     let audio = input
         .streams()
         .filter(|s| s.parameters().medium() == media::Type::Audio)
@@ -94,6 +111,8 @@ pub fn probe(path: &Path) -> Result<MediaInfo> {
             duration(&input, video.as_ref())
         },
         container,
+        subtitles: crate::subtitle::subtitle_streams(&input),
+        other_video,
         video,
         audio,
     })
@@ -185,6 +204,7 @@ fn audio_info(stream: &format::stream::Stream) -> Result<AudioInfo> {
         codec: decoder.id().name().to_owned(),
         sample_rate: decoder.rate(),
         channels: decoder.channels().into(),
+        tags: crate::subtitle::stream_tags(stream),
     })
 }
 
@@ -246,12 +266,22 @@ impl fmt::Display for MediaInfo {
             )?;
             writeln!(f, "color      {}", v.color)?;
         }
+        for v in &self.other_video {
+            writeln!(
+                f,
+                "video #{}   {} {}x{}",
+                v.stream_index, v.codec, v.width, v.height
+            )?;
+        }
         for a in &self.audio {
             writeln!(
                 f,
                 "audio #{}   {} {} Hz, {} ch",
                 a.stream_index, a.codec, a.sample_rate, a.channels
             )?;
+        }
+        for s in &self.subtitles {
+            writeln!(f, "subtitle #{} {}", s.stream_index, s.label())?;
         }
         Ok(())
     }

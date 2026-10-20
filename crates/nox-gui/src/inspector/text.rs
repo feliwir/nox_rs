@@ -1,6 +1,6 @@
 //! The inspector's Text section, for text clips: the text, its font
-//! family, size, weight, italic, color and alignment. Each change is one
-//! undo step; typing in a row is one.
+//! family, size, weight, italic, color, border, shadow and alignment.
+//! Each change is one undo step; typing in a row is one.
 
 use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 use nox_project::Composable;
@@ -19,7 +19,38 @@ pub struct TextControls {
     weight: gtk::SpinButton,
     italic: gtk::CheckButton,
     color: gtk::ColorDialogButton,
+    outline: gtk::SpinButton,
+    outline_color: gtk::ColorDialogButton,
+    shadow: gtk::SpinButton,
+    shadow_color: gtk::ColorDialogButton,
     align: gtk::DropDown,
+}
+
+/// A size in percent of the picture's height, 0 for none (borders,
+/// shadows).
+fn thickness() -> gtk::SpinButton {
+    let spin = gtk::SpinButton::with_range(0.0, 10.0, 0.05);
+    spin.set_digits(2);
+    spin.set_hexpand(true);
+    spin.set_tooltip_text(Some(&gettext("In percent of the picture’s height")));
+    spin
+}
+
+fn color_button(title: &str) -> gtk::ColorDialogButton {
+    gtk::ColorDialogButton::new(Some(
+        gtk::ColorDialog::builder()
+            .with_alpha(true)
+            .title(title)
+            .build(),
+    ))
+}
+
+/// Shows `color` on `button` (unless it does already).
+fn show_color(button: &gtk::ColorDialogButton, [r, g, b, a]: nox_text::Color) {
+    let rgba = gdk::RGBA::new(r, g, b, a);
+    if button.rgba() != rgba {
+        button.set_rgba(&rgba);
+    }
 }
 
 /// The alignments in the drop-down's order.
@@ -68,12 +99,19 @@ impl Inspector {
         let weight = gtk::SpinButton::with_range(100.0, 900.0, 100.0);
         weight.set_tooltip_text(Some(&gettext("400 is regular, 700 bold")));
         let italic = gtk::CheckButton::with_label(&gettext("Italic"));
-        let color = gtk::ColorDialogButton::new(Some(
-            gtk::ColorDialog::builder()
-                .with_alpha(true)
-                .title(gettext("Text Color"))
-                .build(),
-        ));
+        let color = color_button(&gettext("Text Color"));
+        let outline = thickness();
+        let outline_color = color_button(&gettext("Border Color"));
+        let shadow = thickness();
+        let shadow_color = color_button(&gettext("Shadow Color"));
+        let pair = |a: &gtk::Widget, b: &gtk::Widget| {
+            let row = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+            row.append(a);
+            row.append(b);
+            row
+        };
+        let border_row = pair(outline.upcast_ref(), outline_color.upcast_ref());
+        let shadow_row = pair(shadow.upcast_ref(), shadow_color.upcast_ref());
         let align = gtk::DropDown::new(
             Some(string_list([
                 gettext("Start"),
@@ -87,11 +125,13 @@ impl Inspector {
         let grid = gtk::Grid::new();
         grid.set_row_spacing(6);
         grid.set_column_spacing(8);
-        let rows: [(String, &gtk::Widget); 5] = [
+        let rows: [(String, &gtk::Widget); 7] = [
             (gettext("Font"), family.upcast_ref()),
             (gettext("Size"), size.upcast_ref()),
             (gettext("Weight"), weight.upcast_ref()),
             (gettext("Color"), color.upcast_ref()),
+            (gettext("Border"), border_row.upcast_ref()),
+            (gettext("Shadow"), shadow_row.upcast_ref()),
             (gettext("Alignment"), align.upcast_ref()),
         ];
         for (row, (name, widget)) in rows.iter().enumerate() {
@@ -174,6 +214,48 @@ impl Inspector {
                 });
             }
         ));
+        outline.connect_value_changed(glib::clone!(
+            #[weak(rename_to = inspector)]
+            self,
+            move |spin| {
+                let value = spin.value() as f32;
+                inspector.edit_text(&gettext("Change Text Border"), Some("outline"), move |d| {
+                    d.style.outline = value
+                });
+            }
+        ));
+        outline_color.connect_rgba_notify(glib::clone!(
+            #[weak(rename_to = inspector)]
+            self,
+            move |button| {
+                let rgba = button.rgba();
+                let color = [rgba.red(), rgba.green(), rgba.blue(), rgba.alpha()];
+                inspector.edit_text(&gettext("Change Border Color"), None, move |d| {
+                    d.style.outline_color = color
+                });
+            }
+        ));
+        shadow.connect_value_changed(glib::clone!(
+            #[weak(rename_to = inspector)]
+            self,
+            move |spin| {
+                let value = spin.value() as f32;
+                inspector.edit_text(&gettext("Change Text Shadow"), Some("shadow"), move |d| {
+                    d.style.shadow = value
+                });
+            }
+        ));
+        shadow_color.connect_rgba_notify(glib::clone!(
+            #[weak(rename_to = inspector)]
+            self,
+            move |button| {
+                let rgba = button.rgba();
+                let color = [rgba.red(), rgba.green(), rgba.blue(), rgba.alpha()];
+                inspector.edit_text(&gettext("Change Shadow Color"), None, move |d| {
+                    d.style.shadow_color = color
+                });
+            }
+        ));
         align.connect_selected_notify(glib::clone!(
             #[weak(rename_to = inspector)]
             self,
@@ -192,6 +274,10 @@ impl Inspector {
             weight,
             italic,
             color,
+            outline,
+            outline_color,
+            shadow,
+            shadow_color,
             align,
         });
     }
@@ -256,11 +342,13 @@ impl Inspector {
         controls.size.set_value(f64::from(document.style.size));
         controls.weight.set_value(f64::from(document.style.weight));
         controls.italic.set_active(document.style.italic);
-        let [r, g, b, a] = document.style.color;
-        let rgba = gdk::RGBA::new(r, g, b, a);
-        if controls.color.rgba() != rgba {
-            controls.color.set_rgba(&rgba);
-        }
+        show_color(&controls.color, document.style.color);
+        controls
+            .outline
+            .set_value(f64::from(document.style.outline));
+        show_color(&controls.outline_color, document.style.outline_color);
+        controls.shadow.set_value(f64::from(document.style.shadow));
+        show_color(&controls.shadow_color, document.style.shadow_color);
         let align = ALIGNS
             .iter()
             .position(|&a| a == document.align)

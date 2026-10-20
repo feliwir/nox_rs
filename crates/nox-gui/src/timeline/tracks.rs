@@ -28,6 +28,7 @@ impl TimelineView {
         match toggle {
             Toggle::Off => self.set_track_enabled(index, !on),
             Toggle::Solo => self.set_track_solo(index, on),
+            Toggle::Shown => self.set_track_shown(index, on),
             Toggle::Lock => self.set_track_locked(index, on),
             Toggle::Sync => self.set_track_sync_locked(index, on),
         }
@@ -58,6 +59,108 @@ impl TimelineView {
         project.edit_track(index, &label, |track| {
             track.item.set_sync_locked(on);
         });
+    }
+
+    /// Shows subtitle track `index` in the viewer (and no other: they'd
+    /// overlap), or not.
+    pub fn set_track_shown(&self, index: usize, on: bool) {
+        let project = self.imp().project().clone();
+        let label = if on {
+            crate::i18n::gettext("Show Subtitles in Viewer")
+        } else {
+            crate::i18n::gettext("Hide Subtitles in Viewer")
+        };
+        let _ = project.edit(&label, |timeline| {
+            let subtitles: Vec<usize> = timeline
+                .tracks()
+                .filter(|(_, t)| t.kind == TrackKind::Subtitle)
+                .map(|(i, _)| i)
+                .collect();
+            for i in subtitles {
+                if let Some(track) = timeline.track_mut(i) {
+                    track.set_shown(on && i == index);
+                }
+            }
+            Ok::<_, EditError>(())
+        });
+    }
+
+    /// Draws subtitle track `index` into the picture (in the viewer and
+    /// on export) instead of exporting it as a stream, or not.
+    pub fn set_track_burned_in(&self, index: usize, on: bool) {
+        let project = self.imp().project().clone();
+        let label = if on {
+            crate::i18n::gettext("Burn In Subtitles")
+        } else {
+            crate::i18n::gettext("Don't Burn In Subtitles")
+        };
+        project.edit_track(index, &label, |track| track.set_burned_in(on));
+    }
+
+    /// Asks for track `index`'s stream settings: the language, title and
+    /// flags its stream is exported with.
+    pub fn show_stream_settings(&self, index: usize) {
+        use crate::i18n::gettext;
+        use adw::prelude::*;
+        let project = self.imp().project().clone();
+        let Some((name, tags)) = project
+            .timeline()
+            .track(index)
+            .map(|t| (t.item.name.clone(), t.stream_tags()))
+        else {
+            return;
+        };
+        let group = adw::PreferencesGroup::new();
+        let language = adw::EntryRow::builder()
+            .title(gettext("Language"))
+            .text(tags.language.clone().unwrap_or_default())
+            .build();
+        language.set_tooltip_text(Some(&gettext("An ISO 639-2 code, such as eng or ger")));
+        let title = adw::EntryRow::builder()
+            .title(gettext("Title"))
+            .text(tags.title.clone().unwrap_or_default())
+            .build();
+        let switch =
+            |label: String, on: bool| adw::SwitchRow::builder().title(label).active(on).build();
+        let default = switch(gettext("Default"), tags.default);
+        let forced = switch(gettext("Forced"), tags.forced);
+        let hearing = switch(gettext("For the Hearing Impaired"), tags.hearing_impaired);
+        group.add(&language);
+        group.add(&title);
+        group.add(&default);
+        group.add(&forced);
+        group.add(&hearing);
+        let dialog = adw::AlertDialog::new(
+            Some(&gettext("Stream Settings")),
+            Some(&crate::i18n::fill(
+                &gettext("How the stream of “{track}” is tagged when exported."),
+                &[("track", &name)],
+            )),
+        );
+        dialog.set_extra_child(Some(&group));
+        dialog.add_response("cancel", &gettext("Cancel"));
+        dialog.add_response("apply", &gettext("Apply"));
+        dialog.set_response_appearance("apply", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("apply"));
+        dialog.set_close_response("cancel");
+        dialog.connect_response(None, move |_, response| {
+            if response != "apply" {
+                return;
+            }
+            let text =
+                |row: &adw::EntryRow| Some(row.text().trim().to_owned()).filter(|t| !t.is_empty());
+            let tags = nox_project::StreamTags {
+                language: text(&language),
+                title: text(&title),
+                default: default.is_active(),
+                forced: forced.is_active(),
+                hearing_impaired: hearing.is_active(),
+            };
+            project.edit_track(index, &gettext("Change Stream Settings"), |track| {
+                track.set_stream_tags(&tags)
+            });
+        });
+        dialog.present(self.root().as_ref());
     }
 
     pub fn rename_track(&self, index: usize, name: &str) {

@@ -31,10 +31,10 @@ impl Waveform {
             .map_or(0.0, |&p| f32::from(p) / 255.0)
     }
 
-    /// Computes the waveform of `path`'s first audio stream. Returns
-    /// `Error::Interrupted` once `cancel` is set.
-    pub fn compute(path: &Path, cancel: &AtomicBool) -> Result<Self> {
-        let mut decoder = AudioDecoder::open(path, RATE)?;
+    /// Computes the waveform of `path`'s audio stream `stream` (its best
+    /// one if `None`). Returns `Error::Interrupted` once `cancel` is set.
+    pub fn compute(path: &Path, stream: Option<usize>, cancel: &AtomicBool) -> Result<Self> {
+        let mut decoder = AudioDecoder::open_stream(path, stream, RATE)?;
         let seconds = decoder.duration_seconds().unwrap_or(0.0);
         let count = (seconds * f64::from(PEAKS_PER_SECOND)).ceil() as usize;
         let window = (RATE / PEAKS_PER_SECOND) as usize;
@@ -58,13 +58,19 @@ impl Waveform {
 
     /// The waveform of `path` from the cache in `cache_dir`, or computed
     /// and stored there. The cache entry is keyed by the file's path, size
-    /// and modification time, so changed files are computed again.
-    pub fn load_or_compute(path: &Path, cache_dir: &Path, cancel: &AtomicBool) -> Result<Self> {
-        let entry = cache_entry(path, cache_dir)?;
+    /// and modification time (and the stream), so changed files are
+    /// computed again.
+    pub fn load_or_compute(
+        path: &Path,
+        stream: Option<usize>,
+        cache_dir: &Path,
+        cancel: &AtomicBool,
+    ) -> Result<Self> {
+        let entry = cache_entry(path, stream, cache_dir)?;
         if let Some(waveform) = std::fs::read(&entry).ok().and_then(|b| Self::decode(&b)) {
             return Ok(waveform);
         }
-        let waveform = Self::compute(path, cancel)?;
+        let waveform = Self::compute(path, stream, cancel)?;
         // A cache that can't be written only costs time.
         let written = std::fs::create_dir_all(cache_dir)
             .and_then(|()| std::fs::write(&entry, waveform.encode()));
@@ -90,7 +96,7 @@ impl Waveform {
     }
 }
 
-fn cache_entry(path: &Path, cache_dir: &Path) -> Result<PathBuf> {
+fn cache_entry(path: &Path, stream: Option<usize>, cache_dir: &Path) -> Result<PathBuf> {
     let metadata = std::fs::metadata(path).map_err(|source| Error::Io {
         path: path.to_owned(),
         source,
@@ -107,6 +113,8 @@ fn cache_entry(path: &Path, cache_dir: &Path) -> Result<PathBuf> {
         &metadata.len().to_le_bytes(),
         &modified.as_secs().to_le_bytes(),
         &modified.subsec_nanos().to_le_bytes(),
+        // Only for a stream named: the best one's entries stay valid.
+        &stream.map_or(Vec::new(), |s| (s as u64).to_le_bytes().to_vec()),
     ]
     .concat()
     .iter()

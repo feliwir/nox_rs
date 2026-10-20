@@ -18,6 +18,15 @@ pub struct Style {
     pub weight: f32,
     pub italic: bool,
     pub color: Color,
+    /// A border drawn around the letters, its width in percent of the
+    /// picture's height (0: none).
+    pub outline: f32,
+    pub outline_color: Color,
+    /// A copy of the letters (and their border) drawn behind them, moved
+    /// right and down by this much, in percent of the picture's height
+    /// (0: none).
+    pub shadow: f32,
+    pub shadow_color: Color,
 }
 
 impl Default for Style {
@@ -28,6 +37,10 @@ impl Default for Style {
             weight: 400.0,
             italic: false,
             color: [1.0; 4],
+            outline: 0.0,
+            outline_color: [0.0, 0.0, 0.0, 1.0],
+            shadow: 0.0,
+            shadow_color: [0.0, 0.0, 0.0, 1.0],
         }
     }
 }
@@ -70,6 +83,13 @@ pub struct Document {
     /// Where lines wrap, as a fraction of the picture's width (0: only at
     /// line breaks in the text).
     pub width: f32,
+    /// Where in the picture the text goes (fractions of its width and
+    /// height, from the top left) ...
+    pub position: [f32; 2],
+    /// ... with which point of its layout box (fractions of the box: 0
+    /// left or top, 1 right or bottom). Captions sit with the middle of
+    /// their bottom edge a little above the picture's bottom.
+    pub anchor: [f32; 2],
 }
 
 impl Default for Document {
@@ -82,6 +102,8 @@ impl Default for Document {
             line_spacing: 1.2,
             tracking: 0.0,
             width: 0.9,
+            position: [0.5; 2],
+            anchor: [0.5; 2],
         }
     }
 }
@@ -163,6 +185,18 @@ fn number(object: &Object, key: &str) -> Option<f32> {
     object.get(key)?.as_f64().map(|v| v as f32)
 }
 
+/// A point as stored: `[x, y]`.
+fn point_value(point: [f32; 2]) -> Value {
+    Value::Array(point.iter().map(|&c| Value::from(f64::from(c))).collect())
+}
+
+fn point_of(value: Option<&Value>) -> Option<[f32; 2]> {
+    match value?.as_array()? {
+        [x, y] => Some([x.as_f64()? as f32, y.as_f64()? as f32]),
+        _ => None,
+    }
+}
+
 impl Align {
     fn as_str(self) -> &'static str {
         match self {
@@ -197,6 +231,12 @@ impl Document {
                 weight: number(s, "weight").unwrap_or(defaults.style.weight),
                 italic: s.get("italic").and_then(Value::as_bool).unwrap_or(false),
                 color: color_of(s.get("color")).unwrap_or(defaults.style.color),
+                outline: number(s, "outline").unwrap_or(defaults.style.outline),
+                outline_color: color_of(s.get("outline_color"))
+                    .unwrap_or(defaults.style.outline_color),
+                shadow: number(s, "shadow").unwrap_or(defaults.style.shadow),
+                shadow_color: color_of(s.get("shadow_color"))
+                    .unwrap_or(defaults.style.shadow_color),
             })
             .unwrap_or_else(|| defaults.style.clone());
         let spans = parameters
@@ -233,6 +273,8 @@ impl Document {
             line_spacing: number(parameters, "line_spacing").unwrap_or(defaults.line_spacing),
             tracking: number(parameters, "tracking").unwrap_or(defaults.tracking),
             width: number(parameters, "width").unwrap_or(defaults.width),
+            position: point_of(parameters.get("position")).unwrap_or(defaults.position),
+            anchor: point_of(parameters.get("anchor")).unwrap_or(defaults.anchor),
         }
     }
 
@@ -244,6 +286,16 @@ impl Document {
         style.insert("weight", f64::from(self.style.weight));
         style.insert("italic", self.style.italic);
         style.insert("color", color_value(self.style.color));
+        // Borders and shadows only where there are some, so plain titles
+        // store (and are cached) as before.
+        if self.style.outline > 0.0 {
+            style.insert("outline", f64::from(self.style.outline));
+            style.insert("outline_color", color_value(self.style.outline_color));
+        }
+        if self.style.shadow > 0.0 {
+            style.insert("shadow", f64::from(self.style.shadow));
+            style.insert("shadow_color", color_value(self.style.shadow_color));
+        }
         let spans = self
             .spans
             .iter()
@@ -277,6 +329,11 @@ impl Document {
         parameters.insert("line_spacing", f64::from(self.line_spacing));
         parameters.insert("tracking", f64::from(self.tracking));
         parameters.insert("width", f64::from(self.width));
+        let defaults = Self::default();
+        if self.position != defaults.position || self.anchor != defaults.anchor {
+            parameters.insert("position", point_value(self.position));
+            parameters.insert("anchor", point_value(self.anchor));
+        }
         parameters
     }
 }
@@ -295,6 +352,10 @@ mod tests {
                 weight: 700.0,
                 italic: true,
                 color: [1.0, 0.5, 0.25, 0.75],
+                outline: 0.3,
+                outline_color: [0.0, 0.0, 0.25, 1.0],
+                shadow: 0.2,
+                shadow_color: [0.0, 0.0, 0.0, 0.5],
             },
             spans: vec![Span {
                 start: 6,
@@ -307,6 +368,8 @@ mod tests {
             line_spacing: 1.5,
             tracking: 0.05,
             width: 0.5,
+            position: [0.5, 0.95],
+            anchor: [0.5, 1.0],
         };
         assert_eq!(
             Document::from_parameters(&document.to_parameters()),

@@ -256,6 +256,334 @@ fn add_text_and_type() {
     close(window);
 }
 
+/// Import Subtitles (by path, as the dialog's choice does) with a clip
+/// selected: a subtitle track whose clip is timed as the clip is (it
+/// shows its file from 0.4 s, from frame 20), linked with it; Convert to
+/// Text Clips then makes text clips where the events show, and hides the
+/// subtitle track. One undo step each.
+#[gtk::test]
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "GTK must be initialized on the main thread on macOS"
+)]
+fn import_subtitles() {
+    let Some(red) = solid("red.mkv", "0xC03020") else {
+        return;
+    };
+    let srt = dir().join("subtitles.srt");
+    std::fs::write(
+        &srt,
+        "1\n00:00:00,500 --> 00:00:01,750\nHello <b>world</b>\n\n\
+         2\n00:00:02,000 --> 00:00:03,000\nTwo\nlines\n\n\
+         3\n00:00:09,000 --> 00:00:10,000\nAfter the clip\n",
+    )
+    .unwrap();
+    let mut model = Timeline::new("t", FPS);
+    model.place(0, clip(&red, 10, 80), f(20)).unwrap();
+    let window = open(&model);
+    let timeline = window.imp().timeline.get();
+    let tracks = || timeline.project().timeline().tracks().count();
+    let before = tracks();
+    timeline.set_selection(Some(ItemRef { track: 0, index: 1 }));
+    act(
+        &window,
+        "win.import-subtitles-path",
+        Some(srt.to_str().unwrap().to_variant()),
+    );
+    wait_for("a subtitle track", || tracks() > before);
+    let index = {
+        let project = timeline.project();
+        let model = project.timeline();
+        let (index, track) = model
+            .tracks()
+            .find(|(_, t)| t.kind == nox_project::TrackKind::Subtitle)
+            .expect("the subtitle track");
+        assert!(track.shown());
+        let Composable::Clip(subtitles) = &track.children[1] else {
+            panic!("a gap, then the clip");
+        };
+        let Ok(Composable::Clip(video)) = model.item(ItemRef { track: 0, index: 1 }) else {
+            panic!("the video clip");
+        };
+        assert_eq!(subtitles.trimmed_range(), video.trimmed_range());
+        assert_eq!(subtitles.stream(), Some(0));
+        assert!(video.item.link().is_some());
+        assert_eq!(subtitles.item.link(), video.item.link());
+        assert_eq!(
+            model
+                .item_range(ItemRef {
+                    track: index,
+                    index: 1
+                })
+                .unwrap(),
+            TimeRange::new(f(20), f(80))
+        );
+        index
+    };
+
+    // As text clips, where the events show (cut to the clip).
+    act(
+        &window,
+        "win.convert-to-text-clips",
+        Some((index as i64).to_variant()),
+    );
+    let texts = || {
+        let project = timeline.project();
+        let model = project.timeline();
+        model
+            .tracks()
+            .flat_map(|(_, t)| t.child_ranges())
+            .filter_map(|(range, child)| {
+                let Composable::Clip(clip) = child else {
+                    return None;
+                };
+                let text = nox_text::Document::from_parameters(clip.text_parameters()?).text;
+                Some((range.start.frame(FPS), range.duration.frame(FPS), text))
+            })
+            .collect::<Vec<_>>()
+    };
+    wait_for("text clips", || !texts().is_empty());
+    assert_eq!(
+        texts(),
+        [
+            (23, 31, "Hello world".to_owned()),
+            (60, 25, "Two\nlines".to_owned()),
+        ]
+    );
+    assert!(
+        !timeline
+            .project()
+            .timeline()
+            .track(index)
+            .unwrap()
+            .item
+            .enabled
+    );
+    act(&window, "win.undo", None);
+    assert!(texts().is_empty(), "one undo step");
+    act(&window, "win.undo", None);
+    assert_eq!(tracks(), before, "one undo step");
+    close(window);
+}
+
+/// Adding a file with several streams, the ones chosen in the checklist:
+/// the commentary on a second audio track tagged as in the file, the
+/// subtitles on subtitle tracks, all linked.
+#[gtk::test]
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "GTK must be initialized on the main thread on macOS"
+)]
+fn adds_chosen_streams() {
+    let srt = dir().join("streams.srt");
+    std::fs::write(&srt, "1\n00:00:00,500 --> 00:00:01,000\nHi\n").unwrap();
+    let Some(file) = fixture(
+        "streams.mkv",
+        &[
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=320x180:rate=25:duration=2",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:duration=2",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=880:duration=2",
+            "-i",
+            srt.to_str().unwrap(),
+            "-map",
+            "0",
+            "-map",
+            "1",
+            "-map",
+            "2",
+            "-map",
+            "3",
+            "-map",
+            "3",
+            "-c:v",
+            "ffv1",
+            "-c:a",
+            "flac",
+            "-c:s",
+            "srt",
+            "-metadata:s:a:1",
+            "title=Commentary",
+            "-metadata:s:s:0",
+            "language=eng",
+            "-metadata:s:s:1",
+            "language=ger",
+            "-disposition:s:0",
+            "0",
+            "-disposition:s:1",
+            "default",
+        ],
+    ) else {
+        return;
+    };
+    let info = nox_media::probe(&file).unwrap();
+    assert!(crate::project::Streams::worth_asking(&info));
+    let main = crate::project::Streams::main(&info);
+    assert_eq!((main.video, &main.audio[..]), (Some(0), &[1][..]));
+    let window = open(&Timeline::new("t", FPS));
+    let project = window.imp().timeline.get().project();
+    let streams = crate::project::Streams {
+        video: Some(0),
+        audio: vec![1, 2],
+        subtitles: vec![3, 4],
+    };
+    project
+        .add_media(
+            &info,
+            Some(&streams),
+            None,
+            0,
+            false,
+            crate::project::Framing::Keep,
+        )
+        .unwrap();
+    let model = project.timeline();
+    // Each clip's track kind, stream, link and track title or language.
+    type Added = (
+        nox_project::TrackKind,
+        Option<usize>,
+        Option<i64>,
+        Option<String>,
+    );
+    let clips: Vec<Added> = model
+        .tracks()
+        .flat_map(|(_, t)| {
+            t.children.iter().filter_map(move |c| match c {
+                Composable::Clip(clip) => Some((
+                    t.kind.clone(),
+                    clip.stream(),
+                    clip.item.link(),
+                    t.stream_tags().title.or(t.stream_tags().language),
+                )),
+                _ => None,
+            })
+        })
+        .collect();
+    use nox_project::TrackKind::*;
+    let link = clips[0].2;
+    assert!(link.is_some());
+    assert_eq!(
+        clips,
+        [
+            (Video, Some(0), link, None),
+            (Audio, Some(1), link, None),
+            (Audio, Some(2), link, Some("Commentary".to_owned())),
+            (Subtitle, Some(3), link, Some("eng".to_owned())),
+            (Subtitle, Some(4), link, Some("ger".to_owned())),
+        ]
+    );
+    // The viewer shows the file's default subtitles, not the first.
+    let shown: Vec<Option<String>> = model
+        .tracks()
+        .filter(|(_, t)| t.shown())
+        .map(|(_, t)| t.stream_tags().language)
+        .collect();
+    assert_eq!(shown, [Some("ger".to_owned())]);
+    drop(model);
+    close(window);
+}
+
+/// More tracks than fit scroll: the scroll bar shows, rows and their
+/// headers move up under the fixed ruler, the pointer finds the rows
+/// where they are drawn, and selecting a clip off screen scrolls to it.
+#[gtk::test]
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "GTK must be initialized on the main thread on macOS"
+)]
+fn many_tracks_scroll() {
+    let Some(red) = solid("red.mkv", "0xC03020") else {
+        return;
+    };
+    let mut model = Timeline::new("t", FPS);
+    let mut last = 0;
+    for _ in 0..20 {
+        last = model.add_track(nox_project::TrackKind::Video);
+        model.place(last, clip(&red, 0, 10), f(0)).unwrap();
+    }
+    let window = open(&model);
+    let timeline = window.imp().timeline.get();
+    wait_for("the timeline laid out", || timeline.height() > 0);
+    let imp = timeline.imp();
+    let bar = imp.vbar.get().unwrap().clone();
+    assert!(
+        bar.is_visible(),
+        "22 rows don't fit in {} px",
+        timeline.height()
+    );
+    // The first row under the ruler, until scrolled.
+    let top = imp.track_at_y(25.0 + 1.0);
+    bar.adjustment().set_value(44.0 * 3.0);
+    let below = imp.track_at_y(25.0 + 1.0);
+    assert_ne!(top, below);
+    assert_eq!(imp.vscroll.get(), 132.0);
+    // Never past the end.
+    bar.adjustment().set_value(1e6);
+    imp.scroll_rows(1e6);
+    let max = imp.vscroll.get();
+    assert!(max > 0.0 && max <= 44.0 * 22.0, "{max}");
+    // The bottom track (V1, last row) in view, then the top one by
+    // selecting a clip on it.
+    let rows_top = imp.row_y(0);
+    assert!(rows_top < 25.0);
+    timeline.set_selection(Some(ItemRef {
+        track: last,
+        index: 0,
+    }));
+    assert!(imp.vscroll.get() < max);
+    let shown = (0..30)
+        .find(|&row| imp.track_at_y(25.0 + 44.0 * f64::from(row) + 1.0) == Some(last))
+        .is_some();
+    assert!(shown, "the selected clip's track scrolled into view");
+    close(window);
+}
+
+/// During playback the time pages along with the playhead: off the right
+/// edge, it shows near the left edge again; while in view, nothing moves.
+#[gtk::test]
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "GTK must be initialized on the main thread on macOS"
+)]
+fn timeline_follows_the_playhead() {
+    let window = open(&Timeline::new("t", FPS));
+    let timeline = window.imp().timeline.get();
+    wait_for("the timeline laid out", || timeline.width() > 300);
+    let imp = timeline.imp();
+    imp.pixels_per_frame.set(4.0);
+    timeline.set_playhead(10);
+    timeline.follow_playhead();
+    assert_eq!(imp.scroll.get(), 0.0, "in view: no scrolling");
+    // Far past the right edge.
+    let past = (f64::from(timeline.width()) / 4.0) as i64 + 100;
+    timeline.set_playhead(past);
+    timeline.follow_playhead();
+    let at = imp.frame_to_x(timeline.playhead() as f64);
+    let header = 112.0;
+    assert!(
+        at > header && at < header + 0.1 * f64::from(timeline.width()),
+        "near the left edge: {at}"
+    );
+    // Playing on within the view: no jump.
+    let scroll = imp.scroll.get();
+    timeline.set_playhead(past + 20);
+    timeline.follow_playhead();
+    assert_eq!(imp.scroll.get(), scroll);
+    // Back before the view.
+    timeline.set_playhead(0);
+    timeline.follow_playhead();
+    assert_eq!(imp.scroll.get(), 0.0);
+    close(window);
+}
+
 /// Split, Add Dissolve, Undo and Redo from the toolbar, and frames in the
 /// viewer.
 #[gtk::test]

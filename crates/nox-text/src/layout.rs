@@ -51,6 +51,16 @@ pub struct TextLayout {
     pub width: f64,
     pub height: f64,
     pub lines: usize,
+    /// The document's `position` and `anchor` (`placed`).
+    pub position: [f32; 2],
+    pub anchor: [f32; 2],
+    /// The letters' border: its width (pixels) and color.
+    pub outline: f64,
+    pub outline_color: Color,
+    /// Their shadow: how far it is moved right and down (pixels), and its
+    /// color.
+    pub shadow: f64,
+    pub shadow_color: Color,
 }
 
 impl TextLayout {
@@ -60,6 +70,17 @@ impl TextLayout {
         Vec2::new(
             (f64::from(frame.0) - self.width) / 2.0,
             (f64::from(frame.1) - self.height) / 2.0,
+        )
+    }
+
+    /// The offset placing the layout box where its document puts it in a
+    /// picture of `frame` size (`Document::position`, `Document::anchor`).
+    pub fn placed(&self, frame: (u32, u32)) -> Vec2 {
+        let [x, y] = self.position.map(f64::from);
+        let [u, v] = self.anchor.map(f64::from);
+        Vec2::new(
+            x * f64::from(frame.0) - u * self.width,
+            y * f64::from(frame.1) - v * self.height,
         )
     }
 
@@ -265,6 +286,12 @@ pub fn layout(fonts: &mut Fonts, document: &Document, frame: (u32, u32)) -> Text
         }
     }
     TextLayout {
+        position: document.position,
+        anchor: document.anchor,
+        outline: f64::from(px(style.outline).max(0.0)),
+        outline_color: style.outline_color,
+        shadow: f64::from(px(style.shadow).max(0.0)),
+        shadow_color: style.shadow_color,
         lines: layout.len(),
         // Lines are aligned within the wrapping width, if there is one.
         width: f64::from(wrap.unwrap_or(layout.width())),

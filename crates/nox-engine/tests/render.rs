@@ -867,6 +867,112 @@ fn text_clips_render() {
     assert!((middle - 192.0).abs() <= 2.0, "centered at {middle}");
 }
 
+/// A subtitle track of `path`'s stream `stream`: one clip showing the
+/// file's first 4 s from frame 0.
+fn subtitle_track(timeline: &mut Timeline, path: &std::path::Path, stream: usize) -> usize {
+    let range = TimeRange::new(f(0), f(100));
+    let reference = MediaReference::from_path(path, Some(range)).with_stream(stream);
+    timeline
+        .add_subtitle_track(
+            "S",
+            &nox_project::StreamTags::default(),
+            vec![(f(0), Clip::new("subs", reference, range))],
+        )
+        .unwrap()
+}
+
+/// The box of the pixels `drawn` picks, and how many there are.
+fn drawn_box(
+    frame: &RenderedFrame,
+    drawn: impl Fn([u8; 3]) -> bool,
+) -> Option<(u32, u32, u32, u32, usize)> {
+    let (mut xs, mut ys) = (Vec::new(), Vec::new());
+    for y in 0..180 {
+        for x in 0..320 {
+            if drawn(pixel(frame, x, y)) {
+                xs.push(x);
+                ys.push(y);
+            }
+        }
+    }
+    Some((
+        *xs.iter().min()?,
+        *xs.iter().max()?,
+        *ys.iter().min()?,
+        *ys.iter().max()?,
+        xs.len(),
+    ))
+}
+
+fn white_box(frame: &RenderedFrame) -> Option<(u32, u32, u32, u32, usize)> {
+    drawn_box(frame, |p| p.iter().all(|&c| c > 240))
+}
+
+/// Anything but the red clip.
+fn text_box(frame: &RenderedFrame) -> Option<(u32, u32, u32, u32, usize)> {
+    drawn_box(frame, |p| !close(p, [0xC0, 0x30, 0x20]))
+}
+
+/// Subtitle tracks over a red clip. Bitmaps (PGS): the canvas (640×360)
+/// placed as a picture of that size, so the block lands at half its place
+/// and size in a 320×180 output, only while its event shows. Text (SRT):
+/// white letters at the bottom. Only tracks shown in the viewer or
+/// burned in are drawn.
+#[test]
+fn subtitle_tracks_render() {
+    if !common::have_gpu() {
+        return;
+    }
+    let Some(red) = solid("red-subtitled.mkv", "0xC03020", "320x180") else {
+        return;
+    };
+    let dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR"));
+    let sup = dir.join("engine.sup");
+    common::media::write_pgs(&sup, (640, 360), &[(0.4, 1.2, (200, 300, 60, 20))]);
+    let srt = dir.join("engine.srt");
+    std::fs::write(&srt, "1\n00:00:02,000 --> 00:00:03,000\nHELLO\n").unwrap();
+    let mut timeline = Timeline::new("t", FPS);
+    timeline.place(0, clip(&red, 0, 100), f(0)).unwrap();
+    let pgs = subtitle_track(&mut timeline, &sup, 0);
+    let text = subtitle_track(&mut timeline, &srt, 0);
+    // The first track added shows; show the second too.
+    assert!(timeline.track(pgs).unwrap().shown());
+    timeline.track_mut(text).unwrap().set_shown(true);
+
+    let (sender, events) = mpsc::channel();
+    let _slot = common::engine_slot();
+    let engine = Engine::new(Vec::new(), move |event| {
+        let _ = sender.send(event);
+    });
+    engine.set_size(320, 180);
+    engine.set_timeline(Arc::new(timeline.clone()));
+    let frame = render(&engine, &events, 15);
+    assert_eq!(white_box(&frame), Some((100, 129, 150, 159, 300)));
+    assert!(close(pixel(&frame, 2, 2), [0xC0, 0x30, 0x20]));
+    // Before it, only the red clip.
+    let before = render(&engine, &events, 5);
+    assert_eq!(white_box(&before), None);
+    // The SRT line: centered, in the bottom part.
+    let line = render(&engine, &events, 60);
+    // Small (FFmpeg's default style is 16 of 288 lines), so bright
+    // rather than white.
+    assert!(
+        drawn_box(&line, |p| p.iter().all(|&c| c > 180)).is_some(),
+        "bright letters"
+    );
+    let (x0, x1, y0, y1, count) = text_box(&line).expect("the text");
+    assert!(count > 50 && y0 > 120 && y1 < 178, "{x0} {x1} {y0} {y1}");
+    assert!(((x0 + x1) as i32 - 320).abs() <= 4, "{x0} {x1}");
+
+    // Not shown: not drawn; burned in: drawn.
+    timeline.track_mut(text).unwrap().set_shown(false);
+    engine.set_timeline(Arc::new(timeline.clone()));
+    assert_eq!(text_box(&render(&engine, &events, 61)), None);
+    timeline.track_mut(text).unwrap().set_burned_in(true);
+    engine.set_timeline(Arc::new(timeline));
+    assert!(text_box(&render(&engine, &events, 62)).is_some());
+}
+
 /// The engine tells how each file decodes, and decodes as it's told.
 #[test]
 fn reports_how_files_decode() {

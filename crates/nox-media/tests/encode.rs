@@ -49,6 +49,8 @@ fn round_trip(
         accel: None,
         audio_rate: Some(RATE),
         audio_codec: None,
+        audio_streams: Vec::new(),
+        subtitles: Vec::new(),
         encoding: nox_media::OutputEncoding::Sdr,
         peak_nits: 1000.0,
     };
@@ -159,6 +161,8 @@ fn audio_codecs_in_every_container() {
                 accel: None,
                 audio_rate: Some(RATE),
                 audio_codec: Some(audio_codec),
+                audio_streams: Vec::new(),
+                subtitles: Vec::new(),
                 encoding: nox_media::OutputEncoding::Sdr,
                 peak_nits: 1000.0,
             };
@@ -214,6 +218,8 @@ fn odd_sizes_are_rejected() {
         accel: None,
         audio_rate: None,
         audio_codec: None,
+        audio_streams: Vec::new(),
+        subtitles: Vec::new(),
         encoding: nox_media::OutputEncoding::Sdr,
         peak_nits: 1000.0,
     };
@@ -262,6 +268,8 @@ fn gpu_encode(encoder: &str, name: &str) {
         accel: Some(accel.clone()),
         audio_rate: None,
         audio_codec: None,
+        audio_streams: Vec::new(),
+        subtitles: Vec::new(),
         encoding: nox_media::OutputEncoding::Sdr,
         peak_nits: 1000.0,
     };

@@ -105,6 +105,21 @@
                   </object>
                 </child>
                 <child>
+                  <object class="AdwSwitchRow" id="audio_per_track">
+                    <property name="title" translatable="yes">One audio stream per _track</property>
+                    <property name="subtitle" translatable="yes">Instead of one stream with all audio tracks mixed</property>
+                    <property name="use-underline">true</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwSwitchRow" id="subtitles">
+                    <property name="title" translatable="yes">Include _subtitles</property>
+                    <property name="subtitle" translatable="yes">Subtitle tracks as streams; burned-in ones show in the picture</property>
+                    <property name="use-underline">true</property>
+                    <property name="active">true</property>
+                  </object>
+                </child>
+                <child>
                   <object class="AdwComboRow" id="range">
                     <property name="title" translatable="yes">Ra_nge</property>
                     <property name="use-underline">true</property>

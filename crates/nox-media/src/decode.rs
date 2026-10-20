@@ -157,6 +157,17 @@ impl VideoDecoder {
 
     /// Opens `path`, decoding as `hw` says (where `accel` and FFmpeg can).
     pub fn open_with(path: &Path, accel: Option<&Accel>, hw: HwDecode) -> Result<Self> {
+        Self::open_stream(path, None, accel, hw)
+    }
+
+    /// Opens video stream `stream` of `path` (the best one if `None`),
+    /// decoding as `hw` says.
+    pub fn open_stream(
+        path: &Path,
+        stream: Option<usize>,
+        accel: Option<&Accel>,
+        hw: HwDecode,
+    ) -> Result<Self> {
         crate::init();
         let mut input = format::input(path)?;
         let mut still = crate::probe::is_image_demuxer(input.format().name());
@@ -167,10 +178,13 @@ impl VideoDecoder {
             still = true;
             input = format::input(path)?;
         }
-        let stream = input
-            .streams()
-            .best(media::Type::Video)
-            .ok_or(Error::NoVideoStream)?;
+        let stream = match stream {
+            Some(index) => input
+                .stream(index)
+                .filter(|s| s.parameters().medium() == media::Type::Video),
+            None => input.streams().best(media::Type::Video),
+        }
+        .ok_or(Error::NoVideoStream)?;
         let stream_index = stream.index();
         let time_base = rational(stream.time_base()).ok_or(Error::NoVideoStream)?;
         let frame_rate = crate::stream::frame_rate(&stream).unwrap_or(Rational::new(25, 1));

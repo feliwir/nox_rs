@@ -53,6 +53,39 @@ fn pick_track(timeline: &mut Timeline, hint: Option<usize>, kind: TrackKind) -> 
         .unwrap_or_else(|| timeline.add_track(kind))
 }
 
+/// Which streams of a file to add (their indices in the file).
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Streams {
+    pub video: Option<usize>,
+    pub audio: Vec<usize>,
+    pub subtitles: Vec<usize>,
+}
+
+impl Streams {
+    /// What's added without asking: the main video and the default (else
+    /// the first) audio stream, no subtitles.
+    pub fn main(media: &MediaInfo) -> Self {
+        Self {
+            video: media.video.as_ref().map(|v| v.stream_index),
+            audio: media
+                .audio
+                .iter()
+                .find(|a| a.tags.default)
+                .or(media.audio.first())
+                .map(|a| a.stream_index)
+                .into_iter()
+                .collect(),
+            subtitles: Vec::new(),
+        }
+    }
+
+    /// Whether to ask which streams of `media` to add: more than one video
+    /// or audio stream, or subtitles.
+    pub fn worth_asking(media: &MediaInfo) -> bool {
+        !media.other_video.is_empty() || media.audio.len() > 1 || !media.subtitles.is_empty()
+    }
+}
+
 type Listener = Box<dyn Fn(&Project)>;
 
 pub struct Project {
@@ -172,12 +205,15 @@ impl Project {
 
     /// Adds `media` at sequence frame `frame`: its video on `track` (or the
     /// lowest video track) and its audio on `track` (or the first audio
-    /// track), linked. Stills get a fixed length. Overwrites what is there,
-    /// or with `insert`, pushes it (and sync-locked tracks) later. Returns
-    /// the clip's length in sequence frames.
+    /// track), linked. With `streams`, those streams: further audio
+    /// streams on the audio tracks below, subtitles on new subtitle tracks.
+    /// Stills get a fixed length. Overwrites what is there, or with
+    /// `insert`, pushes it (and sync-locked tracks) later. Returns the
+    /// clip's length in sequence frames.
     pub fn add_media(
         &self,
         media: &MediaInfo,
+        streams: Option<&Streams>,
         track: Option<usize>,
         frame: i64,
         insert: bool,
@@ -245,24 +281,89 @@ impl Project {
             };
             let source = TimeRange::new(Time::zero(fps.inverse()), Time::from_frames(length, fps));
             let reference = MediaReference::from_path(&media.path, available);
-            let has_video = media.video.is_some();
-            let has_audio = !media.audio.is_empty();
-            let link = (has_video && has_audio).then(|| timeline.new_link_id());
+            // The streams: chosen, or the main video and best audio (as
+            // the file's own references, naming none).
+            let (video, audio, subtitles): (Vec<Option<usize>>, Vec<Option<usize>>, &[usize]) =
+                match streams {
+                    Some(s) => (
+                        s.video.into_iter().map(Some).collect(),
+                        s.audio.iter().copied().map(Some).collect(),
+                        &s.subtitles,
+                    ),
+                    None => (
+                        media.video.iter().map(|_| None).collect(),
+                        media.audio.first().map(|_| None).into_iter().collect(),
+                        &[],
+                    ),
+                };
+            let count = video.len() + audio.len() + subtitles.len();
+            let link = (count > 1).then(|| timeline.new_link_id());
+            let clip_of = |stream: Option<usize>| {
+                let reference = match stream {
+                    Some(stream) => reference.clone().with_stream(stream),
+                    None => reference.clone(),
+                };
+                let mut clip = Clip::new(name.clone(), reference, source);
+                clip.item.set_link(link);
+                clip
+            };
 
             let mut clips = Vec::new();
-            for (kind, wanted) in [(TrackKind::Video, has_video), (TrackKind::Audio, has_audio)] {
-                if wanted {
-                    let video = kind == TrackKind::Video;
-                    let index = pick_track(timeline, track, kind);
-                    let mut clip = Clip::new(name.clone(), reference.clone(), source);
-                    clip.item.set_link(link);
-                    if let (Some(zoom), true) = (zoom, video) {
-                        clip.item.set_transform(nox_project::Transform {
-                            zoom,
-                            ..nox_project::Transform::IDENTITY
-                        });
+            for stream in video {
+                let mut clip = clip_of(stream);
+                if let Some(zoom) = zoom {
+                    clip.item.set_transform(nox_project::Transform {
+                        zoom,
+                        ..nox_project::Transform::IDENTITY
+                    });
+                }
+                let index = pick_track(timeline, track, TrackKind::Video);
+                clips.push((index, Composable::Clip(clip)));
+            }
+            // Audio streams on the audio tracks from the chosen one down,
+            // new ones where there are none; new tracks take the streams'
+            // tags.
+            let mut audio_track = None;
+            for stream in audio {
+                let index = match audio_track {
+                    None => pick_track(timeline, track, TrackKind::Audio),
+                    Some(previous) => {
+                        let next = timeline
+                            .tracks()
+                            .find(|(i, t)| *i > previous && t.kind == TrackKind::Audio)
+                            .map(|(i, _)| i);
+                        next.unwrap_or_else(|| timeline.add_track(TrackKind::Audio))
                     }
-                    clips.push((index, Composable::Clip(clip)));
+                };
+                audio_track = Some(index);
+                let info = stream.and_then(|s| media.audio.iter().find(|a| a.stream_index == s));
+                if let (Some(info), Some(t)) = (info, timeline.track_mut(index))
+                    && t.children.is_empty()
+                    && t.stream_tags() == nox_project::StreamTags::default()
+                {
+                    t.set_stream_tags(&info.tags);
+                }
+                clips.push((index, Composable::Clip(clip_of(stream))));
+            }
+            let shown_before = timeline
+                .tracks()
+                .any(|(_, t)| t.kind == TrackKind::Subtitle && t.shown());
+            let mut added = Vec::new();
+            for &stream in subtitles {
+                let Some(info) = media.subtitles.iter().find(|s| s.stream_index == stream) else {
+                    continue;
+                };
+                let index = timeline.new_subtitle_track(&info.label(), &info.tags);
+                added.push((index, info.tags.default));
+                clips.push((index, Composable::Clip(clip_of(Some(stream)))));
+            }
+            // The viewer shows the file's default subtitles, if it showed
+            // none before.
+            if !shown_before && let Some(&(default, _)) = added.iter().find(|(_, d)| *d) {
+                for &(index, _) in &added {
+                    if let Some(track) = timeline.track_mut(index) {
+                        track.set_shown(index == default);
+                    }
                 }
             }
             if insert {

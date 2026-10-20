@@ -5,7 +5,7 @@
 use adw::prelude::AdwApplicationWindowExt;
 use adw::subclass::prelude::*;
 use gtk::{CompositeTemplate, gdk, gio, glib, prelude::*};
-use nox_project::{BlendMode, Edge, Rational, Time, TrackKind, supports_drop_frame};
+use nox_project::{BlendMode, Edge, ItemRef, Rational, Time, TrackKind, supports_drop_frame};
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
@@ -592,6 +592,290 @@ impl Ui {
         }
     }
 
+    /// Imports subtitles onto a subtitle track: with a video clip
+    /// selected, one of its file's subtitle streams or a subtitle file,
+    /// timed and linked with the clip; else a subtitle file from the start
+    /// of the sequence.
+    fn import_subtitles(self: &Rc<Self>) {
+        let target = self.subtitle_target();
+        let media = target.and_then(|item| {
+            let timeline = self.project.timeline();
+            match timeline.item(item).ok()? {
+                nox_project::Composable::Clip(clip) => timeline.media_path(clip.media_reference()?),
+                _ => None,
+            }
+        });
+        let ui = self.clone();
+        glib::spawn_future_local(async move {
+            let streams = match media.clone() {
+                Some(path) => gio::spawn_blocking(move || {
+                    nox_media::probe(&path)
+                        .map(|info| info.subtitles)
+                        .unwrap_or_default()
+                })
+                .await
+                .unwrap_or_default(),
+                None => Vec::new(),
+            };
+            match media {
+                Some(path) if !streams.is_empty() => {
+                    ui.choose_subtitle_stream(path, streams, target, true);
+                }
+                _ => ui.choose_subtitle_file(target),
+            }
+        });
+    }
+
+    /// The selected video clip of a file, which imported subtitles are
+    /// timed with.
+    fn subtitle_target(&self) -> Option<ItemRef> {
+        let item = self.timeline.selection()?;
+        let timeline = self.project.timeline();
+        if timeline.track(item.track)?.kind != TrackKind::Video {
+            return None;
+        }
+        match timeline.item(item).ok()? {
+            nox_project::Composable::Clip(clip)
+                if clip.text_parameters().is_none() && clip.media_reference()?.path().is_some() =>
+            {
+                Some(item)
+            }
+            _ => None,
+        }
+    }
+
+    /// Asks which of `streams` of `path` to import (or, with `offer_file`,
+    /// a subtitle file instead); one stream of a chosen file is imported
+    /// without asking.
+    fn choose_subtitle_stream(
+        self: &Rc<Self>,
+        path: PathBuf,
+        streams: Vec<nox_media::SubtitleInfo>,
+        target: Option<ItemRef>,
+        offer_file: bool,
+    ) {
+        if let [stream] = &streams[..]
+            && !offer_file
+        {
+            self.import_subtitle_stream(path, stream.clone(), target);
+            return;
+        }
+        let name = path
+            .file_name()
+            .map_or_else(String::new, |n| n.to_string_lossy().into_owned());
+        let mut answers = vec![("cancel".to_owned(), gettext("Cancel"), Look::Plain)];
+        if offer_file {
+            answers.push(("file".to_owned(), gettext("From File…"), Look::Plain));
+        }
+        let suggested = streams
+            .iter()
+            .position(|s| s.tags.default)
+            .unwrap_or_default();
+        for (i, stream) in streams.iter().enumerate() {
+            let look = if i == suggested {
+                Look::Suggested
+            } else {
+                Look::Plain
+            };
+            let mut label = stream.label();
+            if stream.tags.forced {
+                label = fill(&gettext("{subtitles}, forced"), &[("subtitles", &label)]);
+            }
+            answers.push((format!("stream-{i}"), label, look));
+        }
+        let answers: Vec<(&str, String, Look)> = answers
+            .iter()
+            .map(|(id, label, look)| (id.as_str(), label.clone(), *look))
+            .collect();
+        let ui = self.clone();
+        crate::alert::ask(
+            &self.window,
+            &gettext("Import Subtitles"),
+            &fill(
+                &gettext("Which subtitles of “{file}” go on a new subtitle track?"),
+                &[("file", &name)],
+            ),
+            &answers,
+            move |answer| {
+                if answer == "file" {
+                    ui.choose_subtitle_file(target);
+                } else if let Some(stream) = answer
+                    .strip_prefix("stream-")
+                    .and_then(|i| i.parse::<usize>().ok())
+                    .and_then(|i| streams.get(i))
+                {
+                    ui.import_subtitle_stream(path, stream.clone(), target);
+                }
+            },
+        );
+    }
+
+    /// Asks for a subtitle file (or a video with subtitles) to import.
+    fn choose_subtitle_file(self: &Rc<Self>, target: Option<ItemRef>) {
+        let subtitles = gtk::FileFilter::new();
+        subtitles.set_name(Some(&gettext("Subtitles")));
+        for suffix in [
+            "srt", "ass", "ssa", "vtt", "sup", "idx", "mks", "mkv", "mp4", "m4v", "mov", "ts",
+            "m2ts",
+        ] {
+            subtitles.add_suffix(suffix);
+        }
+        let all = gtk::FileFilter::new();
+        all.set_name(Some(&gettext("All Files")));
+        all.add_pattern("*");
+        let filters = gio::ListStore::new::<gtk::FileFilter>();
+        filters.append(&subtitles);
+        filters.append(&all);
+        let dialog = gtk::FileDialog::builder()
+            .title(gettext("Import Subtitles"))
+            .modal(true)
+            .filters(&filters)
+            .build();
+        let ui = self.clone();
+        dialog.open(Some(&self.window), gio::Cancellable::NONE, move |result| {
+            if let Some(path) = dialog_path(result) {
+                ui.import_subtitle_file(path, target, true);
+            }
+        });
+    }
+
+    /// Imports the subtitles of the file at `path`: its only stream, else
+    /// the one chosen (with `ask`) or its default (or first) one.
+    fn import_subtitle_file(self: &Rc<Self>, path: PathBuf, target: Option<ItemRef>, ask: bool) {
+        let ui = self.clone();
+        glib::spawn_future_local(async move {
+            let probed = path.clone();
+            let streams =
+                gio::spawn_blocking(move || nox_media::probe(&probed).map(|info| info.subtitles))
+                    .await;
+            match streams {
+                Ok(Ok(streams)) if ask && !streams.is_empty() => {
+                    ui.choose_subtitle_stream(path, streams, target, false);
+                }
+                Ok(Ok(streams)) if !streams.is_empty() => {
+                    let stream = streams
+                        .iter()
+                        .find(|s| s.tags.default)
+                        .unwrap_or(&streams[0]);
+                    ui.import_subtitle_stream(path, stream.clone(), target);
+                }
+                Ok(Err(err)) => {
+                    ui.toast_error(&gettext("Cannot import subtitles"), &err.to_string());
+                }
+                _ => ui.toast(&fill(
+                    &gettext("No subtitles in “{file}”"),
+                    &[("file", &path.display())],
+                )),
+            }
+        });
+    }
+
+    /// Reads `stream` of `path` (in the background) and adds it on a new
+    /// subtitle track, timed and linked with `target` if it is still
+    /// there, as one edit.
+    fn import_subtitle_stream(
+        self: &Rc<Self>,
+        path: PathBuf,
+        stream: nox_media::SubtitleInfo,
+        target: Option<ItemRef>,
+    ) {
+        let fps = self.project.frame_rate();
+        let name = stream.label();
+        let ui = self.clone();
+        glib::spawn_future_local(async move {
+            let index = stream.stream_index;
+            let file = path.clone();
+            let read =
+                gio::spawn_blocking(move || crate::subtitle_import::read(&file, index)).await;
+            let cannot = gettext("Cannot import subtitles");
+            let end = match read {
+                Ok(Ok(Some(end))) => end,
+                Ok(Ok(None)) => return ui.toast(&gettext("No subtitles to import there")),
+                Ok(Err(err)) => return ui.toast_error(&cannot, &err.to_string()),
+                Err(_) => return,
+            };
+            let added = ui.project.edit(&gettext("Import Subtitles"), |t| {
+                let like = target.and_then(|item| match t.item(item).ok()? {
+                    nox_project::Composable::Clip(clip) => {
+                        Some((item, clip.clone(), t.item_range(item).ok()?.start))
+                    }
+                    _ => None,
+                });
+                let (clip, at) = match like {
+                    Some((item, video, at)) => {
+                        let mut clip =
+                            crate::subtitle_import::clip_like(&video, &path, index, &name);
+                        // Linked with the clip (and what it is linked with).
+                        let link = video.item.link().unwrap_or_else(|| t.new_link_id());
+                        if let Some(nox_project::Composable::Clip(video)) = t
+                            .track_mut(item.track)
+                            .and_then(|track| track.children.get_mut(item.index))
+                        {
+                            video.item.set_link(Some(link));
+                        }
+                        clip.item.set_link(Some(link));
+                        (clip, at)
+                    }
+                    None => (
+                        crate::subtitle_import::clip_from_start(&path, index, &name, end, fps),
+                        Time::zero(fps.inverse()),
+                    ),
+                };
+                t.add_subtitle_track(&name, &stream.tags, vec![(at, clip)])
+            });
+            match added {
+                Ok(_) => ui.toast(&fill(
+                    &gettext("Added the subtitle track “{name}”"),
+                    &[("name", &name)],
+                )),
+                Err(err) => ui.toast_error(&cannot, &err.to_string()),
+            }
+        });
+    }
+
+    /// Turns the text subtitles of subtitle track `index` into text clips
+    /// on caption tracks (video tracks above the others), styled and
+    /// placed as they show, to change them like titles; the subtitle
+    /// track is hidden.
+    pub(crate) fn convert_to_text_clips(self: &Rc<Self>, index: usize) {
+        let fps = self.project.frame_rate();
+        let (clips, name) = {
+            let timeline = self.project.timeline();
+            let Some(track) = timeline.track(index) else {
+                return;
+            };
+            (
+                crate::subtitle_import::to_convert(&timeline, index),
+                track.item.name.clone(),
+            )
+        };
+        let ui = self.clone();
+        glib::spawn_future_local(async move {
+            let converted =
+                gio::spawn_blocking(move || crate::subtitle_import::text_clips(&clips, fps)).await;
+            let cannot = gettext("Cannot convert to text clips");
+            let clips = match converted {
+                Ok(Ok(Some(clips))) if !clips.is_empty() => clips,
+                Ok(Ok(Some(_))) => return ui.toast(&gettext("No subtitles to convert")),
+                Ok(Ok(None)) => {
+                    return ui.toast(&gettext("Bitmap subtitles have no text to convert"));
+                }
+                Ok(Err(err)) => return ui.toast_error(&cannot, &err.to_string()),
+                Err(_) => return,
+            };
+            let result = ui.project.edit(&gettext("Convert to Text Clips"), |t| {
+                t.add_caption_tracks(&name, clips)?;
+                if let Some(track) = t.track_mut(index) {
+                    track.item.enabled = false;
+                }
+                Ok::<_, nox_project::EditError>(())
+            });
+            if let Err(err) = result {
+                ui.toast_error(&cannot, &err.to_string());
+            }
+        });
+    }
+
     fn add_dissolve(self: &Rc<Self>) {
         let Some(item) = self.timeline.selection() else {
             tracing::info!("select a clip to add a dissolve to");
@@ -980,6 +1264,10 @@ fn add_project_actions(ui: &Rc<Ui>) {
         simple("add-video-track", |ui| ui.add_track(TrackKind::Video)),
         simple("add-audio-track", |ui| ui.add_track(TrackKind::Audio)),
         with_path("open-path", |ui, path| ui.open(path)),
+        with_path("import-subtitles-path", |ui, path| {
+            let target = ui.subtitle_target();
+            ui.import_subtitle_file(path.to_owned(), target, false);
+        }),
         with_path("save-path", |ui, path| {
             ui.save_to(path);
         }),
@@ -1324,12 +1612,20 @@ fn add_clip_actions(ui: &Rc<Ui>) {
         move |_, _| ui.add_text()
     ));
     ui.window.add_action(&text);
+    let subtitles = gio::SimpleAction::new("import-subtitles", None);
+    subtitles.connect_activate(glib::clone!(
+        #[weak]
+        ui,
+        move |_, _| ui.import_subtitles()
+    ));
+    ui.window.add_action(&subtitles);
 }
 
 /// Track actions by stack index, for scripting (the track header menus use
 /// the timeline's own `track.*` actions): `delete-track(x)`,
-/// `set-track-enabled((xb))` (mute or hide), `set-track-locked((xb))` and
-/// `rename-track((xs))`.
+/// `set-track-enabled((xb))` (mute or hide), `set-track-locked((xb))`,
+/// `rename-track((xs))`, `set-track-shown((xb))` (subtitles in the viewer)
+/// and `convert-to-text-clips(x)`.
 fn add_track_actions(ui: &Rc<Ui>) {
     let with_param = |name: &str, ty: &str, f: fn(&Ui, &glib::Variant)| {
         let ty = glib::VariantTy::new(ty).expect("variant type");
@@ -1374,6 +1670,25 @@ fn add_track_actions(ui: &Rc<Ui>) {
             ui.timeline.rename_track(track, &name);
         }
     });
+    with_param("set-track-shown", "(xb)", |ui, value| {
+        if let Some((track, on)) = value.get::<(i64, bool)>()
+            && let Some(track) = index(track)
+        {
+            ui.timeline.set_track_shown(track, on);
+        }
+    });
+    // Subtitle track `x` as text clips (the subtitle track menu's).
+    let convert = gio::SimpleAction::new("convert-to-text-clips", Some(glib::VariantTy::INT64));
+    convert.connect_activate(glib::clone!(
+        #[weak]
+        ui,
+        move |_, parameter| {
+            if let Some(track) = parameter.and_then(|p| p.get::<i64>()).and_then(index) {
+                ui.convert_to_text_clips(track);
+            }
+        }
+    ));
+    ui.window.add_action(&convert);
 }
 
 fn parse_rate(text: &str) -> Option<Rational> {

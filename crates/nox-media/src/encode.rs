@@ -20,7 +20,7 @@
 //! memory (`write_video`) are converted with swscale.
 
 use ffmpeg::{ChannelLayout, Dictionary, codec, encoder, ffi, format, frame, software};
-use nox_project::Rational;
+use nox_project::{Rational, Time};
 use std::path::{Path, PathBuf};
 
 use crate::hwaccel::{self, Accel, GpuSink};
@@ -300,6 +300,11 @@ pub struct OutputSettings {
     pub accel: Option<Accel>,
     /// Stereo audio at this rate, or no audio track.
     pub audio_rate: Option<u32>,
+    /// With `audio_rate`: the audio streams and their tags (none: one,
+    /// untagged). `write_audio_stream` fills each.
+    pub audio_streams: Vec<nox_project::StreamTags>,
+    /// Subtitle streams.
+    pub subtitles: Vec<crate::SubtitleOutput>,
     /// The audio codec; `None` for the container's usual one with `codec`.
     pub audio_codec: Option<AudioCodec>,
     /// SDR, or HDR (PQ or HLG; HEVC and ProRes only). Frames from memory
@@ -358,7 +363,11 @@ struct AudioOutput {
 pub struct MediaWriter {
     output: format::context::Output,
     video: VideoOutput,
-    audio: Option<AudioOutput>,
+    audio: Vec<AudioOutput>,
+    subtitles: Vec<crate::subtitle_out::SubtitleWriter>,
+    /// Subtitle streams left out, and why.
+    skipped: Vec<String>,
+    frame_rate: Rational,
     frames: i64,
     path: PathBuf,
     encoding: OutputEncoding,
@@ -477,10 +486,45 @@ impl MediaWriter {
             .flags()
             .contains(format::Flags::GLOBAL_HEADER);
         let video = open_video(&mut output, settings, global_header)?;
-        let audio = match settings.audio_rate {
-            Some(rate) => Some(open_audio(&mut output, rate, global_header, audio_codec)?),
-            None => None,
-        };
+        // The one video stream is the default (FFmpeg only infers that
+        // while no stream has flags of its own).
+        crate::subtitle_out::tag_stream(
+            &mut output.stream_mut(video.stream).expect("stream"),
+            &nox_project::StreamTags {
+                default: true,
+                ..Default::default()
+            },
+        );
+        let mut audio = Vec::new();
+        if let Some(rate) = settings.audio_rate {
+            let untagged = [nox_project::StreamTags::default()];
+            let streams = match &settings.audio_streams[..] {
+                [] => &untagged[..],
+                streams => streams,
+            };
+            for tags in streams {
+                let opened = open_audio(&mut output, rate, global_header, audio_codec)?;
+                let mut stream = output.stream_mut(opened.stream).expect("stream");
+                crate::subtitle_out::tag_stream(&mut stream, tags);
+                audio.push(opened);
+            }
+        }
+        let (mut subtitles, mut skipped) = (Vec::new(), Vec::new());
+        for wanted in &settings.subtitles {
+            match crate::subtitle_out::open_subtitles(&mut output, wanted, container)? {
+                Ok(writer) => subtitles.push(writer),
+                Err(why) => {
+                    let name = wanted
+                        .tags
+                        .title
+                        .clone()
+                        .or(wanted.tags.language.clone())
+                        .unwrap_or_else(|| "subtitles".into());
+                    tracing::warn!("{name} left out: {why}");
+                    skipped.push(format!("{name}: {why}"));
+                }
+            }
+        }
         let mut options = Dictionary::new();
         // MP4/MOV: index at the front, so files play while downloading.
         if matches!(container, Container::Mp4 | Container::Mov) {
@@ -498,8 +542,19 @@ impl MediaWriter {
                 VideoInput::Gpu(frames) => frames.api(),
                 VideoInput::Memory { .. } => "memory",
             },
-            match &audio {
-                Some(audio) => format!(", {} audio", audio.encoder.id().name()),
+            match audio.first() {
+                Some(first) => format!(
+                    ", {} audio{}{}",
+                    first.encoder.id().name(),
+                    match audio.len() {
+                        1 => String::new(),
+                        n => format!(" ×{n}"),
+                    },
+                    match subtitles.len() {
+                        0 => String::new(),
+                        n => format!(", {n} subtitle streams"),
+                    }
+                ),
                 None => String::new(),
             }
         );
@@ -507,6 +562,9 @@ impl MediaWriter {
             output,
             video,
             audio,
+            subtitles,
+            skipped,
+            frame_rate: settings.frame_rate,
             frames: 0,
             path: settings.path.clone(),
             encoding: settings.encoding,
@@ -593,12 +651,31 @@ impl MediaWriter {
         set_color_tags(frame, self.encoding);
         self.video.encoder.send_frame(frame)?;
         self.frames += 1;
-        self.drain_video()
+        self.drain_video()?;
+        // Subtitles up to the end of this frame.
+        let seconds = Time::from_frames(self.frames, self.frame_rate).as_seconds();
+        for subtitles in &mut self.subtitles {
+            subtitles.write_until(&mut self.output, Some(seconds))?;
+        }
+        Ok(())
     }
 
-    /// Appends interleaved stereo samples (any amount).
+    /// The subtitle streams left out (the container can't hold them), and
+    /// why.
+    pub fn skipped(&self) -> &[String] {
+        &self.skipped
+    }
+
+    /// Appends interleaved stereo samples (any amount) to the first
+    /// audio stream.
     pub fn write_audio(&mut self, samples: &[f32]) -> Result<()> {
-        let Some(audio) = &mut self.audio else {
+        self.write_audio_stream(0, samples)
+    }
+
+    /// Appends interleaved stereo samples to audio stream `index` (in
+    /// `OutputSettings::audio_streams`' order).
+    pub fn write_audio_stream(&mut self, index: usize, samples: &[f32]) -> Result<()> {
+        let Some(audio) = self.audio.get_mut(index) else {
             return Ok(());
         };
         audio.pending.extend_from_slice(samples);
@@ -611,18 +688,19 @@ impl MediaWriter {
 
     /// Flushes the encoders and completes the file.
     pub fn finish(mut self) -> Result<PathBuf> {
-        if let Some(audio) = &mut self.audio
-            && !audio.pending.is_empty()
-        {
-            let rest = std::mem::take(&mut audio.pending);
-            send_audio(audio, &rest)?;
-        }
-        if let Some(audio) = &mut self.audio {
+        for audio in &mut self.audio {
+            if !audio.pending.is_empty() {
+                let rest = std::mem::take(&mut audio.pending);
+                send_audio(audio, &rest)?;
+            }
             audio.encoder.send_eof()?;
         }
         self.drain_audio()?;
         self.video.encoder.send_eof()?;
         self.drain_video()?;
+        for subtitles in &mut self.subtitles {
+            subtitles.write_until(&mut self.output, None)?;
+        }
         // MP4 and MOV write their header (`moov`, with `clli`) last, so the
         // measured light levels still get in (Matroska rewrites its track
         // header at the end too). Light levels are only written
@@ -660,15 +738,15 @@ impl MediaWriter {
     }
 
     fn drain_audio(&mut self) -> Result<()> {
-        match &mut self.audio {
-            Some(audio) => drain(
+        for audio in &mut self.audio {
+            drain(
                 &mut audio.encoder,
                 audio.stream,
                 audio.time_base,
                 &mut self.output,
-            ),
-            None => Ok(()),
+            )?;
         }
+        Ok(())
     }
 }
 
@@ -907,6 +985,8 @@ pub fn probe_encoders(
         audio_codec: None,
         encoding,
         peak_nits: 1000.0,
+        audio_streams: Vec::new(),
+        subtitles: Vec::new(),
     };
     // Encoders that don't open say why on FFmpeg's log; here that's an
     // answer, not an error.

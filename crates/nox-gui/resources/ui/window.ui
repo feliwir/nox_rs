@@ -667,6 +667,12 @@
     </section>
     <section>
       <item>
+        <attribute name="label" translatable="yes">Import _Subtitles…</attribute>
+        <attribute name="action">win.import-subtitles</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">Project _Settings</attribute>
         <attribute name="action">win.project-settings</attribute>
         <!-- Shown only: Shift+9 is the window's own key (window.rs), not

@@ -55,6 +55,8 @@ fn settings(name: &str, codec: VideoCodec, hardware: bool) -> ExportSettings {
         encoder: None,
         range: None,
         audio: true,
+        audio_per_track: false,
+        subtitles: true,
         audio_codec: None,
         encoding: nox_media::OutputEncoding::Sdr,
         peak_nits: 1000.0,

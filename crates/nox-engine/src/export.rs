@@ -82,8 +82,13 @@ pub struct ExportSettings {
     /// Sequence frames to export; `None` for all.
     pub range: Option<Range<i64>>,
     pub audio: bool,
+    /// One audio stream per audio track (tagged as the track says)
+    /// instead of one stream with all of them mixed.
+    pub audio_per_track: bool,
     /// The audio codec; `None` for the container's usual one.
     pub audio_codec: Option<AudioCodec>,
+    /// Write the subtitle tracks (not burned in) as subtitle streams.
+    pub subtitles: bool,
     /// SDR, or HDR10 (PQ) or HLG in BT.2020 (HEVC and ProRes only).
     pub encoding: nox_media::OutputEncoding,
     /// Peak of the mastering display written for HDR10, in nits.
@@ -99,6 +104,9 @@ pub struct ExportSummary {
     /// Whether frames went to the encoder without copies.
     pub zero_copy: bool,
     pub elapsed: Duration,
+    /// Streams left out (e.g. subtitles the container can't hold), and
+    /// why.
+    pub skipped: Vec<String>,
 }
 
 impl ExportSummary {
@@ -185,7 +193,20 @@ pub fn export(
     let fps = timeline.frame_rate();
     let (width, height) = (timeline.settings.width, timeline.settings.height);
     let with_audio = settings.audio && has_audio(timeline, &range);
+    // The audio streams: the mix, or the tracks' (by stack index).
+    let audio_tracks = if with_audio && settings.audio_per_track {
+        crate::streams::audio_tracks(timeline, &range)
+    } else {
+        Vec::new()
+    };
+    let (subtitles, mut skipped) = if settings.subtitles {
+        crate::streams::subtitle_outputs(timeline, &range)
+    } else {
+        Default::default()
+    };
     let mut renderer = Renderer::new(&[], Arc::new(AtomicBool::new(false)));
+    // Subtitle tracks are streams, unless burned in.
+    renderer.preview_subtitles = false;
     renderer.set_output_encoding(settings.encoding)?;
     renderer.set_hw_decode(settings.decode);
     let accel = if settings.hardware {
@@ -205,14 +226,25 @@ pub fn export(
         encoder: settings.encoder.clone(),
         accel,
         audio_rate: with_audio.then_some(EXPORT_AUDIO_RATE),
+        audio_streams: audio_tracks.iter().map(|(_, tags)| tags.clone()).collect(),
+        subtitles,
         audio_codec: settings.audio_codec,
         encoding: settings.encoding,
         peak_nits: settings.peak_nits,
     };
     let mut writer = MediaWriter::create(&output)?;
+    skipped.extend(writer.skipped().iter().cloned());
     let zero_copy = writer.takes_gpu_frames();
     let encoder = writer.video_encoder();
-    let mut mixer = Mixer::new(EXPORT_AUDIO_RATE);
+    // A mixer per audio stream: each keeps its decoders where it reads.
+    let mut mixers: Vec<(Option<Vec<usize>>, Mixer)> = if audio_tracks.is_empty() {
+        vec![(None, Mixer::new(EXPORT_AUDIO_RATE))]
+    } else {
+        audio_tracks
+            .iter()
+            .map(|&(track, _)| (Some(vec![track]), Mixer::new(EXPORT_AUDIO_RATE)))
+            .collect()
+    };
     let mut audio = Vec::new();
     let total = range.end - range.start;
     // Sample position of a sequence frame, exact for any frame rate.
@@ -239,8 +271,10 @@ pub fn export(
         if with_audio {
             let (start, end) = (sample_of(frame), sample_of(frame + 1));
             audio.resize((end - start) as usize * nox_media::CHANNELS, 0.0);
-            mixer.mix(timeline, start, &mut audio);
-            writer.write_audio(&audio)?;
+            for (stream, (tracks, mixer)) in mixers.iter_mut().enumerate() {
+                mixer.mix_tracks(timeline, start, &mut audio, tracks.as_deref());
+                writer.write_audio_stream(stream, &audio)?;
+            }
         }
         if !progress(done as i64 + 1, total) {
             // Leave no half-written file behind.
@@ -256,6 +290,7 @@ pub fn export(
         encoder,
         zero_copy,
         elapsed: started.elapsed(),
+        skipped,
     };
     tracing::info!(
         "exported {} frames in {:.1} s ({:.0} fps) with {}{}",

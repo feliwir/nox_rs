@@ -91,8 +91,12 @@ fn templates_build() {
     panel.show(Some(nox_project::SOURCE.into()));
     glib::Object::new::<ClipStrip>().set_up(&timeline, &window.imp_children().0);
     assert!(crate::timeline::clip_menu().n_items() > 0, "clip menu");
-    let (video, audio) = crate::timeline::track_menus();
-    assert!(video.n_items() > 0 && audio.n_items() > 0, "track menus");
+    assert!(
+        crate::timeline::track_menus()
+            .iter()
+            .all(|menu| menu.n_items() > 0),
+        "track menus"
+    );
     let rename = crate::timeline::rename_dialog();
     let dialog: gtk::Window = rename.object("dialog").expect("rename dialog");
     assert!(rename.object::<gtk::Entry>("name").is_some(), "name entry");

@@ -58,11 +58,14 @@ const RULER: gdk::RGBA = rgb(0x26, 0x27, 0x2b);
 const TRACK_HEADER: gdk::RGBA = rgb(0x2b, 0x2c, 0x31);
 const VIDEO_TRACK: gdk::RGBA = rgb(0x22, 0x24, 0x2a);
 const AUDIO_TRACK: gdk::RGBA = rgb(0x20, 0x26, 0x24);
+const SUBTITLE_TRACK: gdk::RGBA = rgb(0x28, 0x25, 0x20);
 const VIDEO_CLIP: gdk::RGBA = rgb(0x3a, 0x5a, 0x8c);
 const AUDIO_CLIP: gdk::RGBA = rgb(0x35, 0x7a, 0x5a);
 const NESTED_CLIP: gdk::RGBA = rgb(0x6a, 0x4a, 0x8c);
 /// Text clips (magenta, as Premiere's graphics).
 const TEXT_CLIP: gdk::RGBA = rgb(0x9c, 0x3a, 0x74);
+/// Subtitle clips: amber, apart from video, audio and text.
+const SUBTITLE_CLIP: gdk::RGBA = rgb(0x9a, 0x72, 0x28);
 /// Clips whose media file is missing.
 const OFFLINE_CLIP: gdk::RGBA = rgb(0x8c, 0x2e, 0x2e);
 const CLIP_BORDER: gdk::RGBA = rgb(0x12, 0x13, 0x15);
@@ -100,6 +103,7 @@ fn marker_color(name: &str) -> gdk::RGBA {
 fn clip_color(child: &Composable, kind: &TrackKind) -> gdk::RGBA {
     match child {
         Composable::Clip(clip) if clip.text_parameters().is_some() => TEXT_CLIP,
+        Composable::Clip(_) if *kind == TrackKind::Subtitle => SUBTITLE_CLIP,
         Composable::Clip(_) if *kind == TrackKind::Video => VIDEO_CLIP,
         Composable::Clip(_) => AUDIO_CLIP,
         _ => NESTED_CLIP,
@@ -113,16 +117,20 @@ fn with_alpha(color: gdk::RGBA, alpha: f32) -> gdk::RGBA {
 /// Stack indices of the top-level tracks in display order: video tracks
 /// with the topmost layer first, then audio and other tracks.
 fn rows(timeline: &Timeline) -> Vec<usize> {
-    let mut rows: Vec<usize> = timeline
-        .tracks()
-        .rev()
-        .filter(|(_, t)| t.kind == TrackKind::Video)
-        .map(|(i, _)| i)
-        .collect();
+    let upward = |kind: TrackKind| {
+        timeline
+            .tracks()
+            .rev()
+            .filter(move |(_, t)| t.kind == kind)
+            .map(|(i, _)| i)
+    };
+    // Subtitles over the picture, as in Premiere.
+    let mut rows: Vec<usize> = upward(TrackKind::Subtitle).collect();
+    rows.extend(upward(TrackKind::Video));
     rows.extend(
         timeline
             .tracks()
-            .filter(|(_, t)| t.kind != TrackKind::Video)
+            .filter(|(_, t)| !matches!(t.kind, TrackKind::Video | TrackKind::Subtitle))
             .map(|(i, _)| i),
     );
     rows
@@ -188,22 +196,16 @@ fn menu_model(id: &str) -> gtk::gio::MenuModel {
         .unwrap_or_else(|| panic!("{id} in menus.ui"))
 }
 
-/// The track header menus for video and audio tracks (`menus.ui`); their
-/// `track.*` actions work on the track the menu was opened for.
-pub(crate) fn track_menus() -> (gio::MenuModel, gio::MenuModel) {
-    let builder = gtk::Builder::new();
-    builder.set_translation_domain(Some(crate::i18n::DOMAIN));
-    builder
-        .add_from_resource("/io/github/feliwir/Nox/ui/menus.ui")
-        .expect("menus.ui is valid");
-    (
-        builder
-            .object("video_track_menu")
-            .expect("video_track_menu"),
-        builder
-            .object("audio_track_menu")
-            .expect("audio_track_menu"),
-    )
+/// The track header menus for video, audio and subtitle tracks
+/// (`menus.ui`); their `track.*` actions work on the track the menu was
+/// opened for.
+pub(crate) fn track_menus() -> [gio::MenuModel; 3] {
+    [
+        "video_track_menu",
+        "audio_track_menu",
+        "subtitle_track_menu",
+    ]
+    .map(menu_model)
 }
 
 /// Undo labels (and menu texts) for toggling a track.
@@ -223,10 +225,6 @@ fn lock_label(locked: bool) -> String {
     } else {
         crate::i18n::gettext("Unlock Track")
     }
-}
-
-fn row_y(row: usize) -> f32 {
-    RULER_HEIGHT + row as f32 * TRACK_HEIGHT
 }
 
 /// An interaction in progress.
@@ -376,6 +374,11 @@ mod imp {
         pub playhead: Cell<i64>,
         /// Frame shown at the left edge of the track area.
         pub scroll: Cell<f64>,
+        /// Pixels the track rows are scrolled up by (the ruler stays).
+        pub vscroll: Cell<f64>,
+        /// Scrolls the rows when they don't fit; its adjustment holds
+        /// `vscroll`.
+        pub vbar: OnceCell<gtk::Scrollbar>,
         pub pixels_per_frame: Cell<f64>,
         /// The primary selected item: what the inspector and the color
         /// wheels show.
@@ -393,8 +396,8 @@ mod imp {
         pub menu: OnceCell<gtk::PopoverMenu>,
         /// Context menu for the ruler.
         pub ruler_menu: OnceCell<gtk::PopoverMenu>,
-        /// Context menus for video and audio tracks.
-        pub track_menus: OnceCell<(gtk::PopoverMenu, gtk::PopoverMenu)>,
+        /// Context menus for video, audio and subtitle tracks.
+        pub track_menus: OnceCell<[gtk::PopoverMenu; 3]>,
         /// The track (stack index) the track menu was opened for.
         pub menu_track: Cell<Option<usize>>,
         /// The `track.*` actions of the track menus.
@@ -404,6 +407,8 @@ mod imp {
         pub offline: RefCell<std::collections::BTreeSet<std::path::PathBuf>>,
         /// Waveforms of audio clips' files.
         pub waveforms: OnceCell<Rc<crate::waveforms::Waveforms>>,
+        /// Subtitle clips' events.
+        pub subtitle_events: OnceCell<Rc<crate::subtitle_events::SubtitleEvents>>,
         /// Filmstrips of video clips' files.
         pub thumbnails: OnceCell<Rc<crate::thumbnails::Thumbnails>>,
         /// One header per track row, in row order.
@@ -420,6 +425,8 @@ mod imp {
                 project: OnceCell::new(),
                 playhead: Cell::new(0),
                 scroll: Cell::new(0.0),
+                vscroll: Cell::new(0.0),
+                vbar: OnceCell::new(),
                 pixels_per_frame: Cell::new(4.0),
                 selection: Cell::new(None),
                 others: RefCell::default(),
@@ -435,6 +442,7 @@ mod imp {
                 track_actions: gio::SimpleActionGroup::new(),
                 offline: RefCell::default(),
                 waveforms: OnceCell::new(),
+                subtitle_events: OnceCell::new(),
                 thumbnails: OnceCell::new(),
                 headers: RefCell::default(),
                 hovered: Cell::new(None),
@@ -484,6 +492,9 @@ mod imp {
                 .waveforms
                 .set(crate::waveforms::Waveforms::new(redraw.clone()));
             let _ = self
+                .subtitle_events
+                .set(crate::subtitle_events::SubtitleEvents::new(redraw.clone()));
+            let _ = self
                 .thumbnails
                 .set(crate::thumbnails::Thumbnails::new(redraw));
             // Thumbnails and waveforms come and go with the preferences.
@@ -498,6 +509,22 @@ mod imp {
                     ),
                 );
             }
+            let adjustment = gtk::Adjustment::new(0.0, 0.0, 0.0, TRACK_HEIGHT.into(), 0.0, 0.0);
+            adjustment.connect_value_changed(glib::clone!(
+                #[weak]
+                obj,
+                move |adjustment| {
+                    let imp = obj.imp();
+                    if imp.vscroll.get() != adjustment.value() {
+                        imp.vscroll.set(adjustment.value());
+                        obj.queue_allocate();
+                        obj.queue_draw();
+                    }
+                }
+            ));
+            let bar = gtk::Scrollbar::new(gtk::Orientation::Vertical, Some(&adjustment));
+            bar.set_parent(&*obj);
+            let _ = self.vbar.set(bar);
             self.set_up_input();
         }
 
@@ -505,15 +532,17 @@ mod imp {
             for header in self.headers.take() {
                 header.unparent();
             }
+            if let Some(bar) = self.vbar.get() {
+                bar.unparent();
+            }
             if let Some(menu) = self.ruler_menu.get() {
                 menu.unparent();
             }
             if let Some(menu) = self.menu.get() {
                 menu.unparent();
             }
-            if let Some((video, audio)) = self.track_menus.get() {
-                video.unparent();
-                audio.unparent();
+            for menu in self.track_menus.get().into_iter().flatten() {
+                menu.unparent();
             }
         }
     }
@@ -533,13 +562,29 @@ mod imp {
 
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
             self.parent_size_allocate(width, height, baseline);
+            self.update_vscroll(height);
             for (row, header) in self.headers.borrow().iter().enumerate() {
+                let y = self.row_y(row);
+                // Rows scrolled under the ruler take no clicks.
+                header.set_child_visible(y + TRACK_HEIGHT > RULER_HEIGHT + 4.0);
                 header.size_allocate(
                     &gdk::Rectangle::new(
                         0,
-                        row_y(row) as i32,
+                        y as i32,
                         HEADER_WIDTH as i32 - 1,
                         TRACK_HEIGHT as i32 - 1,
+                    ),
+                    -1,
+                );
+            }
+            if let Some(bar) = self.vbar.get() {
+                let (_, natural, _, _) = bar.measure(gtk::Orientation::Horizontal, -1);
+                bar.size_allocate(
+                    &gdk::Rectangle::new(
+                        width - natural,
+                        RULER_HEIGHT as i32,
+                        natural,
+                        (height - RULER_HEIGHT as i32).max(0),
                     ),
                     -1,
                 );
@@ -555,19 +600,23 @@ mod imp {
             let project = self.project();
             let timeline = project.timeline();
             let rows = rows(&timeline);
+            // The rows scroll under the ruler.
+            let below_ruler = graphene::Rect::new(0.0, RULER_HEIGHT, width, height - RULER_HEIGHT);
+            snapshot.push_clip(&below_ruler);
             for (row, &index) in rows.iter().enumerate() {
                 let track = timeline.track(index).expect("track");
-                let y = row_y(row);
-                let color = if track.kind == TrackKind::Video {
-                    VIDEO_TRACK
-                } else {
-                    AUDIO_TRACK
+                let y = self.row_y(row);
+                let color = match track.kind {
+                    TrackKind::Video => VIDEO_TRACK,
+                    TrackKind::Subtitle => SUBTITLE_TRACK,
+                    _ => AUDIO_TRACK,
                 };
                 snapshot.append_color(
                     &color,
                     &graphene::Rect::new(HEADER_WIDTH, y, width - HEADER_WIDTH, TRACK_HEIGHT - 1.0),
                 );
             }
+            snapshot.pop();
 
             snapshot.push_clip(&graphene::Rect::new(
                 HEADER_WIDTH,
@@ -577,8 +626,14 @@ mod imp {
             ));
             self.draw_ruler(snapshot, width);
             let drag = self.drag.borrow().clone();
+            snapshot.push_clip(&below_ruler);
             for (row, &index) in rows.iter().enumerate() {
-                self.draw_track(snapshot, &timeline, index, row_y(row), drag.as_ref());
+                let y = self.row_y(row);
+                // Only the rows in view.
+                if y + TRACK_HEIGHT < RULER_HEIGHT || y > height {
+                    continue;
+                }
+                self.draw_track(snapshot, &timeline, index, y, drag.as_ref());
             }
             self.draw_drag(snapshot, &timeline, &rows, drag.as_ref(), height);
             self.draw_marks(snapshot, &timeline, width, height);
@@ -587,12 +642,13 @@ mod imp {
                 && let Some(row) = rows.iter().position(|&i| i == index)
             {
                 let x = self.frame_to_x(frame as f64);
-                let y = row_y(row);
+                let y = self.row_y(row);
                 snapshot.append_color(
                     &SELECTION,
                     &graphene::Rect::new(x as f32 - 1.0, y, 2.0, TRACK_HEIGHT - 1.0),
                 );
             }
+            snapshot.pop();
             let x = self.frame_to_x(self.playhead.get() as f64) as f32;
             snapshot.append_color(&PLAYHEAD, &graphene::Rect::new(x - 0.5, 0.0, 1.5, height));
             snapshot.append_color(&PLAYHEAD, &graphene::Rect::new(x - 5.0, 0.0, 11.0, 6.0));
@@ -603,8 +659,13 @@ mod imp {
                 &TRACK_HEADER,
                 &graphene::Rect::new(0.0, RULER_HEIGHT, HEADER_WIDTH - 1.0, height),
             );
+            snapshot.push_clip(&below_ruler);
             for header in self.headers.borrow().iter() {
                 obj.snapshot_child(header, snapshot);
+            }
+            snapshot.pop();
+            if let Some(bar) = self.vbar.get() {
+                obj.snapshot_child(bar, snapshot);
             }
         }
     }
@@ -635,10 +696,67 @@ mod imp {
                 let track = timeline.track(index).expect("track");
                 header.show(index, track, &track_name(track, row));
             }
+            drop(headers);
+            // More or fewer rows: what scrolls changes.
+            self.update_vscroll(obj.height());
+            obj.queue_allocate();
         }
 
         pub fn project(&self) -> &Rc<Project> {
             self.project.get().expect("project set at construction")
+        }
+
+        /// Widget y of the top of row `row` (scrolled).
+        pub(crate) fn row_y(&self, row: usize) -> f32 {
+            RULER_HEIGHT + row as f32 * TRACK_HEIGHT - self.vscroll.get() as f32
+        }
+
+        /// Fits the vertical scrolling to the rows and a widget `height`
+        /// high: the scroll bar shows while they don't fit, and the rows
+        /// never scroll past their end.
+        pub(super) fn update_vscroll(&self, height: i32) {
+            let rows = self.project.get().map_or(0, |p| rows(&p.timeline()).len());
+            let content = f64::from(TRACK_HEIGHT) * rows as f64;
+            let view = (f64::from(height) - f64::from(RULER_HEIGHT)).max(0.0);
+            let max = (content - view).max(0.0);
+            let value = self.vscroll.get().clamp(0.0, max);
+            self.vscroll.set(value);
+            if let Some(bar) = self.vbar.get() {
+                let adjustment = bar.adjustment();
+                adjustment.configure(
+                    value,
+                    0.0,
+                    content.max(view),
+                    TRACK_HEIGHT.into(),
+                    view,
+                    view,
+                );
+                bar.set_visible(max > 0.0);
+            }
+        }
+
+        /// Scrolls the rows so track `index` (stack index) is in view.
+        pub(super) fn scroll_to_track(&self, index: usize) {
+            let Some(row) = rows(&self.project().timeline())
+                .iter()
+                .position(|&i| i == index)
+            else {
+                return;
+            };
+            let (top, height) = (self.row_y(row), self.obj().height() as f32);
+            if top < RULER_HEIGHT {
+                self.scroll_rows(f64::from(top - RULER_HEIGHT));
+            } else if top + TRACK_HEIGHT > height && height > RULER_HEIGHT + TRACK_HEIGHT {
+                self.scroll_rows(f64::from(top + TRACK_HEIGHT - height));
+            }
+        }
+
+        /// Scrolls the rows by `pixels` (down for positive).
+        pub(crate) fn scroll_rows(&self, pixels: f64) {
+            self.vscroll.set(self.vscroll.get() + pixels);
+            self.update_vscroll(self.obj().height());
+            self.obj().queue_allocate();
+            self.obj().queue_draw();
         }
 
         pub(super) fn fps(&self) -> f64 {
@@ -710,6 +828,28 @@ impl TimelineView {
         let imp = self.imp();
         if imp.playhead.replace(frame) != frame {
             self.emit_by_name::<()>("playhead-changed", &[&frame]);
+            self.queue_draw();
+        }
+    }
+
+    /// Keeps the playhead in view during playback: once it runs off the
+    /// right edge (or is left of the view), the time pages on, so it shows
+    /// near the left edge again (as Premiere's page scroll). Not while
+    /// dragging.
+    pub fn follow_playhead(&self) {
+        let imp = self.imp();
+        if imp.drag.borrow().is_some() {
+            return;
+        }
+        let (left, right) = (f64::from(HEADER_WIDTH), f64::from(self.width()) - 24.0);
+        if right - left < 40.0 {
+            return;
+        }
+        let frame = imp.playhead.get() as f64;
+        let x = imp.frame_to_x(frame);
+        if x < left || x > right {
+            let visible = (right - left) / imp.pixels_per_frame.get();
+            imp.scroll.set((frame - visible * 0.05).max(0.0));
             self.queue_draw();
         }
     }

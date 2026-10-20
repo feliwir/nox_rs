@@ -1614,6 +1614,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "nox-ass"
+version = "0.1.2"
+dependencies = [
+ "nox-text",
+]
+
+[[package]]
 name = "nox-build"
 version = "0.1.2"
 
@@ -1638,6 +1645,7 @@ version = "0.1.2"
 dependencies = [
  "cpal",
  "nox-ai",
+ "nox-ass",
  "nox-color",
  "nox-fx",
  "nox-gpu",
@@ -1688,6 +1696,7 @@ dependencies = [
  "gtk4",
  "libadwaita",
  "nox-ai",
+ "nox-ass",
  "nox-engine",
  "nox-fx",
  "nox-media",
@@ -1706,6 +1715,7 @@ dependencies = [
  "ffmpeg-next",
  "libc",
  "libloading",
+ "nox-ass",
  "nox-color",
  "nox-gpu",
  "nox-project",

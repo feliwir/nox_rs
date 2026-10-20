@@ -13,7 +13,7 @@ impl imp::TimelineView {
     }
 
     /// Widget x coordinate of a (fractional) frame position.
-    pub(super) fn frame_to_x(&self, frame: f64) -> f64 {
+    pub(crate) fn frame_to_x(&self, frame: f64) -> f64 {
         HEADER_WIDTH as f64 + (frame - self.scroll.get()) * self.pixels_per_frame.get()
     }
 
@@ -26,11 +26,11 @@ impl imp::TimelineView {
     }
 
     /// Stack index of the track at widget y.
-    pub(super) fn track_at_y(&self, y: f64) -> Option<usize> {
+    pub(crate) fn track_at_y(&self, y: f64) -> Option<usize> {
         if y < RULER_HEIGHT as f64 {
             return None;
         }
-        let row = ((y - RULER_HEIGHT as f64) / TRACK_HEIGHT as f64) as usize;
+        let row = ((y - RULER_HEIGHT as f64 + self.vscroll.get()) / TRACK_HEIGHT as f64) as usize;
         rows(&self.project().timeline()).get(row).copied()
     }
 
@@ -47,7 +47,7 @@ impl imp::TimelineView {
         let Some(track_index) = self.track_at_y(y) else {
             return Hit::Nothing;
         };
-        let in_row = (y - RULER_HEIGHT as f64) % TRACK_HEIGHT as f64;
+        let in_row = (y - RULER_HEIGHT as f64 + self.vscroll.get()) % TRACK_HEIGHT as f64;
         if x < HEADER_WIDTH as f64 {
             return Hit::Header { track: track_index };
         }
@@ -272,7 +272,15 @@ impl imp::TimelineView {
         }
     }
 
-    pub(super) fn on_scroll(&self, zoom: bool, dx: f64, dy: f64) {
+    /// The wheel and touchpad: with Ctrl zoom; with Shift, or over the
+    /// track headers, scroll the rows; else scroll in time (a touchpad's
+    /// vertical swipes scroll the rows).
+    pub(super) fn on_scroll(&self, zoom: bool, rows: bool, dx: f64, dy: f64) {
+        if rows && !zoom {
+            // Shift turns some mice's wheel into horizontal steps.
+            self.scroll_rows((dy + dx) * f64::from(TRACK_HEIGHT));
+            return;
+        }
         if zoom {
             // Keep the frame under the pointer in place.
             let x = self.pointer_x.get().max(HEADER_WIDTH as f64);

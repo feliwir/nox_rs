@@ -7,6 +7,7 @@ mod cache;
 mod engine;
 mod export;
 mod render;
+mod streams;
 
 pub use audio::Mixer;
 pub use engine::Engine;

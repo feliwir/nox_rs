@@ -22,6 +22,7 @@ nox-project = { path = "crates/nox-project" }
 nox-otio = { path = "crates/nox-otio" }
 nox-engine = { path = "crates/nox-engine" }
 nox-text = { path = "crates/nox-text" }
+nox-ass = { path = "crates/nox-ass" }
 
 ash = "0.38"
 async-channel = "2"

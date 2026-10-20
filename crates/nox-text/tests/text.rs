@@ -205,3 +205,72 @@ fn rasterizes_letters_as_they_look() {
         .is_none()
     );
 }
+
+#[test]
+fn borders_shadows_and_placement() {
+    let mut fonts = fonts();
+    let plain = Document::new("I");
+    let laid = layout(&mut fonts, &plain, FRAME);
+    let bare = render(&laid, Vec2::ZERO, |_| Look::default()).unwrap();
+    // A black border of 0.5 % of 1080 (5.4 px) around white letters:
+    // wider by about twice that, black at the edges, white inside.
+    let bordered = Document {
+        style: Style {
+            outline: 0.5,
+            ..Style::default()
+        },
+        ..plain.clone()
+    };
+    let laid = layout(&mut fonts, &bordered, FRAME);
+    let picture = render(&laid, Vec2::ZERO, |_| Look::default()).unwrap();
+    let grown = f64::from(picture.width) - f64::from(bare.width);
+    assert!((grown - 10.8).abs() <= 2.0, "{grown}");
+    // Across the middle: black border, white letter, black border.
+    let row = (picture.height / 2) as usize * picture.width as usize * 4;
+    let shown: Vec<&[u8]> = picture.rgba[row..row + picture.width as usize * 4]
+        .chunks(4)
+        .filter(|p| p[3] > 250)
+        .collect();
+    let (first, last) = (shown[0], shown[shown.len() - 1]);
+    assert!(first[0] < 40 && last[0] < 40, "{first:?} {last:?}");
+    assert!(shown.iter().any(|p| p[0] > 240));
+    // A half-transparent shadow, 1 % of 1080 down and right: the picture
+    // grows by it, and the shadow is even where border and letters
+    // overlap.
+    let shadowed = Document {
+        style: Style {
+            shadow: 1.0,
+            shadow_color: [0.0, 0.0, 0.0, 0.5],
+            ..bordered.style.clone()
+        },
+        ..plain.clone()
+    };
+    let laid = layout(&mut fonts, &shadowed, FRAME);
+    let with_shadow = render(&laid, Vec2::ZERO, |_| Look::default()).unwrap();
+    assert_eq!(
+        (
+            with_shadow.width - picture.width,
+            with_shadow.height - picture.height
+        ),
+        (11, 11)
+    );
+    // Below the letter's border only the shadow shows.
+    let below = with_shadow.width as usize * 4 * (with_shadow.height as usize - 4)
+        + (with_shadow.width as usize / 2 + 5) * 4;
+    let alpha = with_shadow.rgba[below + 3];
+    assert!((120..=135).contains(&alpha), "{alpha}");
+
+    // Placed with the middle of the box's bottom edge at 90 % down.
+    let caption = Document {
+        position: [0.5, 0.9],
+        anchor: [0.5, 1.0],
+        ..plain
+    };
+    let laid = layout(&mut fonts, &caption, FRAME);
+    let offset = laid.placed(FRAME);
+    assert!((offset.y + laid.height - 972.0).abs() < 1e-3);
+    assert!((offset.x * 2.0 + laid.width - 1920.0).abs() < 1e-6);
+    // The default is centered.
+    let laid = layout(&mut fonts, &Document::new("I"), FRAME);
+    assert_eq!(laid.placed(FRAME), laid.centered(FRAME));
+}

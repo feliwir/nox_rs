@@ -15,6 +15,8 @@ pub enum Toggle {
     /// Mute for audio, hide for video: on means the track is off.
     Off,
     Solo,
+    /// Subtitle tracks: shown in the viewer.
+    Shown,
     Lock,
     Sync,
 }
@@ -40,6 +42,9 @@ mod imp {
         pub sync: TemplateChild<gtk::ToggleButton>,
         /// Stack index of the track shown.
         pub track: Cell<usize>,
+        /// Whether it is a subtitle track: its solo button shows it in the
+        /// viewer instead.
+        pub subtitle: Cell<bool>,
         /// Set while showing the track's state, so it isn't sent back.
         pub updating: Cell<bool>,
         pub handler: RefCell<Option<Handler>>,
@@ -97,9 +102,21 @@ impl TrackHeader {
             (false, false) => "view-reveal-symbolic",
             (false, true) => "view-conceal-symbolic",
         });
-        // Solo is for audio, as in Resolve.
-        imp.solo.set_visible(audio);
-        imp.solo.set_active(track.item.solo());
+        // Solo is for audio, as in Resolve; for subtitles the same place
+        // shows whether the viewer shows them.
+        let subtitle = track.kind == TrackKind::Subtitle;
+        imp.subtitle.set(subtitle);
+        imp.solo.set_visible(audio || subtitle);
+        imp.solo.set_icon_name(if subtitle {
+            "media-view-subtitles-symbolic"
+        } else {
+            "audio-headphones-symbolic"
+        });
+        imp.solo.set_active(if subtitle {
+            track.shown()
+        } else {
+            track.item.solo()
+        });
         imp.lock.set_active(track.item.locked());
         imp.sync.set_active(track.item.sync_locked());
         imp.updating.set(false);
@@ -122,7 +139,15 @@ impl TrackHeader {
                     gettext("Hide")
                 },
             ),
-            (&*imp.solo, named(gettext("Solo {track}")), gettext("Solo")),
+            if subtitle {
+                (
+                    &*imp.solo,
+                    named(gettext("Show {track} in the viewer")),
+                    gettext("Show in Viewer"),
+                )
+            } else {
+                (&*imp.solo, named(gettext("Solo {track}")), gettext("Solo"))
+            },
             (&*imp.lock, named(gettext("Lock {track}")), gettext("Lock")),
             (
                 &*imp.sync,
@@ -153,7 +178,12 @@ impl TrackHeader {
 
     #[template_callback]
     fn on_solo_toggled(&self, button: &gtk::ToggleButton) {
-        self.toggled(Toggle::Solo, button);
+        let toggle = if self.imp().subtitle.get() {
+            Toggle::Shown
+        } else {
+            Toggle::Solo
+        };
+        self.toggled(toggle, button);
     }
 
     #[template_callback]

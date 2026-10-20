@@ -14,13 +14,15 @@ impl imp::TimelineView {
                 (self.menu.get().expect("menu"), None)
             }
             Hit::Header { track, .. } => {
-                let (video, audio) = self.track_menus.get().expect("track menus");
+                let [video, audio, subtitle] = self.track_menus.get().expect("track menus");
                 let project = self.project();
-                let is_video = project
-                    .timeline()
-                    .track(track)
-                    .is_some_and(|t| t.kind == TrackKind::Video);
-                (if is_video { video } else { audio }, Some(track))
+                let kind = project.timeline().track(track).map(|t| t.kind.clone());
+                let menu = match kind {
+                    Some(TrackKind::Video) => video,
+                    Some(TrackKind::Subtitle) => subtitle,
+                    _ => audio,
+                };
+                (menu, Some(track))
             }
             _ => return,
         };
@@ -63,6 +65,10 @@ impl imp::TimelineView {
             view.set_track_sync_locked(track, on)
         });
         toggle("solo", |view, track, on| view.set_track_solo(track, on));
+        toggle("shown", |view, track, on| view.set_track_shown(track, on));
+        toggle("burn-in", |view, track, on| {
+            view.set_track_burned_in(track, on)
+        });
         let simple = |name: &str, f: fn(&super::TimelineView, usize)| {
             let action = gio::SimpleAction::new(name, None);
             action.connect_activate(glib::clone!(
@@ -77,6 +83,15 @@ impl imp::TimelineView {
             group.add_action(&action);
         };
         simple("rename", |view, track| view.show_rename_dialog(track));
+        simple("stream-settings", |view, track| {
+            view.show_stream_settings(track)
+        });
+        simple("convert", |view, track| {
+            let _ = view.activate_action(
+                "win.convert-to-text-clips",
+                Some(&(track as i64).to_variant()),
+            );
+        });
         simple("delete", |view, track| view.delete_track(track));
         obj.insert_action_group("track", Some(group));
     }
@@ -101,6 +116,8 @@ impl imp::TimelineView {
         set("locked", track.item.locked());
         set("sync", track.item.sync_locked());
         set("solo", track.item.solo());
+        set("shown", track.shown());
+        set("burn-in", track.burned_in());
         if let Some(delete) = self
             .track_actions
             .lookup_action("delete")
@@ -141,6 +158,9 @@ impl imp::TimelineView {
         let changed = self.selection.replace(primary) != primary || *self.others.borrow() != others;
         self.others.replace(others);
         if changed {
+            if let Some(item) = primary {
+                self.scroll_to_track(item.track);
+            }
             self.obj().emit_by_name::<()>("selection-changed", &[]);
             match items.len() {
                 0 => {}
@@ -189,7 +209,7 @@ impl imp::TimelineView {
         let timeline = project.timeline();
         let mut found = Vec::new();
         for (row, track_index) in rows(&timeline).into_iter().enumerate() {
-            let top = f64::from(row_y(row));
+            let top = f64::from(self.row_y(row));
             if top + f64::from(TRACK_HEIGHT) < y0 || top > y1 {
                 continue;
             }
@@ -261,7 +281,7 @@ impl imp::TimelineView {
             .iter()
             .position(|h| Some(h.upcast_ref::<gtk::Widget>()) == focused.as_ref());
         if let Some(row) = header_row {
-            let y = row_y(row) + TRACK_HEIGHT / 2.0;
+            let y = self.row_y(row) + TRACK_HEIGHT / 2.0;
             self.context_menu(f64::from(HEADER_WIDTH / 2.0), f64::from(y));
             return;
         }
@@ -277,7 +297,7 @@ impl imp::TimelineView {
             return;
         };
         drop(model);
-        let rect = self.clip_rect(range, row_y(row));
+        let rect = self.clip_rect(range, self.row_y(row));
         let menu = self.menu.get().expect("menu");
         menu.set_pointing_to(Some(&gdk::Rectangle::new(
             rect.x() as i32,

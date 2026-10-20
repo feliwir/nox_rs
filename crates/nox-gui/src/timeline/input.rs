@@ -68,10 +68,21 @@ impl imp::TimelineView {
             #[upgrade_or]
             glib::Propagation::Proceed,
             move |controller, dx, dy| {
-                let zoom = controller
-                    .current_event_state()
-                    .contains(gdk::ModifierType::CONTROL_MASK);
-                obj.imp().on_scroll(zoom, dx, dy);
+                let state = controller.current_event_state();
+                let zoom = state.contains(gdk::ModifierType::CONTROL_MASK);
+                let imp = obj.imp();
+                let over_headers = imp.pointer_x.get() < f64::from(HEADER_WIDTH);
+                // A touchpad scrolls both ways at once: up and down move
+                // the rows, left and right the time.
+                let smooth = controller.unit() == gdk::ScrollUnit::Surface;
+                let overflow = imp.vbar.get().is_some_and(|bar| bar.is_visible());
+                if smooth && overflow && !zoom && !over_headers {
+                    imp.on_scroll(false, false, dx, 0.0);
+                    imp.on_scroll(false, true, 0.0, dy / f64::from(TRACK_HEIGHT));
+                    return glib::Propagation::Stop;
+                }
+                let rows = state.contains(gdk::ModifierType::SHIFT_MASK) || over_headers;
+                imp.on_scroll(zoom, rows, dx, dy);
                 glib::Propagation::Stop
             }
         ));
@@ -208,7 +219,6 @@ impl imp::TimelineView {
         ));
         obj.add_controller(context);
 
-        let (video, audio) = track_menus();
         let track_menu = |model: &gio::MenuModel| {
             let menu = gtk::PopoverMenu::from_model(Some(model));
             menu.set_parent(&*obj);
@@ -217,7 +227,7 @@ impl imp::TimelineView {
             menu
         };
         self.track_menus
-            .set((track_menu(&video), track_menu(&audio)))
+            .set(track_menus().each_ref().map(track_menu))
             .expect("menus set once");
         self.add_track_actions();
 

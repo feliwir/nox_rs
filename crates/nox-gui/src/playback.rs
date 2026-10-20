@@ -407,6 +407,7 @@ impl Playback {
             }
             self.ticking.set(true);
             self.timeline.set_playhead(frame);
+            self.timeline.follow_playhead();
             self.ticking.set(false);
         }
         self.stats.set(stats);

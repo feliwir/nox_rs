@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 /// Clips from the `ffmpeg` CLI and the shared GPU, as nox-media's tests
 /// make them.
 #[path = "../../../nox-media/tests/common/mod.rs"]
-mod media;
+pub mod media;
 pub use media::fixture;
 
 pub const FPS: Rational = Rational::new(25, 1);

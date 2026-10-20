@@ -195,7 +195,10 @@ impl Timeline {
         match clip.text_parameters() {
             // Text: what it says and looks like.
             Some(parameters) => format!("{parameters:?}").hash(&mut hasher),
-            None => self.media_path(clip.media_reference()?)?.hash(&mut hasher),
+            None => {
+                self.media_path(clip.media_reference()?)?.hash(&mut hasher);
+                clip.stream().hash(&mut hasher);
+            }
         }
         clip.trimmed_range()
             .map(|r| r.start.as_seconds().to_bits())
@@ -293,6 +296,20 @@ impl Timeline {
     /// at zero): the topmost enabled video track with an enabled clip there.
     pub fn video_at(&self, time: Time) -> Option<ResolvedClip<'_>> {
         self.video_layers(time).into_iter().next_back()
+    }
+
+    /// The subtitle clips showing at `time`, with their tracks' stack
+    /// indices, bottom track first.
+    pub fn subtitle_clips(&self, time: Time) -> Vec<(usize, ResolvedClip<'_>)> {
+        self.tracks()
+            .filter(|(_, t)| t.kind == TrackKind::Subtitle)
+            .flat_map(|(index, track)| {
+                track
+                    .resolve(time, Some(&TrackKind::Subtitle))
+                    .into_iter()
+                    .map(move |clip| (index, clip))
+            })
+            .collect()
     }
 
     /// Everything that makes up the picture at `time`, bottom layer first:
@@ -955,6 +972,12 @@ impl Clip {
         self.media_reference()?.text_parameters()
     }
 
+    /// The stream of its file it uses, if its reference names one
+    /// (`MediaReference::with_stream`).
+    pub fn stream(&self) -> Option<usize> {
+        self.media_reference()?.stream()
+    }
+
     /// Its text's parameters to change, if it is a text clip.
     pub fn text_parameters_mut(&mut self) -> Option<&mut Object> {
         let key = self.active_media_reference_key.clone();
@@ -998,6 +1021,28 @@ impl Clip {
     pub fn media_time(&self, local: Time) -> Option<Time> {
         let range = self.trimmed_range()?;
         Some(self.item.warp(range.start, local))
+    }
+
+    /// Where its media's seconds `start..end` (from the start of the file)
+    /// show when the clip is at `place` on the timeline, in timeline
+    /// seconds: through its speed, cut to the clip; `None` if they don't
+    /// show. A freeze frame shows what is at its frame throughout.
+    pub fn place_file_span(&self, place: TimeRange, start: f64, end: f64) -> Option<(f64, f64)> {
+        let trimmed = self.trimmed_range()?;
+        let file_start = self.available_range().map_or(0.0, |r| r.start.as_seconds());
+        let source = trimmed.start.as_seconds() - file_start;
+        let length = place.duration.as_seconds();
+        let speed = self.item.speed();
+        let (a, b) = if speed > 0.0 {
+            ((start - source) / speed, (end - source) / speed)
+        } else if start <= source && source < end {
+            (0.0, length)
+        } else {
+            return None;
+        };
+        let (a, b) = (a.max(0.0), b.min(length));
+        let at = place.start.as_seconds();
+        (a < b).then_some((a + at, b + at))
     }
 
     /// The used part of the media: `source_range`, or all of it.
@@ -1097,6 +1142,9 @@ pub struct InTransition<'a> {
 pub enum TrackKind {
     Video,
     Audio,
+    /// Subtitles: clips of subtitle streams, shown over the picture and
+    /// exported as subtitle streams.
+    Subtitle,
     Other(String),
 }
 
@@ -1105,6 +1153,7 @@ impl TrackKind {
         match self {
             Self::Video => "Video",
             Self::Audio => "Audio",
+            Self::Subtitle => "Subtitle",
             Self::Other(kind) => kind,
         }
     }
@@ -1113,9 +1162,21 @@ impl TrackKind {
         match kind {
             "Video" => Self::Video,
             "Audio" => Self::Audio,
+            "Subtitle" => Self::Subtitle,
             _ => Self::Other(kind.to_owned()),
         }
     }
+}
+
+/// How an output stream is tagged: its language (ISO 639-2, e.g.
+/// `eng`), title and dispositions.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct StreamTags {
+    pub language: Option<String>,
+    pub title: Option<String>,
+    pub default: bool,
+    pub forced: bool,
+    pub hearing_impaired: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1132,6 +1193,61 @@ impl Track {
             kind,
             children: Vec::new(),
         }
+    }
+
+    /// What its output stream is tagged with on export (audio and
+    /// subtitle tracks): `metadata.nox.language`, `title`, `default`,
+    /// `forced` and `hearing_impaired`.
+    pub fn stream_tags(&self) -> StreamTags {
+        let text = |key: &str| {
+            self.item
+                .nox_value(key)
+                .and_then(Value::as_str)
+                .filter(|v| !v.is_empty())
+                .map(str::to_owned)
+        };
+        let flag = |key: &str| self.item.nox_value(key).and_then(Value::as_bool) == Some(true);
+        StreamTags {
+            language: text("language"),
+            title: text("title"),
+            default: flag("default"),
+            forced: flag("forced"),
+            hearing_impaired: flag("hearing_impaired"),
+        }
+    }
+
+    pub fn set_stream_tags(&mut self, tags: &StreamTags) {
+        let text = |v: &Option<String>| v.clone().filter(|v| !v.is_empty()).map(Value::from);
+        let flag = |on: bool| on.then_some(Value::Bool(true));
+        self.item.set_nox_value("language", text(&tags.language));
+        self.item.set_nox_value("title", text(&tags.title));
+        self.item.set_nox_value("default", flag(tags.default));
+        self.item.set_nox_value("forced", flag(tags.forced));
+        self.item
+            .set_nox_value("hearing_impaired", flag(tags.hearing_impaired));
+    }
+
+    /// Subtitle tracks: whether the viewer shows them
+    /// (`metadata.nox.shown`).
+    pub fn shown(&self) -> bool {
+        self.item.nox_value("shown").and_then(Value::as_bool) == Some(true)
+    }
+
+    pub fn set_shown(&mut self, on: bool) {
+        self.item
+            .set_nox_value("shown", on.then_some(Value::Bool(true)));
+    }
+
+    /// Subtitle tracks: whether they are drawn into the picture (in the
+    /// viewer and on export) instead of exported as a stream
+    /// (`metadata.nox.burn_in`).
+    pub fn burned_in(&self) -> bool {
+        self.item.nox_value("burn_in").and_then(Value::as_bool) == Some(true)
+    }
+
+    pub fn set_burned_in(&mut self, on: bool) {
+        self.item
+            .set_nox_value("burn_in", on.then_some(Value::Bool(true)));
     }
 
     /// Length of the contents, ignoring the track's own `source_range`.
@@ -1300,6 +1416,8 @@ impl Track {
                 .collect();
             out.push(AudioSegment {
                 path,
+                stream: clip.stream(),
+                track: 0,
                 place,
                 source_start: source_start - file_start,
                 volume: clip.item.volume(),
@@ -1317,6 +1435,10 @@ impl Track {
 #[derive(Debug, Clone, PartialEq)]
 pub struct AudioSegment {
     pub path: PathBuf,
+    /// The audio stream of the file (its best one if `None`).
+    pub stream: Option<usize>,
+    /// The stack index of its track.
+    pub track: usize,
     pub place: TimeRange,
     /// From the start of the file.
     pub source_start: Time,
@@ -1367,9 +1489,13 @@ impl Timeline {
         let soloing = self
             .tracks()
             .any(|(_, track)| audible(track) && track.item.solo());
-        for (_, track) in self.tracks() {
+        for (index, track) in self.tracks() {
             if audible(track) && (!soloing || track.item.solo()) {
+                let first = segments.len();
                 track.audio_segments(range, &mut segments);
+                for segment in &mut segments[first..] {
+                    segment.track = index;
+                }
             }
         }
         if let Some(dir) = &self.media_dir {
@@ -1509,6 +1635,24 @@ impl MediaReference {
         );
         reference.name = "Text".into();
         reference
+    }
+
+    /// The same media, its stream `stream` (the index in the file)
+    /// instead of the best one of its kind (`metadata.nox.stream`).
+    pub fn with_stream(mut self, stream: usize) -> Self {
+        crate::metadata::set_nox_value(
+            &mut self.metadata,
+            "stream",
+            Some(Value::Int(stream as i64)),
+        );
+        self
+    }
+
+    /// The stream of its file it uses, if it names one (else the file's
+    /// best stream of the clip's kind).
+    pub fn stream(&self) -> Option<usize> {
+        let stream = crate::metadata::nox_value(&self.metadata, "stream")?.as_i64()?;
+        usize::try_from(stream).ok()
     }
 
     /// A text generator's parameters, if it is one.

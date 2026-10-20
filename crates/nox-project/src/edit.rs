@@ -1594,6 +1594,7 @@ impl Timeline {
         let prefix = match kind {
             TrackKind::Video => "V",
             TrackKind::Audio => "A",
+            TrackKind::Subtitle => "S",
             TrackKind::Other(_) => "T",
         };
         let track = Track::new(format!("{prefix}{}", count + 1), kind.clone());
@@ -1643,6 +1644,75 @@ impl Timeline {
             TimeRange::new(Time::zero(duration.timebase), duration),
         );
         self.place(track, Composable::Clip(clip), at)
+    }
+
+    /// Adds `clips` (each with where it starts) on new video tracks above
+    /// the others, named `name`: a caption track. Clips that overlap go
+    /// on further tracks above (`name 2`, …), each on the lowest one with
+    /// room, as subtitles that show at once stack. Returns the tracks'
+    /// stack indices.
+    pub fn add_caption_tracks(
+        &mut self,
+        name: &str,
+        mut clips: Vec<(Time, crate::Clip)>,
+    ) -> Result<Vec<usize>, EditError> {
+        clips.sort_by_key(|a| a.0);
+        // Each track's index and where its last clip ends.
+        let mut tracks: Vec<(usize, Time)> = Vec::new();
+        for (at, clip) in clips {
+            if at.is_negative() {
+                return Err(EditError::BeforeStart);
+            }
+            let end = at + clip.duration();
+            let free = tracks.iter().position(|&(_, last)| last <= at);
+            let slot = match free {
+                Some(slot) => slot,
+                None => {
+                    let index = self.add_track(TrackKind::Video);
+                    let label = match tracks.len() {
+                        0 => name.to_owned(),
+                        n => format!("{name} {}", n + 1),
+                    };
+                    self.track_checked_mut(index)?.item.name = label;
+                    tracks.push((index, at));
+                    tracks.len() - 1
+                }
+            };
+            self.place(tracks[slot].0, Composable::Clip(clip), at)?;
+            tracks[slot].1 = end;
+        }
+        Ok(tracks.into_iter().map(|(index, _)| index).collect())
+    }
+
+    /// Adds an empty subtitle track named `name`, tagged with `tags`; the
+    /// viewer shows it if it shows no other. Returns its stack index.
+    pub fn new_subtitle_track(&mut self, name: &str, tags: &crate::StreamTags) -> usize {
+        let index = self.add_track(TrackKind::Subtitle);
+        let shown = !self
+            .tracks()
+            .any(|(_, t)| t.kind == TrackKind::Subtitle && t.shown());
+        if let Some(track) = self.track_mut(index) {
+            track.item.name = name.to_owned();
+            track.set_stream_tags(tags);
+            track.set_shown(shown);
+        }
+        index
+    }
+
+    /// Adds a subtitle track named `name`, tagged with `tags`, with
+    /// `clips` (each with where it starts), as one edit. Returns its stack
+    /// index.
+    pub fn add_subtitle_track(
+        &mut self,
+        name: &str,
+        tags: &crate::StreamTags,
+        clips: Vec<(Time, crate::Clip)>,
+    ) -> Result<usize, EditError> {
+        let index = self.new_subtitle_track(name, tags);
+        for (at, clip) in clips {
+            self.place(index, Composable::Clip(clip), at)?;
+        }
+        Ok(index)
     }
 
     /// Removes the track at stack index `index` with its contents. Clips
@@ -2054,6 +2124,46 @@ mod tests {
 
     /// Without media beyond the cut, the clips are trimmed at the cut to
     /// make room (what follows moves up), as Resolve offers.
+    #[test]
+    fn caption_tracks_stack_overlaps() {
+        let mut timeline = Timeline::new("t", Rational::new(24, 1));
+        timeline.place(0, clip("v", 0, 100), f(0)).unwrap();
+        let caption = |name: &str, length: i64| {
+            let mut parameters = Object::new();
+            parameters.insert("text", name);
+            Clip::new(
+                name,
+                MediaReference::text(parameters),
+                TimeRange::new(f(0), f(length)),
+            )
+        };
+        let before = timeline.tracks().count();
+        let tracks = timeline
+            .add_caption_tracks(
+                "Subtitles",
+                vec![
+                    (f(30), caption("c", 10)),
+                    (f(0), caption("a", 10)),
+                    (f(5), caption("b", 10)),
+                    (f(10), caption("d", 5)),
+                ],
+            )
+            .unwrap();
+        assert_eq!(tracks.len(), 2);
+        assert_eq!(timeline.tracks().count(), before + 2);
+        let (first, second) = (
+            timeline.track(tracks[0]).unwrap(),
+            timeline.track(tracks[1]).unwrap(),
+        );
+        assert_eq!(first.item.name, "Subtitles");
+        assert_eq!(second.item.name, "Subtitles 2");
+        assert_eq!(first.kind, TrackKind::Video);
+        // Above the video, the second above the first.
+        assert!(tracks[1] > tracks[0]);
+        assert_eq!(layout(first), "a[0]@0+10 d[0]@10+5 _@15+15 c[0]@30+10");
+        assert_eq!(layout(second), "_@0+5 b[0]@5+10");
+    }
+
     #[test]
     fn text_clips_go_on_top_where_free() {
         let mut timeline = Timeline::new("t", Rational::new(24, 1));
