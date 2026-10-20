@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "nox-ai"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ash",
  "bytemuck",
@@ -1615,11 +1615,11 @@ dependencies = [
 
 [[package]]
 name = "nox-build"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "nox-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "nox-engine",
@@ -1630,11 +1630,11 @@ dependencies = [
 
 [[package]]
 name = "nox-color"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "nox-engine"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cpal",
  "nox-ai",
@@ -1652,7 +1652,7 @@ dependencies = [
 
 [[package]]
 name = "nox-fx"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bytemuck",
  "glslang",
@@ -1667,7 +1667,7 @@ dependencies = [
 
 [[package]]
 name = "nox-gpu"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ash",
  "bytemuck",
@@ -1680,7 +1680,7 @@ dependencies = [
 
 [[package]]
 name = "nox-gui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-channel",
  "gettext-rs",
@@ -1701,7 +1701,7 @@ dependencies = [
 
 [[package]]
 name = "nox-media"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ffmpeg-next",
  "libc",
@@ -1715,7 +1715,7 @@ dependencies = [
 
 [[package]]
 name = "nox-otio"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "nox-project",
  "thiserror 2.0.21",
@@ -1723,7 +1723,7 @@ dependencies = [
 
 [[package]]
 name = "nox-project"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "nox-color",
  "thiserror 2.0.21",
@@ -1731,7 +1731,7 @@ dependencies = [
 
 [[package]]
 name = "nox-text"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fontdb",
  "kurbo",
@@ -3186,7 +3186,7 @@ checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde_json",
  "zip",
