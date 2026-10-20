@@ -66,6 +66,18 @@
     <mediatype>application/x-opentimelineio</mediatype>
   </provides>
   <releases>
+    <release version="0.1.3" date="2026-10-20">
+      <description>
+        <p>Subtitles are a track type of their own, in every format FFmpeg reads: SRT, ASS/SSA, WebVTT, MP4 text, and Blu-ray, DVD and DVB bitmap subtitles. They show in the viewer and export as subtitle streams, or burned into the picture.</p>
+        <ul>
+          <li>Import Subtitles adds a file's or a subtitle file's subtitles on a subtitle track, timed with the selected clip; text subtitles can be turned into styled text clips</li>
+          <li>Adding a file with several video, audio or subtitle streams asks which of them to use</li>
+          <li>Exports keep audio tracks as separate streams on request, and tag audio and subtitle streams with their language and title</li>
+          <li>Text can have a border and a shadow</li>
+          <li>The timeline scrolls vertically when its tracks don't fit, and follows the playhead during playback</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.2" date="2026-10-20">
       <description>
         <p>Whole folders can be dropped onto the media pool: Nox imports the video, audio and image files in them and their subfolders, leaving out hidden ones.</p>
