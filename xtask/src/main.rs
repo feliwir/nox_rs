@@ -9,12 +9,8 @@
 //!   libraries it needs, for this platform, as a ZIP archive in
 //!   `target/dist` (see `linux.rs`, `windows.rs`, `macos.rs`).
 //!
-//! - `flatpak-sources`: regenerates `packaging/flatpak/cargo-sources.json`
-//!   from `Cargo.lock` (see `flatpak.rs`); run it after dependencies change.
-//!
 //! `--no-build` uses the release binaries already built.
 
-mod flatpak;
 mod linux;
 #[cfg(unix)]
 mod macos;
@@ -40,9 +36,8 @@ fn main() {
     let result = match args.first().map(String::as_str) {
         Some("install") => install_task(&args[1..]),
         Some("dist") => dist_task(&args[1..]),
-        Some("flatpak-sources") => flatpak::sources(),
         _ => Err(
-            "usage: cargo xtask install --prefix DIR [--no-build]\n       cargo xtask dist [--no-build]\n       cargo xtask flatpak-sources"
+            "usage: cargo xtask install --prefix DIR [--no-build]\n       cargo xtask dist [--no-build]"
                 .into(),
         ),
     };

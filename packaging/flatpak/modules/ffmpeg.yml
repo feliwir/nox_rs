@@ -1,0 +1,67 @@
+# FFmpeg as Nox builds it, with the encoders it adds to the runtime's
+# codecs (x264, x265 in 8 and 10 bit, NVENC through nv-codec-headers).
+# Included by both manifests in the folder above.
+name: ffmpeg
+config-opts:
+  - --enable-shared
+  - --disable-static
+  - --disable-programs
+  - --disable-doc
+  - --enable-gpl
+  - --enable-libx264
+  - --enable-libx265
+  - --enable-libdav1d
+  - --enable-libsvtav1
+  - --enable-libvpx
+  - --enable-libjxl
+  - --enable-libopus
+  - --enable-libmp3lame
+  - --enable-ffnvcodec
+  - --enable-nvenc
+  - --enable-nvdec
+  - --enable-vulkan
+  - --enable-vaapi
+sources:
+  - type: archive
+    url: https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+    sha256: 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+modules:
+  - name: x264
+    config-opts:
+      - --enable-shared
+      - --enable-pic
+      - --disable-cli
+    sources:
+      - type: git
+        url: https://code.videolan.org/videolan/x264.git
+        commit: b35605ace3ddf7c1a5d67a2eb553f034aef41d55
+
+  # One library for 8- and 10-bit (HDR) encoding: the 10-bit build is linked
+  # into the 8-bit one.
+  - name: x265
+    buildsystem: simple
+    build-commands:
+      - cmake -S source -B build-10 -G Ninja -DCMAKE_BUILD_TYPE=Release
+        -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_SHARED=OFF -DENABLE_CLI=OFF
+        -DENABLE_PIC=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - ninja -C build-10
+      - mkdir -p build-8 && cp build-10/libx265.a build-8/libx265_main10.a
+      - cmake -S source -B build-8 -G Ninja -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX=/app -DCMAKE_INSTALL_LIBDIR=lib
+        -DEXTRA_LIB=x265_main10.a -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON
+        -DENABLE_SHARED=ON -DENABLE_CLI=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - ninja -C build-8 install
+    sources:
+      - type: archive
+        url: https://bitbucket.org/multicoreware/x265_git/downloads/x265_4.2.tar.gz
+        sha256: 40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210
+
+  - name: nv-codec-headers
+    buildsystem: simple
+    build-commands:
+      - make install PREFIX=/app
+    sources:
+      - type: git
+        url: https://github.com/FFmpeg/nv-codec-headers.git
+        tag: n13.0.19.1
+        commit: 88fee5c37318c991a8762d423530f91681e32e3a

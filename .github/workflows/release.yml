@@ -125,7 +125,7 @@ jobs:
         with:
           manifest-path: packaging/flatpak/io.github.feliwir.Nox.yml
           bundle: ${{ steps.name.outputs.bundle }}
-          cache-key: flatpak-builder-${{ hashFiles('packaging/flatpak/*') }}
+          cache-key: flatpak-builder-${{ hashFiles('packaging/flatpak/**') }}
           upload-artifact: false
       - uses: actions/upload-artifact@v4
         with:
